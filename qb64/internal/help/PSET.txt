@@ -1,0 +1,31 @@
+The '''PSET''' grahics [[SCREEN (statement)|SCREEN]] statement sets a pixel to a coordinate with a default or designated color attribute.
+
+
+{{PageSyntax}}
+:: PSET [STEP](''column%'', ''row%'')[, ''color_attribute'']
+
+
+* Can use [[STEP]] relative graphics coordinates from a previous graphic object.
+* ''Column'' and ''row'' coordinates can be offscreen.
+* If the ''color attribute'' is omitted, PSET will adopt a color from a previous [[PRINT]] or graphics object's color.
+* ''Color attributes'' are limited to the SCREEN mode used. Any color value other than 0 will be white in [[SCREEN (statement)|SCREEN]]s 2 or 11.
+* PSET can locate other graphics objects and color [[DRAW]] statements.
+* '''PSET can be used in any graphic screen mode, but cannot be used in the default screen mode 0 as it is text only!''' 
+
+
+''Example:'' Using PSET to locate and color a [[DRAW]] statement.
+{{CodeStart}} '' ''
+SCREEN 12
+{{Cl|PSET}}(100, 100), 12
+{{Cl|DRAW}} &quot;U20 R20 D20 L20&quot; '' ''
+{{CodeEnd}}
+:''Screen results:'' A drawn box that is bright red.
+
+
+''See also:'' 
+* [[PRESET]], [[CIRCLE]], [[LINE]]
+* [[COLOR]], [[POINT]]
+* [[Text Using Graphics]] (Demo)
+
+
+{{PageNavigation}}

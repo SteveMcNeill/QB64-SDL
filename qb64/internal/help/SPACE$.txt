@@ -1,0 +1,36 @@
+The {{KW|SPACE$}} function returns a {{KW|STRING}} consisting of a number of space characters.
+
+
+{{PageSyntax}}
+:''result$'' = {{KW|SPACE$}}({{Parameter|count%}})
+
+
+{{PageDescription}}
+&lt;!-- Stylin --&gt;
+* {{Parameter|count%}} is the number of space characters to repeat. Cannot use negative values!
+* Semicolons can be used to combine spaces with text [[STRING]] or numerical values.
+* [[Concatenation]] using + can be used to combine [[STRING]] text values only.
+* Spaces are often used to erase previous text PRINTs from the screen.
+* The function result can also be used to [[GET]] and [[PUT]] a number of bytes as zero characters: bytes$ = SPACE$(numbytes)
+* Spaces can also be made using [[SPC]], [[CHR$]](32) or [[STRING$]](n%, 32).
+
+
+{{PageExamples}}
+{{CodeStart}}{{Cl|FOR...NEXT|FOR}} count% = 0 {{Cl|FOR...NEXT|TO}} 3
+    {{Cl|PRINT}} &quot;abc&quot; + {{Cl|SPACE$}}( count% ) + &quot;def&quot;
+{{Cl|FOR...NEXT|NEXT}} count%
+{{CodeEnd}}
+{{OutputStart}}abcdef
+abc def
+abc  def
+abc   def
+{{OutputEnd}}
+
+
+{{PageSeeAlso}}
+* [[PRINT]], [[PRINT USING]]
+* [[STRING$]]
+* [[SPC]], [[TAB]]
+
+
+{{PageNavigation}}

@@ -1,0 +1,75 @@
+'''STRING''' variables or literal values are one byte per character length text or [[ASCII]] characters.
+
+
+{{PageSyntax}}
+:: DIM variable AS STRING [* byte_length]
+
+
+* ''Byte length'' is optional in [[DIM]] statements, but is required in [[TYPE]] definitions as a literal or [[CONST|constant]] [[INTEGER]] value.
+* Literal strings are defined by quotation marks on each end. The quotes will not [[PRINT]] to the screen.
+* Quotation marks cannot be placed inside of literal string values! Use [[CHR$]](34) to display &quot; quotes.
+* Semicolons and commas outside of the string can be used to combine strings in a [[PRINT]] statement only. 
+* [[LEN]] determines the number of bytes/characters used.
+* Literal value string ends are designated by quotation marks such as: &quot;text&quot;
+* Variable suffix type definition is $ such as: text$.
+* '''NOTE: Many Qbasic keyword variable names CAN be used with a [[STRING]] suffix($) ONLY! You CANNOT use them without the suffix, use a numerical suffix or use [[DIM]], [[REDIM]], [[_DEFINE]], [[BYVAL]] or [[TYPE]] variable [[AS]] statements!'''
+
+
+:::::'''Creating a fixed length STRING variable in Qbasic:'''
+
+:* Variable$ = &quot; &quot; ' 1 space creates a one [[_BYTE|byte]] string length in a procedure(not fixed)
+:* Variable$ = SPACE$(n%) ' defined as a n% length string in a procedure(not fixed)
+:* [[DIM]] variable AS STRING * n% ' fixed string length cannot be changed later
+:* Variable AS STRING * n% ' fixed string length in a [[SUB]] parameter or [[TYPE]] definition.
+:* [[CONST]] variables can also be used after the constant value is defined.
+
+
+:::::'''QB64 fixed length string type suffixes'''
+
+* A number after the string variable name $ suffix denotes the fixed string length: '''X$2''' denotes a 2 byte string.
+
+
+::::::'''String [[Concatenation]] (addition)'''
+::::''Must be used when defining a string variable's literal value!''
+
+* Concatenation uses the + addition symbol to add literal or variable parts to a string variable value.
+* Quotation marks cannot be added. Use [[CHR$]](34) as quotes are used to define the ends of strings.
+* Numerical values added must be converted to strings in string variable definitions. See the [[STR$]] function.
+* Concatenation can be used in PRINT statements along with semicolons and commas used by {{KW|PRINT}} ONLY.
+* Semicolons or commas outside of quotes cannot be used to make a string variable's literal string value!
+
+
+''Example 1:'' Using a string type suffix with a fixed length byte size in QB64 only. The number designates the fixed string length.
+{{CodeStart}}
+var$5 = &quot;1234567&quot;
+
+PRINT var$5
+{{CodeEnd}}
+{{OutputStart}}12345{{OutputEnd}}
+:''Note:'' The suffix must keep the same byte length or it is considered a different string variable with a different value!
+
+
+''Example 2:'' Creating a variable value adding variable and literal string values.
+{{CodeStart}} '' ''
+age% = 10
+a$ = &quot;I am &quot; + {{Cl|CHR$}}(34) + {{Cl|LTRIM$}}({{Cl|STR$}}(age%)) + {{Cl|CHR$}}(34) + &quot; years old.&quot;
+b$ = &quot;How old are you?&quot;
+question$ = a$ + {{Cl|SPACE$}}(1) + b$
+{{Cl|PRINT}} question$
+{{CodeEnd}}
+{{OutputStart}}
+I am &quot;10&quot; years old. How old are you? '' ''
+{{OutputEnd}}
+:''Note:'' Strings can be created on-the-fly by putting a $ after the variable, like this; variable$ = &quot;hello world!&quot;
+
+
+''See also:'' 
+* [[DIM]], [[DEFSTR]] 
+* [[ASCII]], [[CHR$]], [[DRAW]]
+* [[LEFT$]], [[RIGHT$]], [[MID$]]
+* [[LTRIM$]], [[RTRIM$]] 
+* [[LCASE$]], [[UCASE$]] 
+* [[STR$]], [[VAL]]
+
+
+{{PageNavigation}}

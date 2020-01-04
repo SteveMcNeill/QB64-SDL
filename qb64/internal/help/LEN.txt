@@ -1,0 +1,67 @@
+The '''LEN''' function returns the number of bytes used by a variable value and the number of characters in a [[STRING]].
+
+
+{{PageSyntax}}
+:: length% = LEN(variable$)
+
+
+
+* [[STRING]] values return the number of string bytes which is the same as the number of string characters.
+* LEN of number variables returns the number of bytes used by a number variable's type.
+** [[INTEGER]] variables return 2 bytes.
+** [[SINGLE]] variables return 4 bytes.
+** [[LONG]] Integer variables return 4 bytes.
+** [[DOUBLE]] variables return 8 bytes.
+** [[_INTEGER64]] variables return 8 bytes.
+* LEN can be used with a [[TYPE]] variable to determine the number of bytes used.
+* LEN = can be used when you [[OPEN]] a [[RANDOM]] (default = 128) or sequencial(default = 512) file to define the record lengths up to a maximum of 32767 bytes. 
+
+
+''Example 1:'' With a string variable the byte size is the same as the number of characters.
+{{CodeStart}}
+LastName$ = &quot;Williams&quot;
+PRINT {{Cl|LEN}}(LastName$); &quot;bytes&quot; '' ''
+{{CodeEnd}}
+{{OutputStart}}
+ 8 bytes
+{{OutputEnd}}
+
+
+''Example 2:'' With numerical value types you MUST use a variable to find the inherent byte length.
+{{CodeStart}} '' ''
+DIM I AS INTEGER
+PRINT &quot;INTEGER =&quot;; LEN(I); &quot;bytes&quot;
+DIM L AS LONG
+PRINT &quot;LONG =&quot;; LEN(L); &quot;bytes&quot;
+DIM int64 AS _INTEGER64
+PRINT &quot;_INTEGER64 =&quot;; LEN(int64); &quot;bytes&quot;
+DIM S AS SINGLE
+PRINT &quot;SINGLE =&quot;; LEN(S); &quot;bytes&quot;
+DIM D AS DOUBLE
+PRINT &quot;DOUBLE =&quot;; LEN(D); &quot;bytes&quot;
+DIM float AS _FLOAT
+PRINT &quot;_FLOAT =&quot;; LEN(float); &quot;bytes&quot; '' ''
+{{CodeEnd}}
+{{OutputStart}}INTEGER = 2 bytes
+LONG = 4 bytes
+_INTEGER64 = 8 bytes
+SINGLE = 4 bytes
+DOUBLE = 8 bytes
+_FLOAT = 32 bytes
+{{OutputEnd}}
+
+
+''Example 3:'' Opening a RANDOM file using LEN =
+{{CodeStart}} '' ''
+{{Cl|OPEN}} file$ FOR RANDOM AS #1 LEN = RecordLEN% '' ''
+{{CodeEnd}}
+
+
+''See also:'' 
+* [[LOF]]
+* [[TYPE]]
+* [[RANDOM]]
+* [[STRING]]
+
+
+{{PageNavigation}}

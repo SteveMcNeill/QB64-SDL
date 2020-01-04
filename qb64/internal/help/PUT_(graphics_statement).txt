@@ -1,0 +1,78 @@
+The '''PUT''' graphics statement is used to place [[GET (graphics statement)|GET]] or [[BSAVE]] file images stored in the designated array.
+
+
+{{PageSyntax}} 
+
+:: PUT [{{KW|STEP}}](''column'', ''row''), Array[(''index'')][,] [{{KW|_CLIP}}]  [{PSET|PRESET|AND|OR|XOR}]][, omitcolor]
+
+
+* The [[STEP]] keyword can be used to for coordinates relative to the last graphic coordinates used.
+* PUT places an array image to the top left corner screen coordinate position of the box shaped image.
+* '''The entire box area of the image MUST be on the screen or an &quot;Illegal function call&quot; [[ERROR Codes|error]] will occur!'''
+* In '''QB64''' [[_CLIP]] can be used when part of the image may be off of the screen. This will also prevent off screen errors!
+::PUT (-10, 10), mypic(0), PSET ' this causes an illegal function call without [[_CLIP]]
+::PUT (-10, 10), mypic(0), _CLIP PSET ' allows a graphic to be placed partially off-screen
+::PUT (-10, 10), mypic(0), _CLIP ' uses the default PUT XOR operation
+::PUT (-10, 10), mypic(0), _CLIP PSET, 4 ' doesn't place the red pixels of the image
+* The array must have image data at the array index given. [[GET (graphics statement)|GET]] or [[BLOAD]] should be used to place image data into the array.
+* If no [[arrays|array]] index or brackets are used, the image will be assumed to be at the array start index.
+* If no color action is listed after the array, the action will be assumed to be the default [[XOR]]. 
+::* [[XOR]] may blend with background colors, but can be used to erase an image when placed a second time.
+::* [[PSET]] completely overwrites any background with the image.
+::* [[AND]] merges background colors with the black areas of the image where a white image mask is used.
+::* [[OR]] blends the background and foreground colors together.
+::* [[PRESET]] creates a negative of the original image completely overwriting the background.
+
+* In '''QB64''' a color attribute can be removed from the PUT image using the ''omit color'' option instead of creating a mask.
+* [[_PUTIMAGE]] is recommended over PUT as it can also do the [[GET (graphics statement)|GET]] part for you without needing an array.
+
+
+''Example 1:'' How [[GET]] and PUT can be used with images loaded with [[_LOADIMAGE]]. The background color is omitted or &quot;masked&quot;.
+{{CodeStart}} '' ''
+{{Cl|SCREEN (statement)|SCREEN}} {{Cl|_NEWIMAGE}}(640, 480, 256)
+{{Cl|_SCREENMOVE}} {{Cl|_SCREENMOVE|_MIDDLE}}
+image&amp; = {{Cl|_LOADIMAGE}}(&quot;QB64.png&quot;)  '[http://www.qb64.net/forum/index.php QB64 bee image from Forum]
+
+wide&amp; = {{Cl|_WIDTH (function)|_WIDTH}}(image&amp;): deep&amp; = {{Cl|_HEIGHT}}(image&amp;)
+{{Cl|DIM}} Array(wide&amp; * deep&amp;) {{Cl|AS}} {{Cl|INTEGER}}
+
+{{Cl|_SOURCE}} image&amp;              'REQUIRED to GET the proper image area!
+{{Cl|GET (graphics statement)|GET}} (0, 0)-(wide&amp; - 1, deep&amp; - 1), Array(0)
+
+{{Cl|_DEST}} 0
+{{Cl|_COPYPALETTE}} image&amp;, 0      'necessary for custom image colors other than screen defaults
+{{Cl|PUT (graphics statement)|PUT}}(10, 10), Array(0), {{Cl|PSET}} , {{Cl|_RGB}}(255, 255, 255)   'mask white background color
+{{Cl|END}} '' ''
+{{CodeEnd}}
+: ''Explanation:'' '''QB64''' allows one PUT color to be &quot;masked&quot; to allow odd shaped sprite image backgrounds to be transparent.
+
+
+''Example 2:'' Using a [[STRING]] instead of an [[arrays|array]] to store [[GET]] image data that can be PUT later. For images up to 256 colors only.
+{{CodeStart}} '' ''
+a$ = {{Cl|SPACE$}}(4 + 100)            '4 byte header + 100 pixels for a 10 X 10 image
+{{Cl|SCREEN}} 13
+{{Cl|LINE}} (0, 0)-(319, 199), 4, BF   'color 4 = CHR$(4) = ♦
+{{Cl|LINE}} (40, 40)-(49, 49), 14, B   'color 14 = CHR$(14) = ♫
+{{Cl|GET (graphics statement)|GET}} (40, 40)-(49, 49), a$
+
+K$ = {{Cl|INPUT$}}(1)
+
+{{Cl|CLS}}
+{{Cl|PRINT}} a$                        'display string data. Width = {{Cl|CHR$}}(10 * 8) = &quot;P&quot;
+{{Cl|PUT (graphics statement)|PUT}}(100, 100), a$, {{Cl|PSET}} '' ''
+{{CodeEnd}}
+{{small|Code by Galleon}}
+: ''Explanation:'' The header holds the [[INTEGER]] width and depth of the image area as 2 bytes each. Screen 13 width multiplied by 8.
+
+
+''See also:'' 
+* [[_PUTIMAGE]], [[_LOADIMAGE]]
+* [[_MAPTRIANGLE]]
+* [[GET (graphics statement)|GET]], [[BSAVE]], [[BLOAD]]
+* [[SCREEN (statement)|SCREEN]], [[Scancodes]]{{text|(Example 3)}}
+* [[Creating Sprite Masks]] {{text|(for non-box shaped sprites)}}
+* [[GET and PUT Demo]]
+* [[Bitmaps]] 
+
+
+{{PageNavigation}}

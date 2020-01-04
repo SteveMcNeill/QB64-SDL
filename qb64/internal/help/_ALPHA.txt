@@ -1,0 +1,41 @@
+The {{KW|_ALPHA}} function returns the alpha channel transparency level of a color value used on a screen page or image.
+
+
+{{PageSyntax}}
+:{{Parameter|result&amp;}} = {{KW|_ALPHA}}({{Parameter|colour&amp;}} [, {{Parameter|imageHandle&amp;}}])
+
+
+{{PageDescription}}
+* If {{Parameter|imageHandle&amp;}} is omitted, it is assumed to be the current write page.
+* If the image specified by {{Parameter|imageHandle&amp;}} uses a palette, {{Parameter|colour&amp;}} is the palette index of the color value used.
+** Color values that match the clear color set by [[_CLEARCOLOR]] have an alpha level of 0 (zero).
+** Color values that don't match the clear color have an alpha level of 255.
+** If {{Parameter|colour&amp;}} value is outside of the range 0 to 255, an [[ERROR Codes|Illegal function call]] error will occur.
+* If the image specified by {{Parameter|imageHandle&amp;}} does not use a palette, {{Parameter|colour&amp;}} is the color value used to retrieve the alpha level.
+* If {{Parameter|imageHandle&amp;}} is an invalid handle, an [[ERROR Codes|Illegal function call]] error will occur.
+*[[_RED32]], [[_GREEN32]], [[_BLUE32]] and [[_ALPHA32]] are all equivalent to [[_RED]], [[_GREEN]], [[_BLUE]] and [[_ALPHA]] but they are highly optimized and only accept a 32-bit color (B8:G8:R8:A8). Using these in your code (opposed to dividing then ANDing 32-bit color values manually) makes your code easy to read also.
+* '''NOTE: Default 32 bit backgrounds are clear black or [[_RGBA]](0, 0, 0, 0)! Use [[CLS]] to make the black opaque!'''
+
+
+''Example:'' Finding the transparency of a 32 bit screen mode's background.
+{{CodeStart}} '' ''
+{{Cl|SCREEN}} {{Cl|_NEWIMAGE}}(640, 480, 32)
+BG&amp; = {{Cl|POINT}}(1, 1)
+{{Cl|PRINT}} &quot;Alpha =&quot;; {{Cl|_ALPHA}}(BG&amp;); &quot;Press a key to use CLS!&quot;
+K$ = INPUT$(1)                   
+{{Cl|CLS}}
+BG&amp; = {{Cl|POINT}}(1, 1)
+{{Cl|PRINT}} &quot;CLS Alpha =&quot;; {{Cl|_ALPHA}}(BG&amp;) '' ''
+{{CodeEnd}}
+: ''Explanation:'' You need to set the ALPHA value to 255 using [[CLS]] to make the black background opaque!
+
+
+{{PageSeeAlso}}
+* [[_ALPHA32]], [[_SETALPHA]]
+* [[_RED]], [[_GREEN]], [[_BLUE]]
+* [[_RED32]], [[_GREEN32]]. [[_BLUE32]]
+* [[_CLEARCOLOR]], [[_CLEARCOLOR (function)]]
+* [[CLS]], [[COLOR]], [[Images]]
+
+
+{{PageNavigation}}

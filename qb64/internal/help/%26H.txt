@@ -1,0 +1,104 @@
+The '''&amp;H''' prefix denotes that an integer value is expressed in a Hexadecimal base 16 format.
+
+
+{{PageSyntax}} a&amp; = &amp;HFACE
+
+
+* The base 16 numbering system uses hexadecimal digit values of 0 to F. A = 10, B = 11, C = 12, D = 13, E = 14 and F = 15.
+* Leading zero values '''can''' be omitted as they add nothing to the return value.
+* Decimal values returned can be any '''signed''' [[INTEGER]], [[LONG]] integer, or [[_INTEGER64]] value so use those type of variables when converting directly as shown above in the Syntax. The program [[ERROR Codes|&quot;overflow&quot;]] error limits are listed as:
+:: * [[INTEGER]]: 4 hex digits or a decimal value range from -32,768 to 32,767
+:: * [[LONG]]: 8 hex digits or a decimal value range from -2,147,483,648 to 2,147,483,647
+:: * [[_INTEGER64]]: 16 hex digits or decimal values from -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807.
+* The maximum hexadecimal value for each numerical type is the maximum number of digits listed above, each valued at F.
+* Hexadecimal values can be converted to [[LONG]] values by appending them with &amp;. Example: &amp;H8000&amp; = 32768
+
+
+{{TextStart}}
+                      '''Comparing the Base Numbering Systems'''
+
+     '''Decimal (base 10)    Binary (base 2)    Hexadecimal (base 16)    Octal (base 8)'''
+
+          0                  0000                  0                     0
+          1                  0001                  1                     1
+          2                  0010                  2                     2
+          3                  0011                  3                     3
+          4                  0100                  4                     4
+          5                  0101                  5                     5
+          6                  0110                  6                     6
+          7                  0111                  7                     7 -- maxed
+          8                  1000                  8                    10
+  maxed-- 9                  1001                  9                    11
+         10                  1010                  A                    12
+         11                  1011                  B                    13
+         12                  1100                  C                    14
+         13                  1101                  D                    15
+         14                  1110                  E                    16
+         15  -------------   1111 &lt;--- Match ---&gt;  F  ----------------  17 -- max 2
+         16                 10000                 10                    20
+        
+      When the Decimal value is 15, the other 2 base systems are all maxed out!
+      The Binary values can be compared to all of the HEX value digit values so
+      it is possible to convert between the two quite easily. To convert a HEX
+      value to Binary just add the 4 binary digits for each HEX digit place so:
+
+                        F      A      C      E 
+              &amp;HFACE = 1111 + 1010 + 1100 + 1101 = &amp;B1111101011001101
+
+      To convert a Binary value to HEX you just need to divide the number into
+      sections of four digits starting from the right(LSB) end. If one has less
+      than 4 digits on the left end you could add the leading zeros like below:
+ 
+             &amp;B101011100010001001 = 0010 1011 1000 1000 1001  
+                       hexadecimal =  2  + B  + 8 +  8  + 9 = &amp;H2B889 
+
+      See the Decimal to Binary conversion function that uses '''[[HEX$]]''' below.
+ 
+{{TextEnd}}
+
+
+
+''Example:'' Converting a decimal number to binary using [[HEX$]].
+{{CodeStart}}
+'' ''
+FUNCTION BIN$ (n&amp;)
+  h$ = {{Cl|HEX$}}(n&amp;)                     'get hexadecimal string value
+  FOR i = 1 TO {{Cl|LEN}}(h$)              'scan the HEX$ digits
+    SELECT CASE {{Cl|MID$}}(h$, i, 1)      'read each HEX$ digit
+        CASE &quot;0&quot;: b$ = b$ + &quot;0000&quot;
+        CASE &quot;1&quot;: b$ = b$ + &quot;0001&quot;
+        CASE &quot;2&quot;: b$ = b$ + &quot;0010&quot;
+        CASE &quot;3&quot;: b$ = b$ + &quot;0011&quot;
+        CASE &quot;4&quot;: b$ = b$ + &quot;0100&quot;
+        CASE &quot;5&quot;: b$ = b$ + &quot;0101&quot;
+        CASE &quot;6&quot;: b$ = b$ + &quot;0110&quot;
+        CASE &quot;7&quot;: b$ = b$ + &quot;0111&quot;
+        CASE &quot;8&quot;: b$ = b$ + &quot;1000&quot;
+        CASE &quot;9&quot;: b$ = b$ + &quot;1001&quot;
+        CASE &quot;A&quot;: b$ = b$ + &quot;1010&quot;
+        CASE &quot;B&quot;: b$ = b$ + &quot;1011&quot;
+        CASE &quot;C&quot;: b$ = b$ + &quot;1100&quot;
+        CASE &quot;D&quot;: b$ = b$ + &quot;1101&quot;
+        CASE &quot;E&quot;: b$ = b$ + &quot;1110&quot;
+        CASE &quot;F&quot;: b$ = b$ + &quot;1111&quot;
+    END SELECT
+  NEXT i
+  b$ = {{Cl|RIGHT$}}(b$, LEN(b$) - {{Cl|INSTR}}(b$, &quot;1&quot;) + 1)   'eliminate leading zeroes
+  IF {{Cl|VAL}}(b$) THEN BIN$ = b$ ELSE BIN$ = &quot;0&quot;       'return zero if n&amp; = 0
+END FUNCTION '' ''
+{{CodeEnd}}
+{{small|Code by CodeGuy}}
+:''Explanation:'' Hexadecimal digits can be any value up to 15 which also corresponds to all four bits on in binary. The function above just adds every four bit binary string value together to return the binary value. After they are concatenated, the leading bit on is found by [[INSTR]] and everything from that point is kept removing the leading &quot;0&quot;'s.
+
+
+''See also:''
+
+[[HEX$]], [[OCT$]]
+
+[[&amp;B]] (binary), [[&amp;O]] (octal)
+
+[[Base Comparisons]]
+
+
+
+{{PageNavigation}}

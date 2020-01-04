@@ -1,0 +1,34 @@
+The '''LEFT$''' string function returns a part of a [[STRING]] from the start a set number of places.
+
+
+
+{{PageSyntax}}
+:: LEFT$(stringvalue$, numberofcharacters%)
+
+
+
+* The string value can be any string of [[ASCII]] characters as a string variable.
+* If the number of characters exceeds the string length the entire string is returned.
+* Number of characters cannot be a negative value.
+* LEFT$ returns always starts at the first character of the string, even when a space. [[LTRIM$]] can remove leading spaces.
+
+
+''Example:'' Getting the left portion of a string value. 
+{{CodeStart}}
+name$ = &quot;Tom Williams&quot;
+
+First$ = LEFT$(name$, 3)
+
+PRINT First$ '' ''
+{{CodeEnd}}
+{{OutputStart}}
+Tom
+{{OutputEnd}}
+
+
+''See also:'' 
+* [[RIGHT$]], [[MID$]]
+* [[LTRIM$]], [[RTRIM$]]
+
+
+{{PageNavigation}}

@@ -1,0 +1,5 @@
+if(oldstr10893){
+if(oldstr10893->fixed)qbs_set(oldstr10893,_FUNC_COMPRESS_1_RLE_STRING_A);
+qbs_free(_FUNC_COMPRESS_1_RLE_STRING_A);
+}
+qbs_free(_FUNC_COMPRESS_1_RLE_STRING_H);

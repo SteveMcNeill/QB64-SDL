@@ -1,0 +1,25 @@
+The '''INPUT #''' file or port statement reads data using a list of variables or just one variable at a time.
+
+
+
+{{PageSyntax}} 
+:: INPUT #filenumber%, list%[, of!, variables$]
+
+
+
+* INPUT # reads file data from a filenumber% [[OPEN]]ed in the [[INPUT (file mode)|INPUT |INPUT]] file mode.
+* INPUT # can read one variable at a time from a list or read the entire list.
+* Variable types MUST match the types being read! 
+* INPUT # will read each value until it encounters a comma for the next value in a list.
+* Use the [[EOF]] function to avoid reading past the end of a file.
+* Files created by [[WRITE (file statement)|WRITE #]] usually have the same number of values on each file line. If INPUT reads more or less values, it may read beyond the End of File or return bad data input!
+* Use the [[LINE INPUT (file statement)]] for files created by PRINT # or PRINT #, USING. 
+
+
+{{PageSeeAlso}}
+* {{KW|LINE INPUT (file statement)|LINE INPUT #}}, {{KW|INPUT$}}, {{KW|INPUT (file mode)}}
+* {{KW|PRINT (file statement)|PRINT #}} {{KW|PRINT USING (file statement)|PRINT #, USING}} 
+* {{KW|GET|GET #}}, {{KW|INPUT (TCP/IP statement)}}
+
+
+{{PageNavigation}}

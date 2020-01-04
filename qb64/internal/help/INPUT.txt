@@ -1,0 +1,55 @@
+The '''INPUT''' statement requests a [[STRING]] or numerical keyboard entry from a program user.
+
+
+
+{{PageSyntax}}
+:: INPUT [;] [&quot;Question or statement text&quot;{,|;}] ''variable1''[, ''variable2''][, ...]
+
+
+
+* The text MUST be a literal [[STRING|string]] created by the programmer if used. '''Use [[PRINT]] to create text using variables.'''
+* INPUT is capable of returning more than one ''variable'' value. The user will have to know to separate each entry value with a comma.
+* [[STRING|String]] and numerical variables can both be used in multiple entry requests. Text cannot be entered as numerical variable values!
+* The user must press enter for the INPUT procedure to end. Multiple entries can be skipped.
+* '''QB64''' will not return '''Redo from start errors''' as user input is limited to input within the variable type allowances.
+* Use a [[semicolon]] after the INPUT keyword to prevent the screen from rolling when it is used on  the bottom 2 screen rows.
+* A [[semicolon]] immediately after the text statement will display a ? mark with a space after it. A [[comma]] does not.
+* For entries that may contain commas inside of the entry text value, use a [[LINE INPUT]] string entry instead.
+* Will accept the [[scientific notation]] letter E or e with [[SINGLE]] variables and D or d with [[DOUBLE]] numerical values.
+* Numerical entries starting with [[&amp;H]], [[&amp;O]] and [[&amp;B]] can be made also.
+* INPUT removes all spaces preceeding or following a string value entry.
+* The statement stops a program until enter is pressed. Not good in programs using a mouse (see [[INKEY$]]).
+
+
+''Example 1:'' Using a variable in an input text message using PRINT. INPUT text cannot use variables!
+{{CodeStart}} '' ''
+{{Cl|INPUT}} &quot;Enter your name: &quot;, name$
+{{Cl|PRINT}} name$ + &quot; please enter your age: &quot;;: {{Cl|INPUT}} &quot;&quot;, age% 'empty string with comma
+{{Cl|PRINT}} name$ + &quot; how much do you weigh&quot;; : {{Cl|INPUT}} weight%   'no text adds ? '' ''
+{{CodeEnd}}
+:''Explanation:'' Use an empty string with a comma to eliminate the question mark that would appear without the string.
+
+
+''Example 2:'' How QB64 avoids a ''Redo from start'' multiple entry error. Use commas between values!
+{{CodeStart}} '' ''
+{{Cl|DO}} '' ''
+  {{Cl|INPUT}} &quot;What is your name, age, and sex(M/F)&quot;; name$, age%, sex$
+{{Cl|LOOP}} {{Cl|UNTIL}} age%        'loop until age is not 0
+{{Cl|IF}} age% &gt;= 21 {{Cl|THEN}} {{Cl|PRINT}} &quot;You can drink beer!&quot; {{Cl|ELSE}} {{Cl|PRINT}} &quot;You cannot drink beer yet!&quot;
+{{Cl|END}} '' '' 
+{{CodeEnd}}
+{{OutputStart}}
+What is your name, age, and sex(M/F)? Tom,24,M
+You can drink beer!
+{{OutputEnd}}
+:''Explanation:'' Try to enter text for the age value and it will not work. E or D should be allowed as decimal point numerical entries.
+
+
+''See also:'' 
+* [[INPUT$]], [[INKEY$]]
+* [[LINE INPUT]], [[LOCATE]]
+* [[_KEYHIT]], [[_KEYDOWN]]
+* [[Scancodes]]
+
+
+{{PageNavigation}}

@@ -1,0 +1,25 @@
+The [[_RGB32]] function ALWAYS returns the 32-bit ''RGBA'' color value with specified red, green and blue component intensities.
+
+
+{{PageSyntax}}
+:{{Parameter|colorvalue&amp;}} = [[_RGB32]]({{Parameter|red&amp;}}, {{Parameter|green&amp;}}, {{Parameter|blue&amp;}})
+
+
+{{PageDescription}}
+* The color value returned is the 32 bit [[LONG]] negative decimal color value.
+* {{Parameter|red&amp;}} specifies the red component intensity from 0 to 255.
+* {{Parameter|green&amp;}} specifies the green component intensity from 0 to 255.
+* {{Parameter|blue&amp;}} specifies the blue component intensity from 0 to 255.
+* Values outside the valid range from &amp;HFF000000 to &amp;HFFFFFFFF are clipped.
+* Colors returned are ALWAYS opaque as the transparency value is always 255! Use [[_ALPHA]] or [[_CLEARCOLOR]] to change it.
+* '''NOTE: Default 32 bit backgrounds are clear black or [[_RGBA]](0, 0, 0, 0)! Use [[CLS]] to make the black opaque!'''
+
+
+{{PageSeeAlso}}
+* [[_RGBA32]], [[_RGB]], [[_RGBA]]
+* [[_RED32]], [[_GREEN32]], [[_BLUE32]]
+* [[_PALETTECOLOR]]
+* [[HEX$ 32 Bit Values]]
+
+
+{{PageNavigation}}

@@ -1,0 +1,17 @@
+The '''_SHELLHIDE''' function returns the [[INTEGER]] code value sent by [[END]] or [[SYSTEM]] when a program exits.
+
+
+{{PageSyntax}}
+
+::: return_code = _SHELLHIDE
+
+
+* QB64 can now return codes sent by programs when a specified code is added after [[END]] code% or [[SYSTEM]] code%.
+
+
+''See also:''
+* [[_SHELL (function)]]
+* [[SYSTEM]], [[END]]
+
+
+{{PageNavigation}}

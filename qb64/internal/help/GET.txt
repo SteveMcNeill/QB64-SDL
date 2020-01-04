@@ -1,0 +1,60 @@
+The '''GET #''' file or port device statement reads data by bytes or record positions.
+
+
+
+{{PageSyntax}}
+:: GET #''filenumber%'', [''position''], ''read_variable''
+
+
+
+* File/port number is the number used in the [[OPEN]] AS statement. 
+* The [[INTEGER]] or [[LONG]] byte or record ''position'' is the byte in a [[BINARY]] file or the record in a [[RANDOM]] file.
+* The ''position'' can be omitted if the GETs are consecutive or when creating a new file.
+* The first file position is 1. This may require adding one to an offset value when documentation uses that position as 0.
+* GET does NOT require a record position or read variable when using a [[FIELD]] statement!
+* The variable value is any string or number type or a [[TYPE]] or [[FIELD]] variable.
+* '''QB64''' can GET the entire data contents of an array from a [[PUT]] array file.
+* GET can ignore the EOF statement and return bad data when transferring data to another file! Always check for EOF '''after''' a GET to see if it should be [[PUT]].
+
+
+
+''Example 1: Checking for End of File before transferring individual GET data.
+
+{{CodeStart}}
+ DO UNTIL EOF(1)
+   GET #1, , value%
+   IF NOT({{Cl|EOF}}(1)) THEN PUT #2, , value%
+ LOOP
+{{CodeEnd}}
+
+
+''Example 2:'' Using a [[TYPE]] record variable to read a TYPE record(Contact).
+
+{{CodeStart}}
+ OPEN file$ FOR RANDOM as #1 LEN = LEN(Contact)
+ IF record% &lt;= {{Cl|LOF}}(1) \ LEN(Contact) THEN GET #1, record%, Contact
+ CLOSE #1
+{{CodeEnd}}
+
+''Note:'' The Contact record contains all of the DOT variable types listed in the TYPE.
+
+
+''Example 3:'' Restoring [[Arrays|array]] data from a [[BINARY]] file using GET # in '''QB64''' only.
+
+{{CodeStart}}
+ DIM myarray(80000) AS {{Cl|INTEGER}}
+ {{Cl|OPEN}} &quot;myfile.ext&quot; FOR {{Cl|BINARY}} AS #1 
+ GET #1, , myarray() 
+ CLOSE #1
+{{CodeEnd}}
+
+''Note:'' The file data must have been previously stored in the file using PUT # the same way!
+
+
+''See also:'' 
+* [[PUT|PUT #]], [[SEEK]], [[SEEK (statement)]] 
+* [[INPUT (file statement)|INPUT #]], [[GET (TCP/IP statement)]]
+* [[FIELD]], [[RANDOM]], [[BINARY]]
+
+
+{{PageNavigation}}

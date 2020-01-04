@@ -1,0 +1,32 @@
+The '''PRESET''' graphic [[SCREEN]] statement turns a pixel at a coordinate to the background color or a designated color attribute.
+
+
+{{PageSyntax}}
+:: PRESET [STEP](column%, row%)[, color_attribute]
+
+
+* Can use [[STEP]] relative graphics coordinates.
+* Column and row coordinates can be offscreen 
+* If the color attribute is omitted, a PRESET will be the background color, normally black.
+* Color attributes are limited to the SCREEN mode used.
+* Any color value other than 0 will be white in monochrome SCREEN modes.
+* PRESET can locate other graphics objects and add color to [[DRAW]] statements.
+* '''PRESET can be used in any graphic screen mode, but cannot be used in the default screen mode 0 as it is text only!''' 
+
+
+''Example:'' Using PRESET to locate a [[DRAW]] statement.
+{{CodeStart}} '' ''
+SCREEN 12
+{{Cl|PRESET}}(100, 100)
+{{Cl|DRAW}} &quot;C12 U20 R20 D20 L20&quot; '' ''
+((CodeEnd}}
+:''Explanation:'' DRAW string required a color designation as PRESET defaulted to black background color. 
+:''Screen results:'' A drawn box that is bright red.
+
+
+''See also:'' 
+
+* [[PSET]], [[CIRCLE]], [[LINE]]
+
+
+{{PageNavigation}}

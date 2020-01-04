@@ -1,0 +1,57 @@
+'''MOD''' is mathematical [[INTEGER]] remainder division. Also called Modulus, it can work with integer division when a remainder is necessary.
+
+
+{{PageSyntax}}
+:: remainder = Numerator MOD Divisor
+
+
+* MOD returns 0 if a number is evenly divisible by Integer division ( [[\]] ) or the number divided is 0.  
+* '''Divisor (second value) must not be a  value of 0 to .5'''. This will create a [[ERROR Codes|&quot;Division by zero&quot; error!]] due to [[CINT]] rounding.
+* Returns only the integer division remainder as an [[INTEGER]] or [[LONG]] value.
+* Real divisor values are rounded (e.g. 19 MOD 6.7 returns 5 just like 19 MOD 7 would).
+* The result has the same sign as the numerator (e.g. -1 MOD 7 returns -1, not 6).
+* Division and multiplication operations are performed before addition and subtraction in Qbasic's order of operations.
+
+
+''Example 1:'' 
+{{CodeStart}}
+  I% = 100 {{Cl|\}} 9 
+  R% = 100 {{Cl|MOD}} 9
+  PRINT &quot;Integer division =&quot;; I%, &quot;Remainder =&quot;; R% 
+{{CodeEnd}}
+{{OutputStart}}
+  Integer division = 11        Remainder = 1 '' ''
+{{OutputEnd}}
+
+''Explanation:'' Integer division 100 \ 9 returns 11. 11 [[*]] 9 = 99. So the remainder must be 1 as 100 - 99 = 1. Normal decimal point division would return 11.11111.
+
+
+''Example 2:'' Comparing normal, integer and remainder division.
+{{CodeStart}}
+tmp1$ = &quot; Normal:         ####.# / #### = ##.###   &quot;
+tmp2$ = &quot; Integer:        ####.# \ #### = ###      &quot;
+tmp3$ = &quot; Remainder:    ####.# MOD #### = ####     &quot;
+FOR i = 1 TO 6
+   SELECT CASE i
+     CASE 1: numerator = 1: divisor = 5
+     CASE 2: numerator = 13: divisor = 10
+     CASE 3: numerator = 990: divisor = 100
+     CASE 4: numerator = 1100: divisor = 100
+     CASE 5: numerator = 4501: divisor = 1000
+     CASE 6: numerator = 50.6: divisor = 10
+   END SELECT
+LOCATE 5, 20: PRINT USING tmp1$; numerator; divisor; numerator / divisor
+LOCATE 7, 20: PRINT USING tmp2$; numerator; divisor; numerator \ divisor
+LOCATE 9, 20: PRINT USING tmp3$; numerator; divisor; numerator MOD divisor
+DO: SLEEP: LOOP UNTIL INKEY$ &lt;&gt; &quot;&quot;                              
+NEXT '' ''
+{{CodeEnd}}
+
+
+''See also:'' 
+* [[/]] (normal division operator)
+* [[\]] (integer division operator)
+* [[Mathematical Operations]]
+
+
+{{PageNavigation}}

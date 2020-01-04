@@ -1,0 +1,44 @@
+The {{KW|_COPYIMAGE}} function duplicates an image handle from a designated handle.
+
+
+{{PageSyntax}}
+:''newhandle&amp;'' = {{KW|_COPYIMAGE}}[({{parameter|imageHandle&amp;}})]
+
+
+{{PageDescription}}
+* The ''newhandle'' value returned will be different than the source handle value supplied.
+* If ''imagehandle'' parameter is omitted or a value of 0 is used, the current destination screen or image is copied.
+* The function copies any image or screen handle to a new and unique handle value.
+* Valid copy handles are less than -1. Invalid handles return -1.
+* Every attribute of the passed image or program screen is copied to a new handle value.
+* It is IMPORTANT to free discarded images with {{KW|_FREEIMAGE}} to prevent PC memory errors!
+
+
+''Example:'' Restoring a Legacy SCREEN using the _COPYIMAGE return value.
+{{CodeStart}}'' ''
+
+{{Cl|SCREEN}} 13
+{{Cl|CIRCLE}} (160, 100), 100, 40
+DO: {{Cl|SLEEP}}: {{Cl|LOOP}} {{Cl|UNTIL}} {{Cl|INKEY$}} &lt;&gt; &quot;&quot;
+
+'backup screen before changing {{Cl|SCREEN}} mode
+oldmode&amp; = {{Cl|_COPYIMAGE}}(0)  'the 0 value designates the current destination {{Cl|SCREEN}}
+
+s&amp; = {{Cl|_NEWIMAGE}}(800, 600, 32)
+{{Cl|SCREEN}} s&amp;
+{{Cl|LINE}} (100, 100)-(500, 500), {{Cl|_RGB}}(0, 255, 255), BF
+DO: {{Cl|SLEEP}}: {{Cl|LOOP}} {{Cl|UNTIL}} {{Cl|INKEY$}} &lt;&gt; &quot;&quot;
+
+{{Cl|SCREEN}} oldmode&amp;        'restore original screen
+{{Cl|END}} '' ''
+{{CodeEnd}}
+
+
+
+{{PageSeeAlso}}
+* [[_LOADIMAGE]], [[_NEWIMAGE]]
+* [[_SOURCE]], [[_DEST]]
+* [[_FILELIST$ (function)]] {{text|(Demo of _COPYIMAGE)}}
+
+
+{{PageNavigation}}

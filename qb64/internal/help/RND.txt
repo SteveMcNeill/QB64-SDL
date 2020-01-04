@@ -1,0 +1,52 @@
+The '''RND''' function returns a random number with a value between 0 (inclusive) and 1 (exclusive).
+
+
+{{PageSyntax}} 
+:: result! = {{KW|RND}} [(n!)]
+
+
+{{PageDescription}}
+* n! is a numeric value that defines the behavior of the RND function but is NOT normally required:
+::n! omitted: Return next random number in the sequence.
+::n! = 0: Return the last value returned.
+::n! &lt; 0: Always returns the same value for any given n
+* Even if n! &gt; 0, the sequence of numbers generated will not change unless [[RANDOMIZE]] is initiated. 
+* The random numbers generated range from 0 to .9999999 [[SINGLE]] values that never equal 1.
+* To get values in a range larger than 1, multiply it with a number.
+* To get values starting at a certain number, add that number to the result.
+* If you need an integer range of numbers, like a dice roll, round it down to an {{KW|INT}}. Add 1 to the maximum number with INT.
+* The random sequence is 2^24 = 16,777,216 entries long, which can cause repeated patterns in some cases. For a more precise random number, you need to write your own [http://en.wikipedia.org/wiki/Linear_congruential_generator| random function].
+* Formulas for the [[INT|Integer]] or [[CINT|Closest Integer]] of ANY number range from ''min%''(lowest value) to ''max%''(greatest value): 
+::* Using [[INT]]: randNum% = INT(RND * (max% - min% + 1)) + min%
+::* Using [[CINT]]: randNum% = CINT(RND * (max% - min%)) + min%
+* Use [[RANDOMIZE]] [[TIMER]] for different random number results each time a program is run. 
+* [[RUN]] should reset the [[RANDOMIZE]] sequence to the starting [[RND]] function value.(Not yet in QB64)
+
+
+:''Example 1:'' Generating a random integer value between 1 and 6 (inclusive) using INT.
+{{CodeStart}}
+dice% = {{Cl|INT}}({{Cl|RND}} * 6) + 1 '' '' 'add one as INT value never reaches 6 
+{{CodeEnd}}
+
+
+:''Example 2:'' Using uniform random numbers to create random numbers with a gaussian distribution ([http://en.wikipedia.org/wiki/Marsaglia_polar_method| Marsaglia's polar method]).
+{{CodeStart}} '' ''
+{{Cl|DO}}
+  u! = {{Cl|RND}} * 2 - 1
+  v! = {{Cl|RND}} * 2 - 1
+  s! = u! * u! + v! * v!
+{{Cl|LOOP}} {{Cl|WHILE}} s! &gt;= 1 {{Cl|OR}} s! = 0
+s! = SQR(-2 * {{Cl|LOG}}(s!) / s!) * 0.5
+u! = u! * s!
+v! = v! * s! '' ''
+{{CodeEnd}}
+:''Explanation:'' Values ''u!'' and ''v!'' are now two independent random numbers with gaussian distribution, centered at 0.
+
+
+{{PageSeeAlso}}
+* {{KW|RANDOMIZE}}
+* {{KW|TIMER}}
+* {{KW|INT}}
+
+
+{{PageNavigation}}

@@ -1,0 +1,6 @@
+Many sample programs are contained within the'qb64\samples' sub-folders.
+
+Refer to 'qb64\samples\info.txt' for information about these programs.
+
+All example programs can be run from their current location.
+Simply navigate using 'Open...' through the various subfolders of the 'samples' folder to locate the (.bas) programs.

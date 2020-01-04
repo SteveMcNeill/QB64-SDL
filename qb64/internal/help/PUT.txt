@@ -1,0 +1,60 @@
+The '''PUT #''' file or port statement writes data to a specific byte or record location.
+
+
+
+{{PageSyntax}}
+:: PUT #''filenumber%'' [,''position''][, ''variable_value'']
+
+
+
+* File/port number is the number used in the [[OPEN]] statement. 
+* If a [[LEN]] = record length statement is omitted in a [[RANDOM]] [[OPEN]] statement the record size defaults to 128 bytes!
+* The [[INTEGER]] or [[LONG]] ''file_position'' is the byte in a [[BINARY]] file or the record number in a [[RANDOM]] file.
+* The ''file_position'' can be omitted if the PUTs are consecutive or when creating a new file. 
+* The first file position is 1. This may require adding one to an offset value when documentation uses that position as 0.
+* Both the file position and variable can be omitted when using a [[FIELD]] definition.
+* '''Warning: Not designating a PUT position can overwrite previous file data!'''
+* The variable value is any string or numerical type or a [[TYPE]] variable or [[FIELD]] string definition.
+* When using a numeric variable, values do NOT require conversion using [[MKI$]], [[MKL$]], [[MKS$]] or [[MKD$]].
+* '''QB64''' can load an array's data directly to a [[BINARY]] file using '''one''' PUT.
+
+
+
+
+''Example 1:'' Using a [[TYPE]] record variable(Contact) to enter a new record.
+{{CodeStart}} '' ''
+{{Cl|TYPE}} ContactType
+ first AS {{Cl|STRING}} * 10
+ last AS {{Cl|STRING}} * 20
+ age AS {{Cl|INTEGER}}
+{{Cl|END}} {{Cl|TYPE}}
+{{Cl|DIM}} Contact AS ContactType
+
+{{Cl|OPEN}} &quot;Record.lst&quot; FOR {{Cl|RANDOM}} as #1 LEN = {{Cl|LEN}}(Contact)
+NumRecords% = {{Cl|LOF}}(1) \ {{Cl|LEN}}(Contact)
+PUT #1, NumRecords% + 1, Contact   ' add a new record {{Cl|TYPE}} record value 
+{{Cl|CLOSE}} #1 '' ''
+{{CodeEnd}}
+: ''Note:'' The DOT record variable values were created or changed before the PUT. The record length is 32 bytes.
+
+
+''Example 2:'' Placing the contents of a numerical array into a BINARY file.
+{{CodeStart}} '' ''
+{{Cl|DIM}} Array(100, 10) AS {{Cl|INTEGER}}
+{{Cl|OPEN}} &quot;TestArray.bin&quot; FOR {{Cl|BINARY}} AS #1
+{{Cl|PUT}} #1, , Array()                'PUT the entire array into a BINARY file
+{{Cl|CLOSE}} #1 '' ''
+{{CodeEnd}}
+: ''Note:'' Use empty brackets in QB64 when using [[GET]] to create an array or [[PUT]] to create a [[BINARY]] data file.
+
+
+''See Example:'' [[Program ScreenShots]]
+
+
+''See also:'' 
+*[[GET|GET #]], [[SEEK]], [[SEEK (statement)]], 
+*[[PRINT (file statement)|PRINT  #]], [[PUT (TCP/IP statement)]]
+*[[FIELD]], [[PUT (graphics statement)]]
+
+
+{{PageNavigation}}

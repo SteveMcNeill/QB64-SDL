@@ -1,0 +1,38 @@
+The '''_SCREENMOVE''' statement positions the program window on the desktop using designated coordinates or the _MIDDLE function.
+
+
+{{PageSyntax}}
+:: _SCREENMOVE {''column&amp;'', ''row&amp;''|_MIDDLE}
+
+
+* Positions the program window on the desktop using the ''column'' and ''row'' pixel coordinates for the upper left corner.
+* '''_MIDDLE''' automatically centers the program window's position on the desktop in any screen resolution.
+* The program's [[SCREEN]] dimensions may influence the desktop position that can be used to keep the entire window on the screen. 
+* Use [[_SCREENIMAGE]] to find the current user's Windows desktop resolution to place the program's window position.
+* [[Keywords_currently_not_supported_by_QB64#Keywords_Not_Supported_in_Linux_or_MAC_OSX_versions|Keyword Not Supported in Linux or MAC versions]]
+
+
+''Example:'' Calculating the border and header offsets by comparing a coordinate move with MIDDLE by using trial and error.
+{{CodeStart}} '' ''
+user&amp; = {{Cl|_SCREENIMAGE}}
+userwidth&amp; = {{Cl|_WIDTH}}(user&amp;): userheight&amp; = {{Cl|_HEIGHT}}(user&amp;) 'get current screen resolution
+{{Cl|SCREEN}} {{Cl|_NEWIMAGE}}(800, 600, 256)
+scrnwidth&amp; = {{Cl|_WIDTH}}: scrnheight&amp; = {{Cl|_HEIGHT}}  'get the center of the program screen
+
+{{Cl|_SCREENMOVE}} (userwidth&amp; \ 2 - scrnwidth&amp; \ 2) - 3, (userheight \ 2 - scrnheight&amp; \ 2) - 29
+{{Cl|_DELAY}} 4
+{{Cl|_SCREENMOVE}} _MIDDLE  'check centering
+
+{{Cl|END}} '' ''
+{{CodeEnd}}
+: When positioning the window, offset the position by -3 columns and - 29 rows to calculate the top left corner coordinate.
+
+
+''See also:''
+* [[_SCREENIMAGE]]
+* [[_NEWIMAGE]], [[SCREEN (statement)]]
+* [[_SCREENX]], [[_SCREENY]]
+
+
+
+{{PageNavigation}}

@@ -1,0 +1,17 @@
+The {{KW|_BLEND (function)|_BLEND}} function returns if blending is enabled or disabled for the current window or a specified image handle.
+
+
+{{PageSyntax}}
+:''result%'' = {{KW|_BLEND (function)|_BLEND}} ( [{{Parameter|imageHandle&amp;}}] )
+
+
+{{PageDescription}}
+* {{KW|_BLEND (function)|_BLEND}} returns -1 if enabled or 0 if disabled by {{KW|_DONTBLEND}} statement.
+
+
+{{PageSeeAlso}}
+* {{KW|_DONTBLEND}}, {{KW|_BLEND}}
+* [[Images]]
+
+
+{{PageNavigation}}

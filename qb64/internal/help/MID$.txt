@@ -1,0 +1,39 @@
+The '''MID$''' function returns a portion of a [[STRING]]'s value from any position inside a string.
+
+
+
+{{PageSyntax}}
+:: MID$(stringvalue$, startposition%[, bytes%])
+
+
+
+* The stringvalue can be any literal or string variable having a length. See [[LEN]].
+* Startposition cannot be zero(0) or an [[ERROR Codes|Illegal function call error]] will occur.
+* If the start position is greater than the [[LEN|length]] of the string, nothing is returned (no error).
+* Number of character bytes is optional. When not used returns the remainder of the string from the start posiition.
+* Number of character bytes should be within the string's [[LEN|length]] from the start position, but will only return the string's remainder when exceeded.
+* Spaces are also considered as character bytes in the string value.
+
+
+''Example:'' Getting the hour and minutes from [[TIME$]]
+{{CodeStart}} '' ''
+ {{Cl|PRINT}} {{Cl|TIME$}}
+
+ hour$ = {{Cl|LEFT$}}({{Cl|TIME$}}
+ minutes$ = {{Cl|MID$}}({{Cl|TIME$}}, 4, 2) ' skip hours and the colon (3 characters)
+
+ {{Cl|PRINT}} &quot;hour = &quot;; hour$; = &quot;: minutes = &quot;; minutes$
+{{CodeEnd}} 
+
+{{OutputStart}}
+11:23:30
+hour = 11: minutes = 23
+{{OutputEnd}}
+
+
+''See also:''
+* [[MID$ (statement)]], [[LEFT$]], [[RIGHT$]]
+* [[LTRIM$]], [[RTRIM$]], [[INSTR]], [[LEN]] 
+
+
+{{PageNavigation}}

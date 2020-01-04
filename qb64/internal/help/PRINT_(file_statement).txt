@@ -1,0 +1,41 @@
+The {{KW|PRINT (file statement)|PRINT #}} statement prints numeric or string expressions to a file or device.
+
+
+{{PageSyntax}}
+:{{KW|PRINT (file statement)|PRINT #}}{{Parameter|fileNumber%}}, [ [{{Parameter|expression}}] [{{Parameter|separator}}] ... ]
+
+
+{{PageDescription}}
+* {{Parameter|fileNumber%}} is the file number of a file or device opened for writing. See {{KW|OPEN}}.
+* {{Parameter|expression}} is a numeric or string expression to be written.
+* {{KW|SPC}}({{Parameter|n%}}) - specifies that {{Parameter|n%}} space characters will be written.
+* {{KW|TAB}}({{Parameter|column%}}) - specifies that the file cursor is to move to column number {{Parameter|column%}}. If the file cursor is beyond that column, it is moved to that column on the next file row.
+
+
+* {{Parameter|separator}} is used to separate multiple expressions and specifies how the file cursor is to be moved before writing the next expression. It can be one of the following:
+** semi-colon (;) - specifies no change in the file cursor.
+** comma (,) - specifies that the file cursor is to move to the next 14-column tab-stop. If the file cursor is at column 56 or greater, it is moved to the next file row at column 1.
+* If {{Parameter|separator}} is not used at the end of the expression list, the file cursor moves to the next file row at column 1.
+* PRINT # can use the '''+ concatenation''' operator or semicolons to combine strings.
+
+
+* When printing numeric values, the following rules apply:
+** If the value is positive, the number is prefixed with a space character, otherwise, the number is prefixed with a negative sign (-).
+** If the value is an integer (whole number), no decimal point or fractional part will be written.
+** If the value is not an integer (whole number) and has zero for a coefficient, no leading zero is written. For example, &lt;code&gt;-0.123&lt;/code&gt; is written as &lt;code&gt;&quot;-.123 &quot;&lt;/code&gt;
+** If a numeric literal is in scientific notation, the number is also written in scientific notation. {{KW|PRINT USING (file statement)|PRINT #, USING}} can return actual numerical values in string form.
+** The number is suffixed with a space character unless {{KW|STR$}}(number) is used to convert it to a string value.
+* Whenever {{KW|PRINT (file statement)|PRINT #}} moves the file cursor to a new file row, a carriage return character ({{KW|CHR$|CHR$(13)}}) followed by a line feed character ({{KW|CHR$|CHR$(10)}}) is written. The combination are referred to as the &quot;CRLF&quot; character.
+
+
+
+{{PageSeeAlso}}
+* {{KW|SPC}}, {{KW|SPACE$}}, {{KW|TAB}}
+* {{KW|PRINT USING (file statement)|PRINT #, USING}}
+* {{KW|PRINT}}, {{KW|PRINT (TCP/IP statement)}}
+* {{KW|WRITE (file statement)|WRITE #}}
+* {{KW|INPUT (file statement)|INPUT #}}
+* {{KW|OPEN}}, {{KW|LPRINT}}
+
+
+{{PageNavigation}}

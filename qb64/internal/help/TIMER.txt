@@ -1,0 +1,70 @@
+The '''TIMER''' function returns the number of seconds past the previous midnite down to an accuracy of 1/18th of a second. 
+
+
+:::QB {{PageSyntax|}} seconds! = TIMER
+:::'''QB64''' {{PageSyntax}} seconds# = TIMER(accuracy!)
+
+
+* In Qbasic [[INTEGER]] second values range from 0 at midnite to 86399 seconds each day.
+* Qbasic can return [[SINGLE]] values down to about .04 or 1/18th (one tick) of a second accurately. 
+* '''QB64''' can also use TIMER(accuracy!) for accuracy down to 1 millisecond: TIMER(.001). Use [[DOUBLE]] variables for millisecond return values as SINGLE values are only accurate to 100ths of a second at later times of the day!
+* TIMER value comparison ranges cannot exceed 86399! A comparison value must stay within that range as TIMER returns 0 at midnight!
+* TIMER loops should use a midnight adjustment to avoid non-ending loops in QB.
+* TIMER can also be used for timing program Events. See [[ON TIMER(n)]] or the [[TIMER (statement)]]
+
+
+''Example 1:'' Delay SUB with a midnight correction for when TIMER returns 0.
+{{CodeStart}} '' ''
+ Delay .5 ' SUB call for half second delay
+
+ SUB Delay (dlay!)
+  start! = {{Cl|TIMER}}
+  DO WHILE start! + dlay! &gt;= TIMER
+   IF start! &gt; TIMER THEN start! = start! - 86400
+  LOOP
+ END SUB '' ''
+{{CodeEnd}}
+:''Explanation:'' When the delay time is added to the present TIMER value, it could be over the maximum number of 86399 seconds. So when TIMER becomes less than start it has reached midnight. The delay value then must be corrected by subtracting 86400.
+
+
+''Example 2:'' Looping one TIMER tick of 1/18th of a second (ticks per second can be changed)
+{{CodeStart}} '' ''
+DO ' main program loop
+   ' program code
+  {{Cl|DEF SEG}} = 0   ' set to PEEK and POKE {{Cl|TIMER}} Ticks
+  {{Cl|POKE}} 1132, 0  ' zero Timer tick
+  DO
+  ' loop code
+  LOOP UNTIL {{Cl|PEEK}}(1132) &gt;= 1
+  DEF SEG ' reset segment to default
+  ' program code
+LOOP '' ''
+{{CodeEnd}}
+:''Explanation:'' The POKE before the loop sets the tick count to 0. The PEEK count waits until the tick count returns 1 or more. The same thing could be approximated by using the delay loop in Example 1 with: t! = '''TIMER''' + .05
+
+
+''Example 3:'' Using a [[DOUBLE]] variable for [[TIMER]](.001) millisecond accuracy in '''QB64'''.
+{{CodeStart}} 
+
+ ts! = TIMER(.001)     'single variable
+ td# = TIMER(.001)     'double variable
+
+ PRINT &quot;Single =&quot;; ts!
+ PRINT &quot;Double =&quot;; td# '' ''
+{{CodeEnd}}
+{{OutputStart}}
+ Single = 77073.09
+ Double = 77073.094
+{{OutputEnd}}
+:''Explanation:'' [[SINGLE]] variables will cut off the millisecond accuracy returned so [[DOUBLE]] variables should be used. TIMER values will also exceed [[INTEGER]] limits. When displaying TIMER values, use [[LONG]] for seconds and [[DOUBLE]] for milliseconds.
+
+
+
+
+''See also:'' 
+* [[_DELAY]], [[_LIMIT]], [[SLEEP]]   
+* [[RANDOMIZE]], [[Scancodes]](example)
+* [[ON TIMER(n)]], [[TIMER (statement)]]
+
+
+{{PageNavigation}}

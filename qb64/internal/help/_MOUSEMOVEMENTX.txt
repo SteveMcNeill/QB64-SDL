@@ -1,0 +1,43 @@
+The '''_MOUSEMOVEMENTX''' function returns the relative horizontal position of the mouse cursor.  
+
+
+
+&lt;center&gt; ''Syntax:'' xposition = _MOUSEMOVEMENTX &lt;/center&gt;
+
+
+* Returns the relative cursor pixel position compared to the upper left corner of the program window(0, 0).
+* '''Hides the mouse cursor''' once it is inside of the program window area. This may lead to some ''&quot;confusion&quot;'' by the user! 
+* Can also be used to check for any mouse movements to enable a program or close [[Screen Saver Programs]]. 
+
+
+''Example:'' MOD is used to keep horizontal movement of the circle and cursor inside of the SCREEN 13 window(320). 
+
+{{CodeStart}}
+SCREEN 13, , 1, 0
+DO
+
+  DO WHILE {{Cl|_MOUSEINPUT}}
+    x = x + {{Cl|_MOUSEMOVEMENTX}}
+    y = y + {{Cl|_MOUSEMOVEMENTY}}
+  LOOP
+
+  x = (x + 320) {{Cl|MOD}} 320
+  y = (y + 200) {{Cl|MOD}} 200
+
+  CLS
+  {{Cl|CIRCLE}} (x, y), 20
+  {{Cl|PCOPY}} 1, 0
+
+LOOP UNTIL INKEY$ &lt;&gt; &quot;&quot; 'press any key to exit. '' ''
+{{CodeEnd}}
+: '''NOTE: '''When using the function this way, give the user a keypress exit option for crying out loud! At least make sure the user has some way to exit that is not dependent on clicking the X button!
+
+
+
+''See also:''
+* [[_MOUSEMOVEMENTY]], [[_MOUSEINPUT]]
+* [[Screen Saver Programs]]
+
+
+
+{{PageNavigation}}

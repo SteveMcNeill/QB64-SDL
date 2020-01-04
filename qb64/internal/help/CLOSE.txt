@@ -1,0 +1,47 @@
+{{KW|CLOSE}} closes an opened file or port using the number(s) assigned in an {{KW|OPEN}} statement.
+
+
+{{PageSyntax}}
+:{{KW|CLOSE}} [{{Parameter|filenumber}}[, {{Parameter|filenumber2}}][, ...]]
+
+
+''Syntax 1:'' CLOSE can close individual files by using the OPEN filenumber:
+
+''Example 1:'' CLOSE #2
+
+
+''Syntax 2:'' CLOSE can close a few files by using a few filenumbers:
+
+''Example 2:'' CLOSE #1, #2, #3
+
+
+''Syntax 3:'' CLOSE can close ALL OPEN files:
+
+''Example 3:'' CLOSE
+
+
+''Syntax 4:'' CLOSE can close a TCP/IP opened connection in '''QB64''':
+
+''Example 4:'' CLOSE handletoconnection
+
+
+{{PageDescription}}
+* A file MUST be closed when changing to another file mode.
+* CLOSE files when they are no longer needed to save memory.
+* Files cannot be opened using another number until the first one is closed.
+* Use different number variables for each file when using {{KW|FREEFILE}} so that you know which one is to be closed.
+* Will not return an error if a filenumber is already closed or was never opened. 
+* It does not verify that a file was closed.
+* {{KW|CLEAR}} will also close all open files.
+* {{KW|CLOSE}} can also be used to close an open TCP/IP connection using a handle returned by the '''QB64''' {{KW|_OPENCLIENT}}, {{KW|_OPENHOST}} or {{KW|_OPENCONNECTION}} functions.
+
+
+
+
+{{PageSeeAlso}}
+
+*{{KW|OPEN}}, {{KW|OPEN COM}}
+
+
+
+{{PageNavigation}}

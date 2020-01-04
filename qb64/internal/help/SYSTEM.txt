@@ -1,0 +1,24 @@
+The {{KW|SYSTEM}} statement properly closes a Qbasic program in DOS and can avoid exiting to the QB IDE. 
+
+
+{{PageSyntax}}
+:{{KW|SYSTEM}} [return_code%]
+
+
+{{PageDescription}}
+* In '''QB64''' SYSTEM can be followed by a code that can be read in another module using the [[SHELL (function)|_SHELL]] or [[_SHELLHIDE]] function.
+* This command should be used to close a program instead of using {{KW|END}} or nothing at all.
+* A code can be added after the statement to send a value to the [[SHELL (function)]] or [[_SHELLHIDE]] function in another module.
+* Allows BAS file modules to be run from a command line or batch file without encountering the QB IDE on exit! Very useful with Qbasic.exe to immitate a compiled program!
+* If a program BAS module is run from the IDE, stopped by Ctrl-Break or an error occurs the QB program will exit to the IDE.
+* In '''QB64''' it ends the program and closes the window immediately. 
+
+
+
+{{PageSeeAlso}}
+* [[SHELL (function)]]
+* [[_SHELLHIDE]] {{text|(function)}}
+* [[_EXIT (function)]], [[END]]
+
+
+{{PageNavigation}}

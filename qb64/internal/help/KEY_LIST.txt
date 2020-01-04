@@ -1,0 +1,70 @@
+'''KEY LIST''' lists all the softkey strings associated with each of the function keys.
+
+
+{{PageSyntax}}
+:: KEY LIST
+
+
+''Description:''
+* Instead of using an [[ON KEY(n)]] [[GOSUB]] statement, Function keys F1 to F12 can be assigned a &quot;soft key&quot; string value to return.
+* '''KEY n, text$''' defines a literal or variable [[STRING]] &quot;soft key&quot; Function key return value.
+:: ''Example:'' KEY 1, &quot;Help&quot; 'will return the string &quot;Help&quot; to an [[INPUT]] variable when F1 is pressed.
+* n% is the number 1 to 10(F1 to F10), 30 or 31(F11 or F12) of the function key to assign the soft key string.
+* [[KEY LIST]] displays each of the 12 softkey '''function key'''(F1 to F12) string values going down the screen.
+* '''KEY {ON|OFF}''' turns the softkey Function key display of F1 to F10 at the bottom of the screen ON or OFF.
+* '''Note: Soft key values cannot be assigned to KEY numbers 11 through 30 or an [[ERROR Codes|&quot;Illegal Function call&quot; error]] will occur!'''
+
+
+''Example 1:'' Displaying the current KEY LIST string assignments to the Function keys.
+{{CodeStart}} '' ''
+{{Cl|KEY n|KEY}} 1, &quot;Help&quot;
+{{Cl|KEY n|KEY}} 5, &quot;Compile&quot;
+{{Cl|KEY n|KEY}} 10, &quot;Quit&quot;
+{{Cl|PRINT}} &quot;Press any key!&quot;
+K$ = {{Cl|INPUT$}}(1)
+{{Cl|KEY LIST}}
+{{Cl|END}} '' ''
+{{CodeEnd}}
+{{OutputStart}}Press any key!
+F1  Help
+F2
+F3
+F4
+F5  Compile
+F6
+F7
+F8
+F9
+F10 Quit
+F11
+F12
+{{OutputEnd}}
+
+
+''Example 2:'' Displaying the function key assignments for F1 to F10 at the bottom of the screen.
+{{CodeStart}} '' ''
+{{Cl|KEY n|KEY}} 1, &quot;Help&quot; + {{Cl|CHR$}}(13)    'add Return character to complete the input
+{{Cl|KEY n|KEY}} 5, &quot;Compile&quot; + {{Cl|CHR$}}(13)
+{{Cl|KEY n|KEY}} 10, &quot;Quit&quot; + {{Cl|CHR$}}(13)
+'''KEY ON'''
+DO
+{{Cl|INPUT}} &quot;Press F10 to turn display off! &quot;, M$
+LOOP UNTIL M$ = &quot;Quit&quot;
+'''KEY OFF'''
+K$ = {{Cl|INPUT$}}(1)
+{{Cl|KEY LIST}}
+{{Cl|END}} '' ''
+{{CodeEnd}}
+{{OutputStart}}Press F10 to turn display off!
+
+
+1Help← 2      3      4      5Compil 6      7      8      9      10Quit←
+{{OutputEnd}}
+
+
+''See also:'' 
+* [[KEY n]], [[KEY(n)]], 
+* [[ON KEY(n)]]
+
+
+{{PageNavigation}}

@@ -1,0 +1,21 @@
+The '''$CONSOLE''' [[Metacommand]] creates a console window that can be used throughout a QB64 program module.
+
+
+{{PageSyntax}}
+::: $CONSOLE
+
+
+* [[_CONSOLE]] OFF or ON may be used to hide or show the console window. ON can only be used after the console window has been turned OFF.
+* [[_DEST]] [[_CONSOLE]] may be used to send screen output to the console window.
+* [[_SCREENHIDE]] and [[_SCREENSHOW]] can be used to hide or show the main program window.
+* [[_DELAY]] or [[SLEEP]] can be used to allow the console window to be set in front of the main program window.
+* '''QB64 [[Metacommand]]s require that commenting or [[REM]] NOT be used!'''
+
+
+''See also:''
+* [[_CONSOLE]]
+* [[$SCREENHIDE]], [[$SCREENSHOW]] (QB64 [[Metacommand]]s)
+* [[_SCREENHIDE]], [[_SCREENSHOW]]
+
+
+{{PageNavigation}}

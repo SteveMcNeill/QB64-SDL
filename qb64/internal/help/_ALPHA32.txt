@@ -1,0 +1,25 @@
+The {{KW|_ALPHA32}} function returns the alpha channel level of a 32 bit color value only.
+
+
+{{PageSyntax}}
+:{{Parameter|result&amp;}} = {{KW|_ALPHA32}}({{Parameter|colour32~&amp;}})
+
+
+{{PageDescription}}
+* {{Parameter|colour32&amp;}} is the [[_UNSIGNED]] [[LONG]] 32 bit color value used to retrieve the alpha level.
+** Color values that match the clear color set by [[_CLEARCOLOR]] have an alpha level of 0 (zero).
+** Color values that don't match the clear color have an alpha level of 255.
+** If {{Parameter|colour&amp;}} is outside the ranges of 0 (zero) to 255 each, an [[ERROR Codes|illegal function call]] error will occur.
+*_RED32, _GREEN32, _BLUE32 and _ALPHA32 are all equivalent to _RED, _GREEN, _BLUE and _ALPHA but they are highly optimized and only accept a 32-bit color (RGBA) value. Using these in your code (opposed to dividing then ANDing 32-bit color values) makes your code easy to read too.
+
+
+
+{{PageSeeAlso}}
+* [[_ALPHA]], [[POINT]]
+* [[_RED]], [[_GREEN]], [[_BLUE]]
+* [[_RED32]], [[_GREEN32]]. [[_BLUE32]]
+* [[_CLEARCOLOR]], [[_CLEARCOLOR (function)]]
+* [[Images]]
+
+
+{{PageNavigation}}

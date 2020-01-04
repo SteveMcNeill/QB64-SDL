@@ -1,0 +1,8 @@
+if(oldstr9253){
+if(oldstr9253->fixed)qbs_set(oldstr9253,_FUNC_OPERATORUSAGE_STRING_OPERATOR);
+qbs_free(_FUNC_OPERATORUSAGE_STRING_OPERATOR);
+}
+if(oldstr9254){
+if(oldstr9254->fixed)qbs_set(oldstr9254,_FUNC_OPERATORUSAGE_STRING_INFO);
+qbs_free(_FUNC_OPERATORUSAGE_STRING_INFO);
+}

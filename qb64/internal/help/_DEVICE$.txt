@@ -1,0 +1,59 @@
+The '''_DEVICE$''' function returns the [[STRING]] name and input types of the input devices on a computer.
+
+
+{{PageSyntax}}
+::: device$ = _DEVICE$(''device_number'')
+
+
+* Returns the name of the device and input types each can use included in brackets:
+:: [KEYBOARD]
+:: [MOUSE]]
+:: [CONTROLLER] 
+* Returns the type of input after the device name as one of the following types:
+:: [BUTTON] indicates there are button types of input. [[_LASTBUTTON]] can return the number of buttons available. 
+:: [AXIS] indicates that there are [[SCREEN]] coordinate changing inputs that can be read.
+:: [WHEEL] indicates that a scrolling input can be read. 
+* '''Note: The [[_DEVICES]] function MUST be read first to get the number of devices and to enable DEVICE$ returns!'''
+* '''Device numbers above the number of [[_DEVICES|devices]] found will return an OS error!'''
+* Devices found include keyboard, mouse, joysticks, game pads and multiple stick game controllers.
+
+
+''Example 1:'' Checking for the system's input devices and the number of buttons available.
+{{CodeStart}} '' ''
+devices = {{Cl|_DEVICES}}  'MUST be read in order for other 2 device functions to work!
+PRINT &quot;Number of input devices found =&quot;; devices
+FOR i = 1 TO devices
+  PRINT {{Cl|_DEVICE$}}(i)
+  PRINT &quot;Buttons:&quot;; {{Cl|_LASTBUTTON}}(i)
+NEXT '' ''
+{{CodeEnd}}
+{{OutputStart}}Number of input devices found = 3
+[KEYBOARD][BUTTON]
+Buttons: 512
+[MOUSE][BUTTON][AXIS][WHEEL]
+Buttons: 3
+[CONTROLLER][[NAME][Microsoft Sidewinder Precision Pro (USB)]][BUTTON][AXIS]
+Buttons: 9
+{{OutputEnd}}
+:Note: The [[STRIG]]/[[STICK]] commands won't read from the keyboard or mouse device the above example lists.
+
+
+''Example 2:'' Finding the number of mouse buttons available in QB64. This could also be used for other devices.
+{{CodeStart}} '' ''
+{{Cl|FOR...NEXT|FOR}} d = 1 {{Cl|TO}} {{Cl|_DEVICES}}  'number of input devices found
+  dev$ = {{Cl|_DEVICE$}}(d)
+  {{Cl|IF...THEN|IF}} {{Cl|INSTR}}(dev$, &quot;[MOUSE]&quot;) {{Cl|THEN}} buttons = {{Cl|_LASTBUTTON}}(d): {{Cl|EXIT}} {{Cl|FOR...NEXT|FOR}}
+{{Cl|NEXT}}
+{{Cl|PRINT}} buttons; &quot;mouse buttons available&quot; '' ''
+{{CodeEnd}}
+
+
+''See also:''
+* [[_DEVICES]]
+* [[_LASTBUTTON]]
+* [[_MOUSEBUTTON]]
+* [[STRIG]], [[STICK]]
+* [[ON STRIG(n)]], [[STRIG(n)]]
+
+
+{{PageNavigation}}

@@ -1,0 +1,4 @@
+if(oldstr8276){
+if(oldstr8276->fixed)qbs_set(oldstr8276,_FUNC_REMOVEFILEEXTENSION_STRING_F);
+qbs_free(_FUNC_REMOVEFILEEXTENSION_STRING_F);
+}

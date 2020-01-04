@@ -1,0 +1,60 @@
+The {{KW|LPRINT USING}} statement sends formatted data to LPT1, the parallel port printer.
+
+
+{{PageSyntax}}
+:LPRINT [text${;|,}] USING {{Parameter|template$}}; {{Parameter|expressionList}} [{;|,}]
+
+
+{{PageDescription}}
+* Preceding literal or variable ''text$'' can be placed between PRINT and USING or it can be included in the ''template''.
+* The literal or variable [[STRING|string]] {{Parameter|template$}} contains the formatting info 
+* {{Parameter|expressionList}} is one or more expressions separated by semi-colons (;).
+* The behavior is identical to {{KW|PRINT USING}}, except that text is output to '''LPT1'''.
+* Program does not have to {{KW|OPEN}} the '''LPT1''' parallel port. In fact that is '''NOT''' recommended!
+* Assumes a 80 character wide page unless a {{KW|WIDTH|WIDTH LPRINT}} statement is used.
+* In Qbasic ONLY the &quot;LPT1:&quot; device can be [[OPEN]]ed and printed using [[PRINT USING (file statement)]]
+
+
+::::Template is a literal or variable [[STRING|string]] using the following formatting characters:
+
+{| border=1]]
+ |- 
+ | '''&amp;''' || Prints an entire string value. Length should be limited as template width will vary.
+ |- 
+ | '''\''' || Denotes the start and end point of a fixed string area with spaces between(LEN = spaces + 2). 
+ |-
+ | '''!''' || Prints only the leading character of a string value.
+ |- 
+ | '''#''' || Denotes a numerical digit. An appropriate number of digits should be used for values received.
+ |-
+ | '''^^^^''' || Prints a numerical value in exponential format.
+ |- 
+ | '''.''' || Denotes a number's decimal point position. Also determines value accuracy.
+ |-
+ |  ''',''' || Placed to the left of the decimal point, prints a comma every 3 places left of the decimal point.
+ |-
+ |  '''+''' || Denotes position of the number's sign.
+ |-
+ | '''-''' || Placed after the number, displays the number's sign after the number (negative only).
+ |- 
+ | '''$$''' || Prints a dollar sign immediately before the highest digit of the numerical value.
+ |-
+ | '''**'''  || Prints an asterisk in any leading spaces of a numerical value. Specifies 2 extra digit places. 
+ |- 
+ |'''**$''' || Combines ** and $. Negative values will print minus sign to left of $.
+|}
+
+
+* The list of data variables used in the template are '''separated by semicolons''' after the template string value. 
+* The variables should be listed in the order that they are used in the template from left to right.
+* Normal text is allowed in the template also (see example).
+* '''NOTE:''' If the numerical value exceeds the template's integer digit range a % symbol will appear in the leftmost digit area.
+
+
+{{PageSeeAlso}}
+* {{KW|PRINT USING}}
+* {{KW|LPRINT}}
+* {{KW|PRINT}}
+
+
+{{PageNavigation}}

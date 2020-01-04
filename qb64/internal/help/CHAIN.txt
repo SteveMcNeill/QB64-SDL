@@ -1,0 +1,45 @@
+{{KW|CHAIN}} is used to change seamlessly from one module to another one in a program. Available in Quickbasic 4.0 and up.
+
+
+
+{{PageSyntax}}
+:{{KW|CHAIN}} {{Parameter|ModuleName$}}
+
+
+
+{{PageDescription}}
+* The module name is a {{KW|STRING}} variable or value in quotation marks.
+* {{KW|CHAIN}} requires that both the invoking and called modules are of either .BAS or .EXE file types! 
+* {{KW|CHAIN}} looks for a file extension that is the same as the invoking module's extension.
+* The module's filename extension is NOT required. To save editing at compile time just omit the extensions in the calls.
+* To pass data from one module to the other you can use {{KW|COMMON SHARED}}, but compiled EXE files MUST include BRUN45.EXE in QuickBasic 4.5.
+* Module screen modes will not change unless that is desired.
+* Use when modules are too large to compile(Over 100K approx.). Split the modules up. NOT necessary with '''QB64'''!
+* Variable data can be passed in files instead of using {{KW|COMMON SHARED}} values.
+* '''QB64''' will automatically compile a {{KW|CHAIN}} referenced BAS file if there is no EXE file found.
+
+
+
+''Example:'' CHAIN looks for same file type extension as program module (BAS or EXE) in QB 4.5.
+
+{{CodeStart}}
+
+ {{Cl|CHAIN}} &quot;Level1&quot;
+
+{{CodeEnd}}
+
+
+''Explanation:'' The file referred to is &quot;Level1.BAS&quot; if the program module using the call is a BAS file. If the program was compiled, it would look for &quot;Level1.EXE&quot;. QuickBasic4.5 requires that [[COMMON]] or [[COMMON SHARED]] data sharing programs be compiled with BRUN45.EXE being included with the program package(the EXE file will also be larger). '''QB64''' does not have that requirement as it creates data files to pass common data information.
+
+
+
+
+{{PageSeeAlso}} 
+
+* [[RUN]], [[LINKing Modules]]
+* [[COMMON]], [[COMMON SHARED]]
+* [[SHARED]]
+
+
+
+{{PageNavigation}}

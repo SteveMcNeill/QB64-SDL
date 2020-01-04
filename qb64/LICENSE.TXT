@@ -1,0 +1,22 @@
+Notice: This license was updated on 22nd/Feb/2013 for clarification purposes. In no way have the licensing requirements changed.
+
+The QB64 compiler/IDE is freeware, meaning it can be copied/distributed freely but the compiler/IDE have an implicit copyright belonging to the author. It uses SDL (Simple Direct-media Library(http://www.libsdl.org/) which is licensed under LGPL (GNU LESSER GENERAL PUBLIC LICENSE, http://www.gnu.org/licenses/lgpl-2.1.html).
+
+The DLL (dynamically linked libraries) files associated with SDL (http://www.libsdl.org/license-lgpl.php) are LGPL. When distributing QB64 programs in executable form created with this version of QB64 you must:
+1) Include a copy of "lgpl-2.1.txt" (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt) and
+2) Prominently acknowledge that your program uses SDL (http://www.libsdl.org/) and state that SDL is licensed under LPGL.
+All SDL libraries are used in their 'standard'/unmodified form and source code for these libraries can be found at http://www.libsdl.org
+
+You (the QB64 user) are under no obligation to release the source code to the programs you create. You can sell the programs you create for profit. Although you must acknowledge SDL you do not need to include any acknowledgement related to QB64 when distributing your programs.
+
+In Windows distributions, the QB64 compiler calls MinGW64 executables downloaded from http://www.drangon.org/mingw/ (Specifically version: "mingw-w32-bin-i686-20120109.7z : native mingw-w32 (i686) toolchain under Windows XP/2003 i686, build from SVN 2012-01-09 (25M)") to generate compile C++ code into executable (.EXE) form. A full copy of MinGW64 is included with this distribution of QB64. Its sub-folders are present in the 'qb64/internal/c' folder. As MinGW64 extends MinGW the licensing requirements are as follows (http://www.mingw.org/license):
+Each of the various packages, which is distributed by MinGW.org, is governed by its own individual copyright and licensing terms. In summary, for the most commonly deployed packages:
+- MinGW runtime: The MinGW base runtime package has been placed in the public domain, and is not governed by copyright. This basically means that you can do what you like with the code.
+- w32api: You are free to use, modify and copy this package. No restrictions are imposed on programs or object files linked with this library. You may not restrict the usage of this library. You may distribute this library as part of another package or as a modified package if, and only if, you do not restrict the usage of the portions consisting of this (optionally modified) library. If distributed as a modified package, then a copy of this notice must be included.
+- This library is distributed in the hope that it will be useful, but WITHOUT WARRANTY OF ANY KIND; without even the implied warranties of MERCHANTABILITY or of FITNESS FOR A PARTICULAR PURPOSE.
+- MinGW profiling code: MinGW profiling code is distributed under the terms of the GNU General Public License.
+- Binutils, GCC, GDB, GNU Make: All of the GNU development tools, such as GNU binutils, GCC, GDB and GNU Make, are governed by the terms of the GNU General Public License.
+
+Further clarification:
+- When distributing your executables you do not need to acknowledge that they were created using MinGW64
+- This version of QB64 and its license requirements are unrelated to the GPL version of QB64 which is found at http://code.google.com/p/qb64/

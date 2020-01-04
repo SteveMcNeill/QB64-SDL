@@ -1,0 +1,28 @@
+The {{KW|_SNDLOOP}} statement is like {{KW|_SNDPLAY}} but the sound is looped. Uses a handle from the {{KW|_SNDOPEN}} function.
+
+
+{{PageSyntax}}
+:{{KW|_SNDLOOP}} ({{Parameter|handle&amp;}})
+
+
+{{PageDescription}}
+*Plays the sound, looping it.
+*{{KW|_SNDSETPOS}} cannot be called while a looping sound is being played.
+
+
+{{PageExamples}}
+{{CodeStart}}
+
+{{Cl|_SNDLOOP}} h&amp;
+
+{{CodeEnd}}
+
+
+
+
+
+{{PageSeeAlso}}
+*{{KW|_SNDOPEN}}, {{KW|_SNDSTOP}}
+
+
+{{PageNavigation}}

@@ -1,0 +1,26 @@
+The {{KW|WRITE (file statement)|WRITE #}} file statement writes a list of comma separated variable values to a file or port.
+
+
+{{PageSyntax}}
+:{{KW|WRITE (file statement)|WRITE #}}{{Parameter|filenumber%}}[, {{Parameter|expressionList}}]
+
+
+{{PageDescription}}
+* {{Parameter|filenumber%}} is the number(1 to 255) of the file or device {{KW|OPEN}}ed in the {{KW|OUTPUT}} or {{KW|APPEND}} modes. See: {{KW|FREEFILE}}.
+* {{Parameter|expressionList}} is a comma-separated list of values to be written to the file or device.
+* WRITE can place any number and types of variable values needed in a file record separated by commas.
+* String values will have quotation marks although quotes are not required to read strings in CSV files with INPUT #.
+* Data files using WRITE normally will have the same number of values listed on each file line.
+* Data containing commas must be in quotation marks. Number commas are illegal!
+* WRITE created files are normally read with INPUT #.
+* CSV files created can be read by Excel using a .CSV file name extension.
+
+
+{{PageSeeAlso}}
+* [[PRINT (file statement)|PRINT #]]
+* [[INPUT (file statement)|INPUT #]]
+* [[LINE INPUT (file statement)|LINE INPUT #]]
+* [[SQL Client]] {{text|(library)}}
+
+
+{{PageNavigation}}

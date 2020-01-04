@@ -1,0 +1,3 @@
+.\bin\g -fstack-check -w -Wall -I.\i -I..\..\ -L.\l qbx.cpp libqbx.o -mwindows .\i686-w64-mingw32\lib\libimm32.a -lwinspool -lmingw32 -ln -lmix -limg -lttf -lSDL -s -o ..\..\
+
+.\bin\g -fstack-check -w -Wall -I.\i -I..\..\ -L.\l qbx.cpp libqbx.o -mwindows .\i686-w64-mingw32\lib\libimm32.a -lwinspool -lmingw32 -ln -lmix -limg -lttf -lmn -lSDL -s -o ..\..\

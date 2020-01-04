@@ -1,0 +1,24 @@
+'''GOSUB''' sends the program to a sub program that uses a line number or label.
+
+
+
+{{PageSyntax}}
+:: GOSUB label
+
+
+
+* Label is any [[line number]] or line label designated with a colon after it. Don't use the colon in the call.
+* GOSUB procedures usually require a [[RETURN]] line at the end of the procedure.
+* A procedure loop may be used to return automatically instead of using return.
+* GOSUB and GOTO can be used '''within''' [[SUB]] or [[FUNCTION]] procedures, but cannot refer to a label not in the procedure itself.
+
+
+''See also:'' 
+* [[GOTO]]
+* [[ON ERROR]]
+* [[RESUME]] 
+* [[ON TIMER (n)]]
+* [[Line number]] {{text|(removal program)}}
+
+
+{{PageNavigation}}

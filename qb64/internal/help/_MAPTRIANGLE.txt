@@ -1,0 +1,56 @@
+The '''_MAPTRIANGLE''' statement maps a triangular portion of an image to a destination image or screen page.
+
+
+{{PageSyntax}}
+:_MAPTRIANGLE [_SEAMLESS] (''sx1'', ''sy1'')-(''sx2'', ''sy2'')-(''sx3'', ''sy3''), ''source&amp;'', TO (''dx1'', ''dy1'')-(''dx2'', ''dy2'')-(''dx3'', ''dy3'')[, ''destination&amp;'']
+
+
+* The _SEAMLESS option makes the triangle skip the rightmost and bottommost pixels of the triangle. When you make larger objects using several triangles, there can be a &quot;seam&quot; where they overlap when using alpha transparency and the seam would be twice as bright!
+* Graphic triangular coordinates are listed for the ''source'' TO the ''destination'' by column(x) and row(y). 
+* Coordinate positions are '''limited to -16383 to 16383!'''  
+* If the ''destination'' handle is the [[SCREEN]] page then it can be omitted or 0 can be used.
+* The statement is used similar to [[_PUTIMAGE]] to place triangular sections of an image.
+
+
+
+''Example:'' Rotating an image using a rotation and zoom SUB with _MAPTRIANGLE.
+
+{{CodeStart}} '' ''
+{{Cl|SCREEN}} {{Cl|_NEWIMAGE}}(800, 600, 32)
+
+Image&amp; = {{Cl|_LOADIMAGE}}(&quot;Qb64.png&quot;)   '[http://www.qb64.net/forum/index.php Image from top of QB64 Forum]
+
+{{Cl|DO}}
+  {{Cl|CLS}}
+  RotoZoom 400, 300, Image&amp;, 1.5 + {{Cl|SIN}}(zoom), angle
+  {{Cl|LOCATE}} 1, 1: {{Cl|PRINT}} &quot;Angle:&quot;; {{Cl|CINT}}(angle)
+  {{Cl|PRINT USING|PRINT}} &quot;Zoom&quot;; {{Cl|PRINT USING|USING}} &quot;##.###&quot;; 1.5 + {{Cl|SIN}}(zoom)
+  {{Cl|_DISPLAY}}
+  angle = angle + .5: {{Cl|IF...THEN|IF}} angle &gt;= 360 {{Cl|THEN}} angle = angle - 360
+  zoom = zoom + .01
+{{Cl|LOOP}} {{Cl|UNTIL}} {{Cl|INKEY$}} &lt;&gt; &quot;&quot;
+{{Cl|END}}
+
+{{Cl|SUB}} RotoZoom (X {{Cl|AS}} {{Cl|LONG}}, Y {{Cl|AS}} {{Cl|LONG}}, Image {{Cl|AS}} {{Cl|LONG}}, Scale {{Cl|AS}} {{Cl|SINGLE}}, Rotation {{Cl|AS}} {{Cl|SINGLE}})
+{{Cl|DIM}} px(3) {{Cl|AS}} {{Cl|SINGLE}}: {{Cl|DIM}} py(3) {{Cl|AS}} {{Cl|SINGLE}}
+W&amp; = {{Cl|_WIDTH (function)|_WIDTH}}(Image&amp;): H&amp; = {{Cl|_HEIGHT}}(Image&amp;)
+px(0) = -W&amp; / 2: py(0) = -H&amp; / 2: px(1) = -W&amp; / 2:py(1) = H&amp; / 2 
+px(2) = W&amp; / 2: py(2) = H&amp; / 2: px(3) = W&amp; / 2: py(3) = -H&amp; / 2
+sinr! = {{Cl|SIN}}(-Rotation / 57.2957795131): cosr! = {{Cl|COS}}(-Rotation / 57.2957795131)
+{{Cl|FOR...NEXT|FOR}} i&amp; = 0 {{Cl|TO}} 3
+  x2&amp; = (px(i&amp;) * cosr! + sinr! * py(i&amp;)) * Scale + X: y2&amp; = (py(i&amp;) * cosr! - px(i&amp;) * sinr!) * Scale + Y
+  px(i&amp;) = x2&amp;: py(i&amp;) = y2&amp;
+{{Cl|NEXT}}
+{{Cl|_MAPTRIANGLE}} (0, 0)-(0, H&amp; - 1)-(W&amp; - 1, H&amp; - 1), Image&amp; TO(px(0), py(0))-(px(1), py(1))-(px(2), py(2))
+{{Cl|_MAPTRIANGLE}} (0, 0)-(W&amp; - 1, 0)-(W&amp; - 1, H&amp; - 1), Image&amp; TO(px(0), py(0))-(px(3), py(3))-(px(2), py(2))
+{{Cl|END SUB}} '' ''
+{{CodeEnd}}
+{{small|Code by Galleon}}
+
+
+''See also:''
+* [[_PUTIMAGE]]
+* [[SIN]], [[COS]]
+
+
+{{PageNavigation}}

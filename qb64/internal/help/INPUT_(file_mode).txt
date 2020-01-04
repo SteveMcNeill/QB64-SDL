@@ -1,0 +1,50 @@
+The '''INPUT''' file mode can only [[OPEN]] existing files for program INPUT.
+
+
+{{PageSyntax}}
+:: OPEN filename$ FOR INPUT AS #filenumber%
+
+
+
+* If the filename does not exist, INPUT will create a program [[ERROR Codes|file error]]!
+* The file number can be determined automatically by using a [[FREEFILE]] variable value.
+* Mode can use INPUT #, LINE INPUT # or [[INPUT$]] to read the file data.
+* Use the [[EOF]] function to avoid reading data past the end of a file!
+* Input file statements will use the same filenumber as the OPEN statement.
+* The INPUT mode allows the same file to be opened in another mode with a different number.
+
+
+''Example:'' Avoiding an INPUT mode or [[INPUT (file statement)|INPUT #]] read error using a FileExist function.
+
+{{CodeStart}} '' ''
+ DIM Fdata$(100)
+ INPUT &quot;Enter data file name: &quot;, datafile$ 
+ IF FileExist%(datafile$) THEN
+    D% = {{Cl|FREEFILE}}: count = 0
+    {{Cl|OPEN}} datafile$ FOR {{Cl|INPUT (file mode)|INPUT}} AS #D%
+    DO UNTIL {{Cl|EOF}}(D%)
+     count = count + 1
+     {{Cl|INPUT (file statement)|LINE INPUT}} #D%, Fdata$(count)
+     IF count = 100 THEN {{Cl|EXIT}} DO  ' don't exceed {{Cl|Arrays|array}} size!
+    LOOP
+  {{Cl|CLOSE}} #D%
+ ELSE : PRINT &quot;File not found!&quot;
+ END IF
+
+ FUNCTION FileExist% (filename$)
+   f% = {{Cl|FREEFILE}}  
+   {{Cl|OPEN}} filename$ FOR {{Cl|APPEND}} AS #f% ' check that file exists
+   IF {{Cl|LOF}}(f%) THEN FileExist% = -1 ELSE CLOSE #f%: {{Cl|KILL}} filename$
+   CLOSE #f%
+ END FUNCTION '' ''
+{{CodeEnd}}
+
+''Explanation:'' The function opens the filename in APPEND mode to see if there is data in the file. It also creates the file if it did not exist. [[LOF]] will return 0 if the file is empty and cannot be read. In fact you can [[KILL]] the file if it is empty. If it is not empty then the function returns -1 and the existing file can be opened for INPUT and read by the program. 
+
+
+''See also:'' 
+* [[INPUT (file statement)|INPUT #]], [[LINE INPUT (file statement)|LINE INPUT #]], [[INPUT$]]
+* [[APPEND]], [[RANDOM]], [[OUTPUT]], [[BINARY]]
+
+
+{{PageNavigation}}

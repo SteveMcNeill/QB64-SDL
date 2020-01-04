@@ -1,0 +1,34 @@
+The '''SHARED''' statement allows variables to be passed automatically to any [[SUB]] or [[FUNCTION]] procedure.
+
+
+
+{{PageSyntax}}
+:: DIM SHARED Qt AS STRING * 1
+
+
+* Variables are shared with all procedures in the program module.
+* When used with DIM in the main module, it eliminates the need to pass a parameter variable to a [[SUB]] or [[FUNCTION]]. 
+* Does not SHARE variables with other modules. See [[COMMON SHARED]].
+* Lists of variables can be made using comma separators.
+* Only use SHARED ('''without DIM''') to share variables inside of [[SUB]] or [[FUNCTION]] procedures with the main module.
+* '''Note: Values assigned to shared variables used as procedure call parameters will not be passed to other procedures! The shared variable value MUST be assigned INSIDE of the [[SUB]] or [[FUNCTION]] procedure to be passed!'''
+
+
+''Example 1:'' Defining variable types with AS.
+{{CodeStart}} '' ''
+{{Cl|DIM}} {{Cl|SHARED}} Qt AS {{Cl|STRING}} * 1, price AS {{Cl|DOUBLE}}, ID AS {{Cl|INTEGER}}
+{{CodeEnd}} '' ''
+
+
+''Example 2:'' Using type suffixes
+{{CodeStart}} '' ''
+{{Cl|DIM}} {{Cl|SHARED}} Qt$, price#, ID%
+{{CodeEnd}} '' ''
+
+
+''See also:'' 
+* [[DIM]], [[COMMON]]
+* [[COMMON SHARED]]
+
+
+{{PageNavigation}}

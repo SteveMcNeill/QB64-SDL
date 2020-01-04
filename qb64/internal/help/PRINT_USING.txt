@@ -1,0 +1,67 @@
+The '''PRINT USING''' statement is used to [[PRINT]] formatted data to the Screen or a file using a [[STRING]] template.
+
+
+{{PageSyntax}}
+: PRINT [''text$''{;|,}] USING ''template$''; ''variable''; ''list''; ...etc[{;|,}]
+
+
+* Preceding literal or variable ''text$'' can be placed between PRINT and USING or it can be included in the ''template''.
+* The list of data ''variables'' used in the ''template'' are '''separated by semicolons''' after the template string value. 
+* The ''variables'' should be listed in the order that they are used in the template from left to right.
+* No more than 25 # digit places are allowed in a template number or an [[ERROR Codes|error]] will occur.
+* Can convert numerical exponential or [[scientific notation]] values to normal decimal point values.
+* '''NOTE:''' If the numerical value exceeds the template's integer digit range a % symbol will appear in the leftmost digit area.
+
+
+::::Template is a literal or variable [[STRING|string]] using the following formatting characters:
+
+{| border=1]]
+ |- 
+ | '''&amp;''' || Prints an entire string value. Length should be limited as template width will vary.
+ |- 
+ | '''\''' || Denotes the start and end point of a fixed string area with spaces between(LEN = spaces + 2). 
+ |-
+ | '''!''' || Prints only the leading character of a string value.
+ |- 
+ | '''#''' || Denotes a numerical digit. An appropriate number of digits should be used for values received.
+ |-
+ | '''^^^^''' || Prints a numerical value in exponential format.
+ |- 
+ | '''.''' || Denotes a number's decimal point position. Also determines value accuracy.
+ |-
+ |  ''',''' || Placed to left of decimal point, prints a comma every 3 places left of the decimal point.
+ |-
+ |  '''+''' || Denotes position of the number's sign.
+ |-
+ | '''-''' || Placed after the number, displays the number's sign after the number (negative only).
+ |- 
+ | '''$$''' || Prints a dollar sign immediately before the highest non-zero digit position of the numerical value.
+ |-
+ | '''**'''  || Prints an asterisk in any leading empty spaces of a numerical value. Specifies 2 extra digit positions.
+ |- 
+ |'''**$''' || Combines ** and $. Negative values will display minus sign to left of $.
+|}
+
+
+
+
+''Example:'' Printing formatted data using a predefined [[STRING|string]] template variable.
+{{CodeStart}} '' ''
+first$ = &quot;Bobby&quot;: last$ = &quot;Smith&quot;
+boxes% = 1510: sales! = 4530
+tmp$ = &quot;Salesperson: &amp; &amp;  #####,.   $$#####,.##&quot;
+
+{{Cl|PRINT USING}} tmp$; first$; last$; boxes%; sales!
+{{CodeEnd}} '' ''
+{{OutputStart}}
+Salesperson: Bobby Smith  1,510  $4,530.00
+{{OutputEnd}}
+''Explanation:'' The ''Salesperson:'' text precedes the formatted data. The name lengths will change the length of the string template accordingly so columns will not all line up. If \  \ was used, the columns would stay the same, but parts of some names might be lost. If the box or sales values exceed 3 digits, a comma is used in the value every 3 digits.
+
+
+''See also:'' 
+* [[PRINT]], [[PRINT USING (file statement)|PRINT #, USING]]
+* [[LPRINT]], [[LPRINT USING]]
+
+
+{{PageNavigation}}

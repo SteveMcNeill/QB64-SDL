@@ -1,0 +1,5 @@
+if(oldstr11007){
+if(oldstr11007->fixed)qbs_set(oldstr11007,_FUNC_CONVERTTABS_STRING_A2);
+qbs_free(_FUNC_CONVERTTABS_STRING_A2);
+}
+qbs_free(_FUNC_CONVERTTABS_STRING_A);

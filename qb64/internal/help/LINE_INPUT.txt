@@ -1,0 +1,23 @@
+The '''LINE INPUT''' statement requests a [[STRING]] keyboard entry from a program user.
+
+
+
+{{PageSyntax}}
+:: LINE INPUT [;] [&quot;text prompt or question&quot;{,|;}] string_variable$
+
+
+* Requires ONE [[STRING|string]] variable to hold the entire entry. Cannot use numerical type variables!
+* Allows commas and quotation marks in the user input, unlike [[INPUT]] where commas denote other input values.
+* Use a semicolon BEFORE the input text to use it on the bottom 2 [[SCREEN (statement)|SCREEN]] rows to prevent the screen from rolling.
+* A [[comma]] or [[semicolon]] separator can be used after the input text prompt.
+* The statement stops the procedure until an entry is made. Pressing Enter ends the entry.
+* Use [[VAL]] to convert string number entries into numerical values. 
+
+
+''See also:'' 
+* [[INPUT]], [[LOCATE]] 
+* [[INPUT$]], [[INKEY$]]
+* [[LINE INPUT (file statement)]]
+
+
+{{PageNavigation}}

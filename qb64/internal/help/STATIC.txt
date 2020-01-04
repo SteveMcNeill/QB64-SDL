@@ -1,0 +1,106 @@
+The {{KW|STATIC}} keyword is used in declaration statements to control where variables are stored.
+
+
+{{PageSyntax}}
+:{{KW|STATIC}} {{Parameter|variableName}}[()] [{{KW|AS}} {{Parameter|dataType}}][, ...]
+
+{{PageSyntax}}
+:&lt;code&gt;{{{KW|SUB}}|{{KW|FUNCTION}}} {{Parameter|procedureName}} [({{Parameter|parameterList}})] {{KW|STATIC}}&lt;/code&gt;
+
+
+{{PageDescription}}
+* In the first syntax, the {{KW|STATIC}} statement is used in {{KW|SUB}} and {{KW|FUNCTION}} procedures to declare one or more variables or arrays with static storage.
+** Variables and arrays with static storage will retain their values in between procedure calls.
+** {{Parameter|variableName}} is the name of the variable.
+*** {{Parameter|variableName}} may include a type suffix to specify a type other than the default type.
+*** If {{Parameter|variableName}} does not include a type suffix, {{Parameter|dataType}} can be used to specify a type other than the default type:
+**** Any numeric or string type, such as {{KW|INTEGER}} or {{KW|STRING|STRING * 5}}.
+**** A custom type. See the {{KW|TYPE}} statement for more information about custom types.
+*** See [[Data types]] for more information about the available types and type suffixes.
+** Arrays with static storage are declared by specifying empty parenthesis following {{Parameter|variableName}}.
+*** Static arrays declared in a {{KW|STATIC}} statement are always variable-length.
+*** They are initially empty (contain no elements), and must be resized using {{KW|REDIM}}.
+*** See [[Arrays]] for more information about declaring and using arrays.
+
+* In the second syntax, {{KW|STATIC}} is used at the end of a {{KW|SUB}} or {{KW|FUNCTION}} statement to force static storage of all variables and arrays within the procedure.
+** All variables and arrays declared within the procedure have static storage, even if they are not declared in a {{KW|STATIC}} statement.
+** See the {{KW|SUB}} and {{KW|FUNCTION}} statements for more information about declaring procedures.
+
+
+{{PageExamples}}
+
+''Example 1: Finding the binary bit settings from an [[INTEGER]] register return using recursion.
+{{CodeStart}}
+
+FUNCTION Bin$ (n&amp;) {{Cl|STATIC}}
+  DIM p%, s$
+  IF 2 ^ p% &gt; n&amp; THEN
+    p% = 0
+  ELSE
+    IF n&amp; AND 2 ^ p% THEN s$ = &quot;1&quot; + s$ ELSE s$ = &quot;0&quot; + s$
+    IF n&amp; &gt; 2 ^ p% THEN
+       p% = p% + 1
+       s$ = Bin$(n&amp;)    'recursive call to itself
+    ELSE : p% = 0
+    END IF
+  END IF
+  IF p% = 0 THEN s$ = &quot;&quot;
+  IF s$ = &quot;&quot; THEN Bin$ = &quot;0&quot; ELSE Bin$ = s$
+END FUNCTION
+
+{{CodeEnd}}
+: ''Explanation:'' The [[FUNCTION]] above returns a [[STRING]] value representing the bits ON in an [[INTEGER]] value. The string can be printed to the screen to see what is happening in a port register. '''STATIC''' keeps the function from overloading the memory &quot;Stack&quot; and is normally REQUIRED to use recursion with QBasic or '''QB64'''!
+
+
+''Example 2:'' Using a static array to cache factorials, speeding up repeated calculations:
+{{CodeStart}}
+
+{{Cl|PRINT}} Factorial(0)
+{{Cl|PRINT}} Factorial(5)
+{{Cl|PRINT}} Factorial(50
+
+{{Cl|FUNCTION}} Factorial# ( n {{Cl|AS}} {{Cl|DOUBLE}} )
+    {{Cl|CONST}} maxNToCache = 50
+    {{Cl|STATIC}} resultCache() {{Cl|AS}} {{Cl|DOUBLE}}
+    {{Cl|STATIC}} firstCall {{Cl|AS}} {{Cl|INTEGER}}
+    
+    ' The lookup table is initially empty, so re-size it..
+    {{Cl|IF...THEN|IF}} firstCall = 0 {{Cl|IF...THEN|THEN}}
+        firstCall = -1
+        {{Cl|REDIM}} resultCache(maxNToCache) {{Cl|AS}} {{Cl|DOUBLE}}
+        
+        ' ..and pre-calculate some factorials.
+        resultCache(0) = 1
+        resultCache(1) = 1
+        resultCache(2) = 2
+    {{Cl|IF...THEN|END IF}}
+    
+    ' See if we have the result cached. If so, we're done.
+    {{Cl|IF...THEN|IF}} n &lt;= maxNToCache {{Cl|IF...THEN|THEN}}
+        {{Cl|IF...THEN|IF}} resultCache(n) &lt;&gt; 0 {{Cl|IF...THEN|THEN}}
+            Factorial = resultCache(n)
+            {{Cl|EXIT FUNCTION}}
+        {{Cl|IF...THEN|END IF}}
+    {{Cl|IF...THEN|END IF}}
+    
+    ' If not, we use recursion to calculate the result, then cache it for later use:
+    resultCache(n) = {{Cl|INT}}(n) * Factorial({{Cl|INT}}(n) - 1)
+    Factorial = resultCache(n)
+{{Cl|END FUNCTION}}
+
+{{CodeEnd}}
+{{OutputStart}} 
+ 1
+ 120
+ 3.041409320171338D+64
+{{OutputEnd}}
+
+
+{{PageSeeAlso}}
+* {{KW|DIM}}, {{KW|REDIM}}, {{KW|COMMON}}
+* {{KW|SUB}}, {{KW|FUNCTION}}
+* {{KW|TYPE}}, {{KW|Arrays}}, {{KW|$STATIC}}
+* [[Data types]]
+
+
+{{PageNavigation}}

@@ -1,0 +1,12 @@
+qbs *_FUNC_COMPRESS_STRING_COMPRESS=NULL;
+if (!_FUNC_COMPRESS_STRING_COMPRESS)_FUNC_COMPRESS_STRING_COMPRESS=qbs_new(0,0);
+qbs*oldstr10901=NULL;
+if(_FUNC_COMPRESS_STRING_A->tmp||_FUNC_COMPRESS_STRING_A->fixed||_FUNC_COMPRESS_STRING_A->readonly){
+oldstr10901=_FUNC_COMPRESS_STRING_A;
+if (oldstr10901->cmem_descriptor){
+_FUNC_COMPRESS_STRING_A=qbs_new_cmem(oldstr10901->len,0);
+}else{
+_FUNC_COMPRESS_STRING_A=qbs_new(oldstr10901->len,0);
+}
+memcpy(_FUNC_COMPRESS_STRING_A->chr,oldstr10901->chr,oldstr10901->len);
+}

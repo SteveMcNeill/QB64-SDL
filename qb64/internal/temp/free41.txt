@@ -1,0 +1,4 @@
+if(oldstr9140){
+if(oldstr9140->fixed)qbs_set(oldstr9140,_FUNC_ISUINTEGER_STRING_I);
+qbs_free(_FUNC_ISUINTEGER_STRING_I);
+}

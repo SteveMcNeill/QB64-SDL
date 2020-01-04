@@ -1,0 +1,47 @@
+'''RETURN''' is used in [[GOSUB]] procedures to return to the original call code line.
+
+
+{{PageSyntax}}
+:: RETURN
+
+
+* Usually required unless procedure returns using a loop.
+* Not used in error handling procedures. Error procedures use [[RESUME]] line number or [[RESUME|RESUME NEXT]].
+* GOSUB procedures use line numbers or line labels.
+* If RETURN is found without a subsequent GOSUB call a [[ERROR Codes|&quot;RETURN without GOSUB&quot; error]] is produced. 
+* To avoid errors, place [[GOSUB]] procedures AFTER the main program code or after an [[EXIT SUB]] or [[EXIT FUNCTION]] call.
+
+
+''Example:'' Returns after a Gosub.
+{{CodeStart}}
+{{Cl|FOR...NEXT|FOR}} a = 1 {{Cl|TO}} 10
+{{Cl|PRINT}} a
+{{Cl|IF...THEN|IF}} a = 5 {{Cl|THEN}} {{Cl|GOSUB}} five
+{{Cl|NEXT}}
+{{Cl|END}}       'END or SYSTEM stop the program before the execution of a sub procedure
+
+five:
+{{Cl|PRINT}} &quot;Aha! Five!&quot;
+{{Cl|RETURN}} '' ''
+{{CodeEnd}}
+{{OutputStart}}
+ 1
+ 2
+ 3
+ 4
+ 5
+Aha! Five!
+ 6
+ 7
+ 8
+ 9
+ 10
+{{OutputEnd}}
+
+
+''See also:'' 
+* [[GOSUB]], [[GOTO]]
+* [[RESUME]]
+
+
+{{PageNavigation}}
