@@ -1,4 +1,0 @@
-S_0:;
-sub_end();
-return NULL;
-}

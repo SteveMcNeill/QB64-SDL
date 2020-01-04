@@ -1,5 +1,0 @@
-if(oldstr10926){
-if(oldstr10926->fixed)qbs_set(oldstr10926,_FUNC_CHKSUM_STRING_F);
-qbs_free(_FUNC_CHKSUM_STRING_F);
-}
-qbs_free(_FUNC_CHKSUM_STRING_A);

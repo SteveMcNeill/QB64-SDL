@@ -1,7 +1,0 @@
-if(oldstr8982){
-if(oldstr8982->fixed)qbs_set(oldstr8982,_FUNC_FINDARRAY_STRING_SECURE);
-qbs_free(_FUNC_FINDARRAY_STRING_SECURE);
-}
-qbs_free(_FUNC_FINDARRAY_STRING_N);
-qbs_free(_FUNC_FINDARRAY_STRING_SC);
-qbs_free(_FUNC_FINDARRAY_STRING_N2);

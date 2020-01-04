@@ -1,4 +1,0 @@
-if(oldstr11023){
-if(oldstr11023->fixed)qbs_set(oldstr11023,_SUB_GIVE_ERROR_STRING_A);
-qbs_free(_SUB_GIVE_ERROR_STRING_A);
-}
