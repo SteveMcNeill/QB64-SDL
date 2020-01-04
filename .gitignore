@@ -1,0 +1,9 @@
+qb64/internal/c/c_compiler
+qb64/internal/temp*
+*.o
+*.a
+*.exe
+qb64/internal/config*.txt
+qb64/internal/help
+qb64/tempfoldersearch.bin
+qb64/internal/c/qbx*

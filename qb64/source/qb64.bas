@@ -1226,7 +1226,7 @@ IF c = 9 THEN 'run
     END IF
 
     'hack! (a new message should be sent to the IDE stating C++ compilation was successful)
-    COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+    COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
 
     LOCATE idewy - 3, 2: PRINT "Starting program...";
     PCOPY 3, 0
@@ -11557,7 +11557,7 @@ FOR i = 1 TO LEN(Help_Txt$) STEP 4
     IF c = 13 THEN
         COLOR col AND 15, col \ 16
         PRINT SPACE$(help_w - POS(0));
-        COLOR 7, 0
+        COLOR 15, 0
         PRINT SPACE$(_WIDTH - POS(0) + 1);
         COLOR col AND 15, col \ 16
         SLEEP
@@ -25680,7 +25680,7 @@ ideerror = 1 'unknown IDE error
 IF LEFT$(c$, 1) = CHR$(12) THEN
     f$ = RIGHT$(c$, LEN(c$) - 1)
     LOCATE , , 0
-    COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+    COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
     LOCATE idewy - 3, 2
 
     IF os$ = "LNX" THEN
@@ -25854,21 +25854,21 @@ IF idelaunched = 0 THEN
 
     'static background
     COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
-    COLOR 7, 1: idebox 1, 2, idewx, idewy - 5
+    COLOR 15, 1: idebox 1, 2, idewx, idewy - 5
 
 
-    COLOR 7, 1: idebox 1, idewy - 4, idewx, 5
+    COLOR 15, 1: idebox 1, idewy - 4, idewx, 5
     'edit corners
-    COLOR 7, 1: LOCATE idewy - 4, 1: PRINT "Ã";: LOCATE idewy - 4, idewx: PRINT "´";
+    COLOR 15, 1: LOCATE idewy - 4, 1: PRINT "Ã";: LOCATE idewy - 4, idewx: PRINT "´";
 
     IF idehelp = 1 THEN
-        COLOR 7, 0: idebox 1, idewy, idewx, idesubwindow + 1
-        COLOR 7, 0: LOCATE idewy, 1: PRINT "Ã";: LOCATE idewy, idewx: PRINT "´";
-        COLOR 7, 0: LOCATE idewy, idewx - 3: PRINT "´XÃ";
+        COLOR 15, 0: idebox 1, idewy, idewx, idesubwindow + 1
+        COLOR 15, 0: LOCATE idewy, 1: PRINT "Ã";: LOCATE idewy, idewx: PRINT "´";
+        COLOR 15, 0: LOCATE idewy, idewx - 3: PRINT "´XÃ";
     END IF
 
     'add status title
-    COLOR 7, 1: LOCATE idewy - 4, (idewx - 8) / 2: PRINT " Status "
+    COLOR 15, 1: LOCATE idewy - 4, (idewx - 8) / 2: PRINT " Status "
     'status bar
     COLOR 0, 3: LOCATE idewy + idesubwindow, 1: PRINT SPACE$(idewx);
     q = idevbar(idewx, idewy - 3, 3, 1, 1)
@@ -26112,7 +26112,7 @@ IF skipdisplay = 0 THEN
     'COLOR 0, 7: LOCATE 1, 1: PRINT menubar$; 'repair menu bar
 
     IF c$ <> CHR$(3) THEN
-        COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+        COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
         IF ready THEN LOCATE idewy - 3, 2: PRINT "OK"; 'report OK status
         IF showexecreated THEN
             showexecreated = 0
@@ -26170,16 +26170,16 @@ DO
         LOCATE , , 0
 
         'update title of main window
-        COLOR 7, 1: LOCATE 2, 2: PRINT STRING$(idewx - 2, "Ä");
+        COLOR 15, 1: LOCATE 2, 2: PRINT STRING$(idewx - 2, "Ä");
         IF LEN(ideprogname) THEN a$ = ideprogname ELSE a$ = "Untitled" + tempfolderindexstr$
         a$ = " " + a$ + " "
         COLOR 1, 7: LOCATE 2, ((idewx / 2) - 1) - (LEN(a$) - 1) \ 2: PRINT a$;
 
         'update search bar
         LOCATE 2, idewx - 30
-        COLOR 7, 1: PRINT "´";
+        COLOR 15, 1: PRINT "´";
         COLOR 3, 1: PRINT "Find[                     ]";
-        COLOR 7, 1: PRINT "Ã";
+        COLOR 15, 1: PRINT "Ã";
         f$ = idefindtext
         IF LEN(f$) > 20 THEN
             f$ = "úúú" + RIGHT$(f$, 17)
@@ -26192,7 +26192,7 @@ DO
 
         'display error message (if necessary)
         IF failed THEN
-            COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+            COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
 
             'scrolling unavailable, but may span multiple lines
             a$ = MID$(c$, 2, LEN(c$) - 5)
@@ -26226,7 +26226,7 @@ DO
         END IF
 
         IF idechangemade THEN
-            COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+            COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
 
 
             LOCATE idewy - 3, 2: PRINT "..."; 'assume new compilation will begin
@@ -26281,7 +26281,7 @@ DO
                     IF i > Help_Back_Pos THEN COLOR 9, 7
                     PRINT CHR$(a);
                 ELSE
-                    COLOR 7, 0
+                    COLOR 15, 0
                     PRINT "Ä";
                 END IF
             NEXT
@@ -26624,7 +26624,7 @@ DO
         IF ready THEN
 
             LOCATE , , 0
-            COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+            COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
 
             IF idecompiled THEN
 
@@ -26670,7 +26670,7 @@ DO
 
         'correct status message
         LOCATE , , 0
-        COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+        COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
 
 
         LOCATE idewy - 3, 2: PRINT "Checking program... (editing program will cancel request)";
@@ -27038,7 +27038,7 @@ DO
                 '        IF i > Help_Back_Pos THEN COLOR 9, 7
                 '        PRINT CHR$(a);
                 '    ELSE
-                '        COLOR 7, 0
+                '        COLOR 15, 0
                 '        PRINT "Ä";
                 '    END IF
                 'NEXT
@@ -27305,7 +27305,7 @@ DO
 
                             IF Back$(Help_Back_Pos) <> l$ THEN
                                 Help_Select = 0: Help_MSelect = 0
-                                'COLOR 7, 0
+                                'COLOR 15, 0
 
                                 Help_Back(Help_Back_Pos).sx = Help_sx 'update position
                                 Help_Back(Help_Back_Pos).sy = Help_sy
@@ -28294,7 +28294,7 @@ DO
     FOR i = 1 TO menus
         IF m = i THEN COLOR 15, 0 ELSE COLOR 15, 7
         PRINT " " + LEFT$(menu$(i, 0), 1);
-        IF m = i THEN COLOR 7, 0 ELSE COLOR 0, 7
+        IF m = i THEN COLOR 15, 0 ELSE COLOR 0, 7
         PRINT RIGHT$(menu$(i, 0), LEN(menu$(i, 0)) - 1) + " ";
         IF i = menus - 1 THEN LOCATE 1, idewx - LEN(menu$(menus, 0)) - 2
     NEXT
@@ -28382,7 +28382,7 @@ DO
     x = 4: FOR i = 1 TO m - 1: x = x + LEN(menu$(i, 0)) + 2
         IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 1
     NEXT: xx = x
-    LOCATE 1, xx - 1: COLOR 7, 0: PRINT " " + menu$(m, 0) + " "
+    LOCATE 1, xx - 1: COLOR 15, 0: PRINT " " + menu$(m, 0) + " "
     COLOR 0, 7
     'calculate menu width
     w = 0
@@ -28403,7 +28403,7 @@ DO
         IF m$ = "-" THEN
             COLOR 0, 7: LOCATE i + 2, xx - 2: PRINT "Ã" + STRING$(w + 2, "Ä") + "´";
         ELSE
-            IF r = i THEN LOCATE i + 2, xx - 1: COLOR 7, 0: PRINT SPACE$(w + 2);
+            IF r = i THEN LOCATE i + 2, xx - 1: COLOR 15, 0: PRINT SPACE$(w + 2);
             LOCATE i + 2, xx
             h = -1: x = INSTR(m$, "#"): IF x THEN h = x: m$ = LEFT$(m$, x - 1) + RIGHT$(m$, LEN(m$) - x)
             x = INSTR(m$, "  "): IF x THEN m1$ = LEFT$(m$, x - 1): m2$ = RIGHT$(m$, LEN(m$) - x - 1): m$ = m1$ + SPACE$(w - LEN(m1$) - LEN(m2$)) + m2$
@@ -28411,7 +28411,7 @@ DO
                 IF x = h THEN
                     IF r = i THEN COLOR 15, 0 ELSE COLOR 15, 7
                 ELSE
-                    IF r = i THEN COLOR 7, 0 ELSE COLOR 0, 7
+                    IF r = i THEN COLOR 15, 0 ELSE COLOR 0, 7
                 END IF
                 PRINT MID$(m$, x, 1);
 
@@ -28784,7 +28784,7 @@ DO
                 END IF
 
                 SCREEN , , 4, 4
-                COLOR 7, 1
+                COLOR 15, 1
                 CLS
 
                 PRINT "Generating list of cached content..."
@@ -29892,7 +29892,7 @@ IF o.typ = 2 THEN
                 'skip
             ELSE
                 IF y <= o.h THEN
-                    IF o.sel = n THEN COLOR 7, 0 ELSE COLOR 0, 7
+                    IF o.sel = n THEN COLOR 15, 0 ELSE COLOR 0, 7
                     IF (o.sel = n OR -o.sel = n) AND o.foc = 0 THEN o.cx = o.par.x + o.x + 2: o.cy = o.par.y + o.y + y
                     LOCATE o.par.y + o.y + y, o.par.x + o.x + 1
                     a3$ = " " + a3$ + SPACE$(o.w)
@@ -31667,9 +31667,9 @@ IF sx1 > sx2 THEN SWAP sx1, sx2
 l = idesy
 FOR y = 0 TO (idewy - 9)
     LOCATE y + 3, 1
-    COLOR 7, 1
+    COLOR 15, 1
     PRINT CHR$(179); 'clear prev bookmarks from lhs
-    IF l = idefocusline AND idecy <> l THEN COLOR 7, 4 ELSE COLOR 7, 1
+    IF l = idefocusline AND idecy <> l THEN COLOR 15, 4 ELSE COLOR 15, 1
 
     IF l <= iden THEN
         a$ = idegetline(l)
@@ -31721,7 +31721,7 @@ FOR y = 0 TO (idewy - 9)
                     END IF
                     x2 = x2 + 1
                 NEXT
-                COLOR 7, 1
+                COLOR 15, 1
             ELSE 'multiline select
                 IF idecx = 1 AND l = sy2 AND idecy > sy1 THEN GOTO nofinalselect
                 LOCATE y + 3, 2
@@ -31731,7 +31731,7 @@ FOR y = 0 TO (idewy - 9)
                     PRINT CHR$(ASC(a2$, x));
                 NEXT
 
-                COLOR 7, 1
+                COLOR 15, 1
                 nofinalselect:
             END IF
         END IF
@@ -31740,7 +31740,7 @@ FOR y = 0 TO (idewy - 9)
     l = l + 1
 NEXT
 
-COLOR 7, 1
+COLOR 15, 1
 FOR b = 1 TO IdeBmkN
     y = IdeBmk(b).y
     IF y >= idesy AND y <= idesy + (idewy - 9) THEN
@@ -35134,7 +35134,7 @@ END IF
 
 IF how < 2 THEN
     SCREEN 0, , 0, 0
-    COLOR 7, 1
+    COLOR 15, 1
     CLS
 END IF
 
@@ -35184,7 +35184,7 @@ IF NOT OK THEN
     IF how <= 1 THEN
         PCOPY 3, 0: what$ = ideyesnobox("Download Failed", "Retry?"): PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
         IF what$ = "Y" THEN
-            SCREEN 0, , 0, 0: COLOR 7, 1: CLS: GOTO dlretry2
+            SCREEN 0, , 0, 0: COLOR 15, 1: CLS: GOTO dlretry2
         END IF
         ON ERROR GOTO qberror
         EXIT SUB
@@ -35255,7 +35255,7 @@ DO UNTIL EOF(1)
                                     idemessagebox "This file has been modified by you but will be overwritten!", a1$
                                     PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
                                     SCREEN 0, , 0, 0
-                                    COLOR 7, 1
+                                    COLOR 15, 1
                                     CLS
                                 END IF
                                 IF how >= 2 THEN
@@ -35334,7 +35334,7 @@ DO UNTIL EOF(1)
                     PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
                     IF what$ = "Y" THEN
                         SCREEN 0, , 0, 0
-                        COLOR 7, 1
+                        COLOR 15, 1
                         CLS
                         GOTO dlretry
                     END IF
@@ -35620,7 +35620,7 @@ END IF
 
 REDIM Help_LineLen(Help_wh)
 
-COLOR 7, 0
+COLOR 15, 0
 
 'CLS
 'FOR y = Help_wy1 - 1 TO Help_wy2 + 1
@@ -35680,7 +35680,7 @@ FOR y = Help_sy TO Help_sy + Help_wh - 1
         LOCATE sy, sx
         x3 = Help_sx
         FOR x4 = 1 TO Help_ww
-            COLOR 7, 0
+            COLOR 15, 0
             IF Help_Select = 2 THEN
                 IF y >= Help_SelY1 AND y <= Help_SelY2 THEN
                     IF x3 >= Help_SelX1 AND x3 <= Help_SelX2 THEN
