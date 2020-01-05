@@ -31690,9 +31690,38 @@ FOR y = 0 TO (idewy - 9)
         a2$ = SPACE$((idewx - 2))
     END IF
 
-    FOR x = 1 TO LEN(a2$)
-        PRINT CHR$(ASC(a2$, x));
-    NEXT
+    'FOR x = 1 TO LEN(a2$)
+    '    PRINT CHR$(ASC(a2$, x));
+    'NEXT
+
+    inquote = 0
+    comment = 0
+    metacommand = 0
+    FOR k = 1 TO idesx 'First check the part of the line that's off screen to the left
+        SELECT CASE MID$(a$, k, 1)
+            CASE CHR$(34)
+                inquote = NOT inquote
+            CASE "'"
+                IF inquote = 0 AND MID$(a$, k, 2) = "'$" THEN metacommand = -1 ELSE comment = -1
+        END SELECT
+    NEXT k
+    FOR m = 1 TO LEN(a2$) 'continue checking, while printing to the screen
+        SELECT CASE MID$(a$, m + idesx - 1, 1)
+            CASE CHR$(34): inquote = NOT inquote
+            CASE "'": IF inquote = 0 AND metacommand = 0 THEN comment = -1
+        END SELECT
+        COLOR 15
+        IF comment THEN
+            COLOR 11
+        ELSEIF metacommand THEN
+            COLOR 10
+        ELSEIF inquote OR MID$(a2$, m, 1) = CHR$(34) THEN
+            COLOR 14
+        END IF
+        LOCATE y + 3, 2 + m - 1
+        PRINT MID$(a2$, m, 1);
+    NEXT m
+
 
     'apply selection color change if necessary
     IF ideselect THEN
