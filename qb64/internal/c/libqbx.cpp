@@ -31097,3 +31097,53 @@ if (port60h_events==256){memmove(port60h_event,port60h_event+1,255); port60h_eve
 port60h_event[port60h_events]=scancode+128;
 port60h_events++;
 }
+
+/* Extra maths functions - we do what we must because we can */
+double func_deg2rad (double value) {return (value * 0.01745329251994329576923690768489);}
+double func_rad2deg (double value) {return (value * 57.29577951308232);}        
+double func_deg2grad (double value) {return (value * 1.111111111111111);}
+double func_grad2deg (double value) {return (value * 0.9);}
+double func_rad2grad (double value) {return (value * 63.66197723675816);} 
+double func_grad2rad (double value) {return (value * .01570796326794896);} 
+double func_pi (double multiplier,int32 passed) {
+    if (passed) {return 3.14159265358979323846264338327950288419716939937510582 * multiplier;}
+    return (3.14159265358979323846264338327950288419716939937510582);
+}
+double func_arcsec (double num) {
+    int sign = (num > 0) - (num < 0);
+    if (num<-1||num>1) {error(5);return 0;}
+    return atan(num / sqrt(1 - num * num)) + (sign - 1) * (2 * atan(1));
+}
+double func_arccsc (double num) {
+    int sign = (num > 0) - (num < 0);
+    if (num<-1||num>1) {error(5);return 0;}
+    return atan(num / sqrt(1 - num * num)) + (sign - 1) * (2 * atan(1));
+}
+double func_arccot (double num) {return 2 * atan(1) - atan(num);}
+double func_sech (double num) {
+    if (num>88.02969) {error(5);return 0;}
+    if (exp(num) + exp(-num)==0) {error(5);return 0;}
+    return 2/ (exp(num) + exp(-num));
+}
+double func_csch (double num) {
+    if (num>88.02969) {error(5);return 0;}
+    if (exp(num) - exp(-num)==0) {error(5);return 0;}
+    return 2/ (exp(num) - exp(-num));
+}
+double func_coth (double num) {
+    if (num>44.014845) {error(5);return 0;}
+    if (2 * exp(num) - 1==0) {error(5);return 0;}
+    return 2 * exp(num) - 1;
+}
+double func_sec (double num) {
+    if (cos(num)==0) {error(5);return 0;}
+    return 1/cos(num);
+}
+double func_csc (double num) {
+    if (sin(num)==0) {error(5);return 0;}
+    return 1/sin(num);
+}
+double func_cot (double num) {
+    if (tan(num)==0) {error(5);return 0;}
+    return 1/tan(num);
+}

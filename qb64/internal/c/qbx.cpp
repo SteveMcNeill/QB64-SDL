@@ -23,6 +23,23 @@ extern void *malloc2(int x);
 int QBMAIN(void *);
 
 //extern functions
+double func_deg2rad (double value);
+double func_rad2deg (double value);        
+double func_deg2grad (double value);
+double func_grad2deg (double value);
+double func_rad2grad (double value); 
+double func_grad2rad (double value); 
+double func_pi (double multiplier,int32 passed);
+double func_arcsec (double num);
+double func_arccsc (double num);
+double func_arccot (double num);
+double func_sech (double num);
+double func_csch (double num);
+double func_coth (double num);
+double func_sec (double num);
+double func_csc (double num);
+double func_cot (double num);
+
 extern void sub__memfill(mem_block* dblk,ptrszint doff,ptrszint dbytes,ptrszint soff,ptrszint sbytes);
 extern void sub__memfill_nochecks(ptrszint doff,ptrszint dbytes,ptrszint soff,ptrszint sbytes);
  extern void sub__memfill_1(mem_block* dblk,ptrszint doff,ptrszint dbytes,int8 val);
