@@ -22811,6 +22811,86 @@ id.arg = MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATTYPE - ISPOINTER) 'These simply
 id.ret = FLOATTYPE - ISPOINTER 'we want it to return to us a nice _FLOAT value
 regid 'and we're finished with ID registration
 
+clearid
+id.n = "_ARCSEC"
+id.subfunc = 1
+id.callname = "func_arcsec"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_ARCCSC"
+id.subfunc = 1
+id.callname = "func_arccsc"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_ARCCOT"
+id.subfunc = 1
+id.callname = "func_arccot"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_SECH"
+id.subfunc = 1
+id.callname = "func_sech"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_CSCH"
+id.subfunc = 1
+id.callname = "func_csch"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_COTH"
+id.subfunc = 1
+id.callname = "func_coth"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_SEC"
+id.subfunc = 1
+id.callname = "func_sec"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_CSC"
+id.subfunc = 1
+id.callname = "func_csc"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_COT"
+id.subfunc = 1
+id.callname = "func_cot"
+id.args = 1
+id.arg = MKL$(FLOATTYPE - ISPOINTER)
+id.ret = FLOATTYPE - ISPOINTER
+regid
 
 
 reginternalsubfunc = 0
