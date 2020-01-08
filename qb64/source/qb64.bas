@@ -4,10 +4,20 @@ $SCREENHIDE
 '$DYNAMIC
 DEFLNG A-Z
 
-_TITLE "QB64"
+
+REDIM SHARED OName(0) AS STRING 'Operation Name
+REDIM SHARED PL(0) AS INTEGER 'Priority Level
+REDIM SHARED vars(26) AS STRING ' 0 is previous answer, 1 - 26 is A - Z
+DIM SHARED FileName AS STRING, DirName AS STRING
+DIM SHARED QuickReturn AS INTEGER
+DirName = "internal/MathEval/"
+FileName = "internal/MathEval/Math Evaluator User Variables.bin"
+
+
+_TITLE "QB64 SDL (Steve Update 01/08/2020)"
 
 DIM SHARED version AS STRING
-version$ = "0.954"
+version$ = "0.954 - SU:01/08/2020"
 
 DIM SHARED debug AS LONG 'debug logging is off by default
 debug = 0
@@ -1633,8 +1643,12 @@ lineinput3load sourcefile$
 
 DO
     wholeline$ = lineinput3$
+    stevewashere:
+
     IF wholeline$ = CHR$(13) THEN EXIT DO
     ideprepass:
+
+    wholestv$ = wholeline$
 
     prepass = 1
     layout = ""
@@ -1853,7 +1867,7 @@ DO
 
 
 
-
+                        stevewashere2:
 
 
                         IF n >= 1 AND firstelement$ = "CONST" THEN
@@ -1878,7 +1892,150 @@ DO
                             END IF
 
 
+                            'Steve Tweak to add _RGB32 and _MATH support to CONST
+                            'Our alteration to allow for multiple uses of RGB and RGBA inside a CONST //SMcNeill
+                            altered = 0
 
+                            'Edit 02/23/2014 to add space between = and _ for statements like CONST x=_RGB(123,0,0) and stop us from gettting an error.
+                            DO
+                                l = INSTR(wholestv$, "=_")
+                                IF l THEN
+                                    wholestv$ = LEFT$(wholestv$, l) + " " + MID$(wholestv$, l + 1)
+                                END IF
+                            LOOP UNTIL l = 0
+                            'End of Edit on 02/23/2014
+
+                            DO
+                                finished = -1
+                                l = INSTR(l + 1, UCASE$(wholestv$), " _RGBA")
+                                IF l > 0 THEN
+                                    altered = -1
+                                    l$ = LEFT$(wholestv$, l - 1)
+                                    vp = INSTR(l, wholestv$, "(")
+                                    IF vp > 0 THEN
+                                        E = INSTR(vp + 1, wholestv$, ")")
+                                        IF E > 0 THEN
+                                            'get our 3 colors or 4 if we need RGBA values
+                                            first = INSTR(vp, wholestv$, ",")
+                                            second = INSTR(first + 1, wholestv$, ",")
+                                            third = INSTR(second + 1, wholestv$, ",")
+                                            fourth = INSTR(third + 1, wholestv$, ",") 'If we need RGBA we need this one as well
+                                            red$ = MID$(wholestv$, vp + 1, first - vp - 1)
+                                            green$ = MID$(wholestv$, first + 1, second - first - 1)
+                                            blue$ = MID$(wholestv$, second + 1, third - second - 1)
+                                            alpha$ = MID$(wholestv$, third + 1)
+                                            IF MID$(wholestv$, l + 6, 2) = "32" THEN
+                                                val$ = "32"
+                                            ELSE
+                                                val$ = MID$(wholestv$, fourth + 1)
+                                            END IF
+                                            SELECT CASE VAL(val$)
+                                                CASE 0, 1, 2, 7, 8, 9, 10, 11, 12, 13, 256
+                                                    wi& = _NEWIMAGE(240, 120, VAL(val$))
+                                                    clr~& = _RGBA(VAL(red$), VAL(green$), VAL(blue$), VAL(alpha$), wi&)
+                                                    _FREEIMAGE wi&
+                                                CASE 32
+                                                    clr~& = _RGBA32(VAL(red$), VAL(green$), VAL(blue$), VAL(alpha$))
+                                                CASE ELSE
+                                                    a$ = "Invalid Screen Mode.": GOTO errmes
+                                            END SELECT
+
+                                            wholestv$ = l$ + STR$(clr~&) + RIGHT$(wholestv$, LEN(wholestv$) - E)
+                                            finished = 0
+                                        ELSE
+                                            'no finishing bracket
+                                            a$ = ") Expected": GOTO errmes
+                                        END IF
+                                    ELSE
+                                        'no starting bracket
+                                        a$ = "( Expected": GOTO errmes
+                                    END IF
+                                END IF
+                            LOOP UNTIL finished
+
+                            DO
+                                finished = -1
+                                l = INSTR(l + 1, UCASE$(wholestv$), " _RGB")
+                                IF l > 0 THEN
+                                    altered = -1
+                                    l$ = LEFT$(wholestv$, l - 1)
+                                    vp = INSTR(l, wholestv$, "(")
+                                    IF vp > 0 THEN
+                                        E = INSTR(vp + 1, wholestv$, ")")
+                                        IF E > 0 THEN
+                                            first = INSTR(vp, wholestv$, ",")
+                                            second = INSTR(first + 1, wholestv$, ",")
+                                            third = INSTR(second + 1, wholestv$, ",")
+                                            red$ = MID$(wholestv$, vp + 1, first - vp - 1)
+                                            green$ = MID$(wholestv$, first + 1, second - first - 1)
+                                            blue$ = MID$(wholestv$, second + 1)
+                                            IF MID$(wholestv$, l + 5, 2) = "32" THEN
+                                                val$ = "32"
+                                            ELSE
+                                                val$ = MID$(wholestv$, third + 1)
+                                            END IF
+
+                                            SELECT CASE VAL(val$)
+                                                CASE 0, 1, 2, 7, 8, 9, 10, 11, 12, 13, 256
+                                                    wi& = _NEWIMAGE(240, 120, VAL(val$))
+                                                    clr~& = _RGB(VAL(red$), VAL(green$), VAL(blue$), wi&)
+                                                    _FREEIMAGE wi&
+                                                CASE 32
+                                                    clr~& = _RGB32(VAL(red$), VAL(green$), VAL(blue$))
+                                                CASE ELSE
+                                                    a$ = "Invalid Screen Mode.": GOTO errmes
+                                            END SELECT
+
+                                            wholestv$ = l$ + STR$(clr~&) + RIGHT$(wholestv$, LEN(wholestv$) - E)
+                                            finished = 0
+                                        ELSE
+                                            a$ = ") Expected": GOTO errmes
+                                        END IF
+                                    ELSE
+                                        a$ = "( Expected": GOTO errmes
+                                    END IF
+                                END IF
+                            LOOP UNTIL finished
+
+                            ' ### END OF STEVE EDIT FOR EXPANDED CONST SUPPORT ###
+
+                            'New Edit by Steve on 02/23/2014 to add support for the new Math functions
+
+                            l = 0: Emergency_Exit = 0 'A counter where if we're inside the same DO-Loop for more than 10,000 times, we assume it's an endless loop that didn't process properly and toss out an error message instead of locking up the program.
+                            DO
+                                l = INSTR(l + 1, wholestv$, "=")
+                                IF l THEN
+                                    l2 = INSTR(l + 1, wholestv$, ",") 'Look for a comma after that
+                                    IF l2 = 0 THEN 'If there's no comma, then we're working to the end of the line
+                                        l2 = LEN(wholestv$)
+                                    ELSE
+                                        l2 = l2 - 1 'else we only want to take what's before that comma and see if we can use it
+                                    END IF
+                                    temp$ = RTRIM$(LTRIM$(MID$(wholestv$, l + 1, l2 - l)))
+                                    temp1$ = RTRIM$(LTRIM$(Evaluate_Expression$(temp$)))
+                                    IF LEFT$(temp1$, 5) <> "ERROR" AND temp$ <> temp1$ THEN
+                                        'The math routine should have did its replacement for us.
+                                        altered = -1
+                                        wholestv$ = LEFT$(wholestv$, l) + temp1$ + MID$(wholestv$, l2 + 1)
+                                    ELSE
+                                        'We should leave it as it is and let the normal CONST routine handle things from here on out and see if it passes the rest of the error checks.
+                                    END IF
+                                    l = l + 1
+                                END IF
+                                Emergency_Exit = Emergency_Exit + 1
+                                IF Emergency_Exit > 10000 THEN a$ = "CONST ERROR: Attempting to process MATH Function caused Endless Loop.  Please recheck your math formula.": GOTO errmes
+                            LOOP UNTIL l = 0
+                            'End of Math Support Edit
+
+
+                            'Steve edit to update the CONST with the Math and _RGB functions
+                            IF altered THEN
+                                altered = 0
+                                wholeline$ = wholestv$
+                                linenumber = linenumber - 1
+                                GOTO ideprepass
+                            END IF
+                            'End of Final Edits to CONST
 
 
 
@@ -22892,6 +23049,17 @@ id.arg = MKL$(FLOATTYPE - ISPOINTER)
 id.ret = FLOATTYPE - ISPOINTER
 regid
 
+clearid
+id.n = "_INSTRREV"
+id.subfunc = 1
+id.callname = "func__instrrev"
+id.args = 3
+id.arg = MKL$(LONGTYPE - ISPOINTER) + MKL$(STRINGTYPE - ISPOINTER) + MKL$(STRINGTYPE - ISPOINTER)
+id.ret = LONGTYPE - ISPOINTER
+id.specialformat = "[?],?,?" 'checked!
+regid
+
+
 
 reginternalsubfunc = 0
 END SUB
@@ -35987,3 +36155,1518 @@ NEXT
 'LOOP UNTIL c
 
 END SUB
+
+
+'Too much math stuff!!
+
+FUNCTION Evaluate_Expression$ (e$)
+t$ = e$ 'So we preserve our original data, we parse a temp copy of it
+
+b = INSTR(UCASE$(e$), "EQL") 'take out assignment before the preparser sees it
+IF b THEN t$ = MID$(e$, b + 3): var$ = UCASE$(LTRIM$(RTRIM$(MID$(e$, 1, b - 1))))
+
+QuickReturn = 0
+PreParse t$
+
+IF QuickReturn THEN Evaluate_Expression$ = t$: EXIT FUNCTION
+
+IF LEFT$(t$, 5) = "ERROR" THEN Evaluate_Expression$ = t$: EXIT FUNCTION
+
+'Deal with brackets first
+exp$ = "(" + t$ + ")" 'Starting and finishing brackets for our parse routine.
+
+DO
+    Eval_E = INSTR(exp$, ")")
+    IF Eval_E > 0 THEN
+        c = 0
+        DO UNTIL Eval_E - c <= 0
+            c = c + 1
+            IF Eval_E THEN
+                IF MID$(exp$, Eval_E - c, 1) = "(" THEN EXIT DO
+            END IF
+        LOOP
+        s = Eval_E - c + 1
+        IF s < 1 THEN PRINT "ERROR -- BAD () Count": END
+        eval$ = " " + MID$(exp$, s, Eval_E - s) + " " 'pad with a space before and after so the parser can pick up the values properly.
+        ParseExpression eval$
+
+        eval$ = LTRIM$(RTRIM$(eval$))
+        IF LEFT$(eval$, 5) = "ERROR" THEN Evaluate_Expression$ = eval$: EXIT SUB
+        exp$ = DWD(LEFT$(exp$, s - 2) + eval$ + MID$(exp$, Eval_E + 1))
+        IF MID$(exp$, 1, 1) = "N" THEN MID$(exp$, 1) = "-"
+
+        temppp$ = DWD(LEFT$(exp$, s - 2) + " ## " + eval$ + " ## " + MID$(exp$, E + 1))
+    END IF
+LOOP UNTIL Eval_E = 0
+c = 0
+DO
+    c = c + 1
+    SELECT CASE MID$(exp$, c, 1)
+        CASE "0" TO "9", ".", "-" 'At this point, we should only have number values left.
+        CASE ELSE: Evaluate_Expression$ = "ERROR - Unknown Diagnosis: (" + exp$ + ") ": EXIT SUB
+    END SELECT
+LOOP UNTIL c >= LEN(exp$)
+
+Evaluate_Expression$ = exp$
+END FUNCTION
+
+
+
+SUB ParseExpression (exp$)
+DIM num(10) AS STRING
+'We should now have an expression with no () to deal with
+IF MID$(exp$, 2, 1) = "-" THEN exp$ = "0+" + MID$(exp$, 2)
+FOR J = 1 TO 250
+    lowest = 0
+    DO UNTIL lowest = LEN(exp$)
+        lowest = LEN(exp$): OpOn = 0
+        FOR P = 1 TO UBOUND(OName)
+            'Look for first valid operator
+            IF J = PL(P) THEN 'Priority levels match
+                IF LEFT$(exp$, 1) = "-" THEN op = INSTR(2, exp$, OName(P)) ELSE op = INSTR(exp$, OName(P))
+                IF op > 0 AND op < lowest THEN lowest = op: OpOn = P
+            END IF
+        NEXT
+        IF OpOn = 0 THEN EXIT DO 'We haven't gotten to the proper PL for this OP to be processed yet.
+        IF LEFT$(exp$, 1) = "-" THEN op = INSTR(2, exp$, OName(OpOn)) ELSE op = INSTR(exp$, OName(OpOn))
+        numset = 0
+
+        '*** SPECIAL OPERATION RULESETS
+        IF OName(OpOn) = "-" THEN 'check for BOOLEAN operators before the -
+            SELECT CASE MID$(exp$, op - 3, 3)
+                CASE "NOT", "XOR", "AND", "EQV", "IMP"
+                    EXIT DO 'Not an operator, it's a negative
+            END SELECT
+            IF MID$(exp$, op - 3, 2) = "OR" THEN EXIT DO 'Not an operator, it's a negative
+        END IF
+
+        IF op THEN
+            c = LEN(OName(OpOn)) - 1
+            DO
+                SELECT CASE MID$(exp$, op + c + 1, 1)
+                    CASE "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "N": numset = -1 'Valid digit
+                    CASE "-" 'We need to check if it's a minus or a negative
+                        IF OName(OpOn) = "PI" OR numset THEN EXIT DO
+                    CASE ELSE 'Not a valid digit, we found our separator
+                        EXIT DO
+                END SELECT
+                c = c + 1
+            LOOP UNTIL op + c >= LEN(exp$)
+            E = op + c
+
+            c = 0
+            DO
+                c = c + 1
+                SELECT CASE MID$(exp$, op - c, 1)
+                    CASE "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "N" 'Valid digit
+                    CASE "-" 'We need to check if it's a minus or a negative
+                        c1 = c
+                        bad = 0
+                        DO
+                            c1 = c1 + 1
+                            SELECT CASE MID$(exp$, op - c1, 1)
+                                CASE "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."
+                                    bad = -1
+                                    EXIT DO 'It's a minus sign
+                                CASE ELSE
+                                    'It's a negative sign and needs to count as part of our numbers
+                            END SELECT
+                        LOOP UNTIL op - c1 <= 0
+                        IF bad THEN EXIT DO 'We found our seperator
+                    CASE ELSE 'Not a valid digit, we found our separator
+                        EXIT DO
+                END SELECT
+            LOOP UNTIL op - c <= 0
+            s = op - c
+            num(1) = MID$(exp$, s + 1, op - s - 1) 'Get our first number
+            num(2) = MID$(exp$, op + LEN(OName(OpOn)), E - op - LEN(OName(OpOn)) + 1) 'Get our second number
+            IF MID$(num(1), 1, 1) = "N" THEN MID$(num(1), 1) = "-"
+            IF MID$(num(2), 1, 1) = "N" THEN MID$(num(2), 1) = "-"
+            num(3) = EvaluateNumbers(OpOn, num())
+            IF MID$(num(3), 1, 1) = "-" THEN MID$(num(3), 1) = "N"
+            'PRINT "*************"
+            'PRINT num(1), OName(OpOn), num(2), num(3), exp$
+            IF LEFT$(num(3), 5) = "ERROR" THEN exp$ = num(3): EXIT SUB
+            exp$ = LTRIM$(N2S(DWD(LEFT$(exp$, s) + RTRIM$(LTRIM$(num(3))) + MID$(exp$, E + 1))))
+            'PRINT exp$
+        END IF
+        op = 0
+    LOOP
+NEXT
+
+END SUB
+
+
+
+SUB Set_OrderOfOperations
+'PL sets our priortity level. 1 is highest to 65535 for the lowest.
+'I used a range here so I could add in new priority levels as needed.
+'OName ended up becoming the name of our commands, as I modified things.... Go figure!  LOL!
+
+IF _DIREXISTS("internal") THEN
+    'Good, we're being run from within the QB64 folder as intended
+ELSE
+    MKDIR "internal" 'Make us an internal folder so we don't generate errors.
+END IF
+IF _DIREXISTS("internal/MathEval") THEN
+    'Good, we're have the proper subfolder as well
+ELSE
+    MKDIR "internal/MathEval" 'Make us an internal folder so we don't generate errors.
+END IF
+
+'Constants get evaluated first, with a Priority Level of 1
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ANS" 'the result of the previous calculation
+REDIM _PRESERVE PL(i): PL(i) = 1
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "PI"
+REDIM _PRESERVE PL(i): PL(i) = 1
+'I'm not certain where exactly percentages should go.  They kind of seem like a special case to me.  COS10% should be COS.1 I'd think...
+'I'm putting it here for now, and if anyone knows someplace better for it in our order of operations, let me know.
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "%"
+REDIM _PRESERVE PL(i): PL(i) = 5
+'Then Functions with PL 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCCOS"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCSIN"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCSEC"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCCSC"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCCOT"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SECH"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "CSCH"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COTH"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COS"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SIN"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "TAN"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "LOG"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "EXP"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ATN"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2R"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2G"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2D"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2G"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2D"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2R"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ABS"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SGN"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "INT"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "_ROUND"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "FIX"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SEC"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "CSC"
+REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COT"
+REDIM _PRESERVE PL(i): PL(i) = 10
+'Exponents with PL 20
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "^"
+REDIM _PRESERVE PL(i): PL(i) = 20
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SQR"
+REDIM _PRESERVE PL(i): PL(i) = 20
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ROOT"
+REDIM _PRESERVE PL(i): PL(i) = 20
+'Multiplication and Division PL 30
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "*"
+REDIM _PRESERVE PL(i): PL(i) = 30
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "/"
+REDIM _PRESERVE PL(i): PL(i) = 30
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "BTM"
+REDIM _PRESERVE PL(i): PL(i) = 30
+'Integer Division PL 40
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "\"
+REDIM _PRESERVE PL(i): PL(i) = 40
+'MOD PL 50
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "MOD"
+REDIM _PRESERVE PL(i): PL(i) = 50
+'Addition and Subtraction PL 60
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "+"
+REDIM _PRESERVE PL(i): PL(i) = 60
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "-"
+REDIM _PRESERVE PL(i): PL(i) = 60
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "BTA"
+REDIM _PRESERVE PL(i): PL(i) = 60
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "BTS"
+REDIM _PRESERVE PL(i): PL(i) = 60
+
+'Relational Operators =, >, <, <>, <=, >=   PL 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "<>"
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "><" 'These next three are just reversed symbols as an attempt to help process a common typo
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "<="
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = ">="
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "=<" 'I personally can never keep these things straight.  Is it < = or = <...
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "=>" 'Who knows, check both!
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = ">"
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "<"
+REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "="
+REDIM _PRESERVE PL(i): PL(i) = 70
+'Logical Operations PL 80+
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "NOT"
+REDIM _PRESERVE PL(i): PL(i) = 80
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "AND"
+REDIM _PRESERVE PL(i): PL(i) = 90
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "OR"
+REDIM _PRESERVE PL(i): PL(i) = 100
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "XOR"
+REDIM _PRESERVE PL(i): PL(i) = 110
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "EQV"
+REDIM _PRESERVE PL(i): PL(i) = 120
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "IMP"
+REDIM _PRESERVE PL(i): PL(i) = 130
+
+f = FREEFILE
+
+FOR c = ASC("A") TO ASC("Z") 'variables
+    i = i + 1: REDIM _PRESERVE OName(i): OName(i) = CHR$(c) + "#"
+    REDIM _PRESERVE PL(i): PL(i) = 1
+NEXT c
+
+FOR c = ASC("A") TO ASC("Z") 'strings
+    i = i + 1: REDIM _PRESERVE OName(i): OName(i) = CHR$(c) + "!"
+    REDIM _PRESERVE PL(i): PL(i) = 1000
+NEXT c
+
+OPEN FileName FOR BINARY AS #f
+counter = 0
+FOR c = 0 TO 26 'variables
+    GET #f, , length&
+    t$ = SPC(length&)
+    GET #f, , t$
+    vars(c) = t$
+NEXT c
+CLOSE #f
+
+
+
+'SPECIAL STRING Operators have PL 1000.  They shouldn't mix with lower value commands, as we handle them separate
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "DATE$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "TIME$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COMMAND$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "WIKI"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "QB64"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "FORUMS"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "WEBCHAT"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2R$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2G$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2D$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2G$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2R$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2D$"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "RUN:"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "RETURN"
+REDIM _PRESERVE PL(i): PL(i) = 1000
+
+END SUB
+
+FUNCTION EvaluateNumbers$ (p, num() AS STRING)
+DIM n1 AS _FLOAT, n2 AS _FLOAT, n3 AS _FLOAT
+SELECT CASE OName(p) 'Depending on our operator..
+    CASE "PI"
+        n1 = 3.14159265358979323846264338327950288## 'Future compatable in case something ever stores extra digits for PI
+    CASE "%" 'Note percent is a special case and works with the number BEFORE the % command and not after
+        IF num(1) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get percent of NULL string": EXIT FUNCTION
+        n1 = (VAL(num(1))) / 100
+    CASE "ARCCOS"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOS of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOS from value >1, which is Invalid": EXIT FUNCTION
+        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOS from value <-1, which is Invalid": EXIT FUNCTION
+        IF n1 = 1 THEN EvaluateNumbers$ = "0": EXIT FUNCTION
+        n1 = (2 * ATN(1)) - ATN(n1 / SQR(1 - n1 * n1))
+    CASE "ARCSIN"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSIN of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSIN from value >1, which is Invalid": EXIT FUNCTION
+        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSIN from value <-1, which is Invalid": EXIT FUNCTION
+        n1 = ATN(n1 / SQR(1 - (n1 * n1)))
+    CASE "ARCSEC"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSEC of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSEC from value > 1, which is Invalid": EXIT FUNCTION
+        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSEC from value < -1, which is Invalid": EXIT FUNCTION
+        n1 = ATN(n1 / SQR(1 - n1 * n1)) + (SGN(n1) - 1) * (2 * ATN(1))
+    CASE "ARCCSC"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCSC of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCSC from value >=1, which is Invalid": EXIT FUNCTION
+        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCSC from value <-1, which is Invalid": EXIT FUNCTION
+        n1 = ATN(1 / SQR(1 - n1 * n1)) + (SGN(n1) - 1) * (2 * ATN(1))
+    CASE "ARCCOT"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOT of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        n1 = (2 * ATN(1)) - ATN(n1)
+    CASE "SECH"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SECH of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        IF n1 > 88.02969 OR (EXP(n1) + EXP(-n1)) = 0 THEN EvaluateNumbers$ = "ERROR - Bad SECH command": EXIT FUNCTION
+        n1 = 2 / (EXP(n1) + EXP(-n1))
+    CASE "CSCH"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get CSCH of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        IF n1 > 88.02969 OR (EXP(n1) - EXP(-n1)) = 0 THEN EvaluateNumbers$ = "ERROR - Bad CSCH command": EXIT FUNCTION
+        n1 = 2 / (EXP(n1) - EXP(-n1))
+    CASE "COTH"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get COTH of NULL string": EXIT FUNCTION
+        n1 = VAL(num(2))
+        IF 2 * n1 > 88.02969 OR EXP(2 * n1) - 1 = 0 THEN EvaluateNumbers$ = "ERROR - Bad COTH command": EXIT FUNCTION
+        n1 = (EXP(2 * n1) + 1) / (EXP(2 * n1) - 1)
+    CASE "COS"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get COS of NULL string": EXIT FUNCTION
+        n1 = COS(VAL(num(2)))
+    CASE "SIN"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SIN of NULL string": EXIT FUNCTION
+        n1 = SIN(VAL(num(2)))
+    CASE "TAN"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get TAN of NULL string": EXIT FUNCTION
+        n1 = TAN(VAL(num(2)))
+    CASE "LOG"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get LOG of NULL string": EXIT FUNCTION
+        n1 = LOG(VAL(num(2)))
+    CASE "EXP"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get EXP of NULL string": EXIT FUNCTION
+        n1 = EXP(VAL(num(2)))
+    CASE "ATN"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ATN of NULL string": EXIT FUNCTION
+        n1 = ATN(VAL(num(2)))
+    CASE "D2R"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Radian of NULL Degree value": EXIT FUNCTION
+        n1 = 0.0174532925 * (VAL(num(2)))
+    CASE "D2G"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Grad of NULL Degree string": EXIT FUNCTION
+        n1 = 1.1111111111 * (VAL(num(2)))
+    CASE "R2D"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Degree of NULL Radian string": EXIT FUNCTION
+        n1 = 57.2957795 * (VAL(num(2)))
+    CASE "R2G"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Grad of NULL Radian string": EXIT FUNCTION
+        n1 = 0.015707963 * (VAL(num(2)))
+    CASE "G2D"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Degree of NULL Gradian string": EXIT FUNCTION
+        n1 = 0.9 * (VAL(num(2)))
+    CASE "G2R"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Radian of NULL Grad string": EXIT FUNCTION
+        n1 = 63.661977237 * (VAL(num(2)))
+    CASE "ABS"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ABS of NULL string": EXIT FUNCTION
+        n1 = ABS(VAL(num(2)))
+    CASE "SGN"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SGN of NULL string": EXIT FUNCTION
+        n1 = SGN(VAL(num(2)))
+    CASE "INT"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get INT of NULL string": EXIT FUNCTION
+        n1 = INT(VAL(num(2)))
+    CASE "_ROUND"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to _ROUND a NULL string": EXIT FUNCTION
+        n1 = _ROUND(VAL(num(2)))
+    CASE "FIX"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to FIX a NULL string": EXIT FUNCTION
+        n1 = FIX(VAL(num(2)))
+    CASE "SEC"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SEC of NULL string": EXIT FUNCTION
+        n1 = COS(VAL(num(2)))
+        IF n1 = 0 THEN EvaluateNumbers$ = "ERROR - COS value is 0, thus SEC is 1/0 which is Invalid": EXIT FUNCTION
+        n1 = 1 / n1
+    CASE "CSC"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get CSC of NULL string": EXIT FUNCTION
+        n1 = SIN(VAL(num(2)))
+        IF n1 = 0 THEN EvaluateNumbers$ = "ERROR - SIN value is 0, thus CSC is 1/0 which is Invalid": EXIT FUNCTION
+        n1 = 1 / n1
+    CASE "COT"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get COT of NULL string": EXIT FUNCTION
+        n1 = COS(VAL(num(2)))
+        IF n1 = 0 THEN EvaluateNumbers$ = "ERROR - TAN value is 0, thus COT is 1/0 which is Invalid": EXIT FUNCTION
+        n1 = 1 / n1
+    CASE "BTA"
+        IF num(2) = "" OR num(1) = "" THEN EvaluateNumbers$ = "ERROR - BTA": EXIT FUNCTION
+        EvaluateNumbers$ = BTen$(num(1), "+", num(2)): EXIT FUNCTION
+    CASE "BTS"
+        IF num(2) = "" OR num(1) = "" THEN EvaluateNumbers$ = "ERROR - BTS": EXIT FUNCTION
+        EvaluateNumbers$ = BTen$(num(1), "-", num(2)): EXIT FUNCTION
+    CASE "BTM"
+        IF num(2) = "" OR num(1) = "" THEN EvaluateNumbers$ = "ERROR - BTM": EXIT FUNCTION
+        EvaluateNumbers$ = BTen$(num(1), "*", num(2)): EXIT FUNCTION
+    CASE "^"
+        IF num(1) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to raise NULL string to exponent": EXIT FUNCTION
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to raise number to NULL exponent": EXIT FUNCTION
+        n1 = VAL(num(1)) ^ VAL(num(2))
+    CASE "SQR"
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SQR of NULL string": EXIT FUNCTION
+        IF VAL(num(2)) < 0 THEN EvaluateNumbers$ = "ERROR - Cannot take take SQR of numbers < 0.  I'm a computer, I have a poor imagination.": EXIT FUNCTION
+        n1 = SQR(VAL(num(2)))
+    CASE "ROOT"
+        IF num(1) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ROOT of a NULL string": EXIT FUNCTION
+        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get NULL ROOT of a string": EXIT FUNCTION
+        n1 = VAL(num(1)): n2 = VAL(num(2))
+        IF n2 = 1 THEN EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1))): EXIT FUNCTION
+        IF n2 = 0 THEN EvaluateNumbers$ = "ERROR - There is no such thing as a 0 ROOT of a number": EXIT FUNCTION
+        IF n1 < 0 AND n2 MOD 2 = 0 AND n2 > 1 THEN EvaluateNumbers$ = "ERROR - Cannot take take an EVEN ROOT of numbers < 0.  I'm a computer, I have a poor imagination.": EXIT FUNCTION
+        IF n1 < 0 AND n2 >= 1 THEN sign = -1: n1 = -n1 ELSE sign = 1
+        n3 = 1## / n2
+        IF n3 <> INT(n3) AND n2 < 1 THEN sign = SGN(n1): n1 = ABS(n1)
+        n1 = sign * (n1 ^ n3)
+    CASE "*"
+        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to multiply NULL string ": EXIT FUNCTION
+        n1 = VAL(num(1)) * VAL(num(2))
+    CASE "/":
+        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to divide NULL string ": EXIT FUNCTION
+        IF VAL(num(2)) = 0 THEN EvaluateNumbers$ = "ERROR - Division by 0": EXIT FUNCTION
+        n1 = VAL(num(1)) / VAL(num(2))
+    CASE "\"
+        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to divide NULL string ": EXIT FUNCTION
+        IF VAL(num(2)) = 0 THEN EvaluateNumbers$ = "ERROR - Division by 0": EXIT FUNCTION
+        n1 = VAL(num(1)) \ VAL(num(2))
+    CASE "MOD"
+        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to MOD with NULL string ": EXIT FUNCTION
+        IF VAL(num(2)) = 0 THEN EvaluateNumbers$ = "ERROR - Division by 0": EXIT FUNCTION
+        n1 = VAL(num(1)) MOD VAL(num(2))
+    CASE "+": n1 = VAL(num(1)) + VAL(num(2))
+    CASE "-": n1 = VAL(num(1)) - VAL(num(2))
+    CASE "=": n1 = VAL(num(1)) = VAL(num(2))
+    CASE ">": n1 = VAL(num(1)) > VAL(num(2))
+    CASE "<": n1 = VAL(num(1)) < VAL(num(2))
+    CASE "<>", "><": n1 = VAL(num(1)) <> VAL(num(2))
+    CASE "<=", "=<": n1 = VAL(num(1)) <= VAL(num(2))
+    CASE ">=", "=>": n1 = VAL(num(1)) >= VAL(num(2))
+    CASE "NOT": n1 = NOT VAL(num(2))
+    CASE "AND": n1 = VAL(num(1)) AND VAL(num(2))
+    CASE "OR": n1 = VAL(num(1)) OR VAL(num(2))
+    CASE "XOR": n1 = VAL(num(1)) XOR VAL(num(2))
+    CASE "EQV": n1 = VAL(num(1)) EQV VAL(num(2))
+    CASE "IMP": n1 = VAL(num(1)) IMP VAL(num(2))
+    CASE "ANS": n1 = VAL(vars(0))
+    CASE ELSE
+        EvaluateNumbers$ = "ERROR - Bad operation (We shouldn't see this)" 'Let's say we're bad...
+        FOR c = ASC("A") TO ASC("Z") 'Unless we evaluate to be a user set variable.
+            IF OName(p) = CHR$(c) + "#" THEN EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(VAL(vars(c - 64))))): EXIT FUNCTION
+        NEXT
+END SELECT
+EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1)))
+END FUNCTION
+
+FUNCTION DWD$ (exp$) 'Deal With Duplicates
+'To deal with duplicate operators in our code.
+'Such as --  becomes a +
+'++ becomes a +
+'+- becomes a -
+'-+ becomes a -
+t$ = exp$
+DO
+    bad = 0
+    DO
+        l = INSTR(t$, "++")
+        IF l THEN t$ = LEFT$(t$, l - 1) + "+" + MID$(t$, l + 2): bad = -1
+    LOOP UNTIL l = 0
+    DO
+        l = INSTR(t$, "+-")
+        IF l THEN t$ = LEFT$(t$, l - 1) + "-" + MID$(t$, l + 2): bad = -1
+    LOOP UNTIL l = 0
+    DO
+        l = INSTR(t$, "-+")
+        IF l THEN t$ = LEFT$(t$, l - 1) + "-" + MID$(t$, l + 2): bad = -1
+    LOOP UNTIL l = 0
+    DO
+        l = INSTR(t$, "--")
+        IF l THEN t$ = LEFT$(t$, l - 1) + "+" + MID$(t$, l + 2): bad = -1
+    LOOP UNTIL l = 0
+LOOP UNTIL NOT bad
+DWD$ = t$
+VerifyString t$
+END FUNCTION
+
+SUB PreParse (e$)
+DIM f AS _FLOAT
+
+t$ = e$
+
+'Check for High/Low Flag operations
+j = 1: highflag = 0: lowflag = 0
+DO
+    comp$ = UCASE$(MID$(t$, j, 1))
+    SELECT CASE comp$
+        CASE "0" TO "9", ".", "(", ")": j = j + 1
+        CASE ELSE
+            good = 0
+            FOR i = 1 TO UBOUND(OName)
+                IF UCASE$(MID$(t$, j, LEN(OName(i)))) = OName(i) AND PL(i) > 250 THEN highflag = -1
+            NEXT
+            IF i <= UBOUND(Oname) THEN j = j + LEN(OName(i)) ELSE j = j + 1
+    END SELECT
+LOOP UNTIL j > LEN(t$)
+IF highflag THEN ParseString t$
+
+IF QuickReturn THEN e$ = t$: EXIT SUB
+'First strip all spaces
+t$ = ""
+FOR i = 1 TO LEN(e$)
+    IF MID$(e$, i, 1) <> " " THEN t$ = t$ + MID$(e$, i, 1)
+NEXT
+
+t$ = UCASE$(t$)
+
+
+
+
+
+
+IF t$ = "" THEN e$ = "ERROR -- NULL string; nothing to evaluate"
+
+'ERROR CHECK by counting our brackets
+l = 0
+DO
+    l = INSTR(l + 1, t$, "("): IF l THEN c = c + 1
+LOOP UNTIL l = 0
+l = 0
+DO
+    l = INSTR(l + 1, t$, ")"): IF l THEN c1 = c1 + 1
+LOOP UNTIL l = 0
+IF c <> c1 THEN e$ = "ERROR -- Bad Parenthesis:" + STR$(c) + "( vs" + STR$(c1) + ")": EXIT SUB
+
+'Modify so that NOT will process properly
+l = 0
+DO
+    l = INSTR(l + 1, t$, "NOT")
+    IF l THEN
+        'We need to work magic on the statement so it looks pretty.
+        ' 1 + NOT 2 + 1 is actually processed as 1 + (NOT 2 + 1)
+        'Look for something not proper
+        l1 = INSTR(l + 1, t$, "AND")
+        IF l1 = 0 OR (INSTR(l + 1, t$, "OR") > 0 AND INSTR(l + 1, t$, "OR") < l1) THEN l1 = INSTR(l + 1, t$, "OR")
+        IF l1 = 0 OR (INSTR(l + 1, t$, "XOR") > 0 AND INSTR(l + 1, t$, "XOR") < l1) THEN l1 = INSTR(l + 1, t$, "XOR")
+        IF l1 = 0 OR (INSTR(l + 1, t$, "EQV") > 0 AND INSTR(l + 1, t$, "EQV") < l1) THEN l1 = INSTR(l + 1, t$, "EQV")
+        IF l1 = 0 OR (INSTR(l + 1, t$, "IMP") > 0 AND INSTR(l + 1, t$, "IMP") < l1) THEN l1 = INSTR(l + 1, t$, "IMP")
+        IF l1 = 0 THEN l1 = LEN(t$) + 1
+        t$ = LEFT$(t$, l - 1) + "(" + MID$(t$, l, l1 - l) + ")" + MID$(t$, l + l1 - l)
+        l = l + 3
+        'PRINT t$
+    END IF
+LOOP UNTIL l = 0
+
+'Check for bad operators before a ( bracket
+l = 0
+DO
+    l = INSTR(l + 1, t$, "(")
+    IF l AND l > 2 THEN 'Don't check the starting bracket; there's nothing before it.
+        good = 0
+        FOR i = 1 TO UBOUND(OName)
+            IF MID$(t$, l - LEN(OName(i)), LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
+        NEXT
+        IF NOT good THEN e$ = "ERROR - Improper operations before (.": EXIT SUB
+        l = l + 1
+    END IF
+LOOP UNTIL l = 0
+
+'Check for bad operators after a ) bracket
+l = 0
+DO
+    l = INSTR(l + 1, t$, ")")
+    IF l AND l < LEN(t$) THEN
+        good = 0
+        FOR i = 1 TO UBOUND(OName)
+            IF MID$(t$, l + 1, LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
+        NEXT
+        IF MID$(t$, l + 1, 1) = ")" THEN good = -1
+        IF NOT good THEN e$ = "ERROR - Improper operations after ).": EXIT SUB
+        l = l + 1
+    END IF
+LOOP UNTIL l = 0 OR l = LEN(t$) 'last symbol is a bracket
+
+'Turn all &H (hex) numbers into decimal values for the program to process properly
+l = 0
+DO
+    l = INSTR(t$, "&H")
+    IF l THEN
+        E = l + 1: finished = 0
+        DO
+            E = E + 1
+            comp$ = MID$(t$, E, 1)
+            SELECT CASE comp$
+                CASE "0" TO "9", "A" TO "F" 'All is good, our next digit is a number, continue to add to the hex$
+                CASE ELSE
+                    good = 0
+                    FOR i = 1 TO UBOUND(OName)
+                        IF MID$(t$, E, LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
+                    NEXT
+                    IF NOT good THEN e$ = "ERROR - Improper &H value. (" + comp$ + ")": EXIT SUB
+                    E = E - 1
+                    finished = -1
+            END SELECT
+        LOOP UNTIL finished OR E = LEN(t$)
+        t$ = LEFT$(t$, l - 1) + LTRIM$(RTRIM$(STR$(VAL(MID$(t$, l, E - l + 1))))) + MID$(t$, E + 1)
+    END IF
+LOOP UNTIL l = 0
+
+'Turn all &B (binary) numbers into decimal values for the program to process properly
+l = 0
+DO
+    l = INSTR(t$, "&B")
+    IF l THEN
+        E = l + 1: finished = 0
+        DO
+            E = E + 1
+            comp$ = MID$(t$, E, 1)
+            SELECT CASE comp$
+                CASE "0", "1" 'All is good, our next digit is a number, continue to add to the hex$
+                CASE ELSE
+                    good = 0
+                    FOR i = 1 TO UBOUND(OName)
+                        IF MID$(t$, E, LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
+                    NEXT
+                    IF NOT good THEN e$ = "ERROR - Improper &B value. (" + comp$ + ")": EXIT SUB
+                    E = E - 1
+                    finished = -1
+            END SELECT
+        LOOP UNTIL finished OR E = LEN(t$)
+        bin$ = MID$(t$, l + 2, E - l - 1)
+        FOR i = 1 TO LEN(bin$)
+            IF MID$(bin$, i, 1) = "1" THEN f = f + 2 ^ (LEN(bin$) - i)
+        NEXT
+        t$ = LEFT$(t$, l - 1) + LTRIM$(RTRIM$(STR$(f))) + MID$(t$, E + 1)
+    END IF
+LOOP UNTIL l = 0
+
+t$ = N2S(t$)
+VerifyString t$
+
+e$ = t$
+END SUB
+
+SUB ParseString (e$)
+t$ = e$
+'Since these are string swaps going on, we don't plug them into a nice little working formula as we did before.
+'Instead, we write a separate routine for each method and evaluate on a command by command basis.
+
+'RUN -- Special "Do Anything" type command
+IF UCASE$(LEFT$(t$, 4)) = "RUN:" THEN
+    'Look for RETURN:
+    l = INSTR(UCASE$(t$), "RETURN")
+    IF l = 0 THEN e$ = "ERROR -- No RETURN after RUN": QuickReturn = -1: EXIT SUB
+    tempfile$ = "MathProcess" + DATE$
+    f = FREEFILE
+    OPEN tempfile$ + ".txt" FOR OUTPUT AS #f
+    PRINT #f, MID$(t$, 5, l - 5)
+    PRINT #f, "OPEN " + CHR$(34) + tempfile$ + ".txt" + CHR$(34) + " FOR OUTPUT AS #1"
+    PRINT #f, "PRINT #1, " + MID$(t$, l + 7)
+    PRINT #f, "CLOSE"
+    PRINT #f, "SYSTEM "
+    CLOSE #f
+    SHELL _HIDE "QB64.exe -c " + tempfile$ + ".txt"
+    SHELL _HIDE tempfile$ + ".exe"
+    OPEN tempfile$ + ".txt" FOR INPUT AS #f
+    LINE INPUT #f, e$
+    CLOSE #f
+    IF _FILEEXISTS(tempfile$ + ".txt") THEN KILL tempfile$ + ".txt"
+    IF _FILEEXISTS(tempfile$ + ".exe") THEN KILL tempfile$ + ".exe"
+    QuickReturn = -1: EXIT SUB
+END IF
+
+QUI = 0 'Quick User Insert
+FOR c = ASC("A") TO ASC("Z") 'Unless we evaluate to be a user set variable.
+    IF INSTR(UCASE$(t$), CHR$(c) + "!") THEN
+        f = FREEFILE
+        IF _FILEEXISTS(DirName + CHR$(c) + "!.txt") THEN
+            QUI = -1
+            OPEN DirName + CHR$(c) + "!.txt" FOR INPUT AS #f
+            t$ = ""
+            count = 0
+            DO UNTIL EOF(f)
+                count = count + 1
+                LINE INPUT #f, t1$
+                t2$ = t2$ + t1$ + CHR$(13)
+            LOOP
+            CLOSE #f
+        ELSE
+            e$ = "ERROR --" + DirName + CHR$(c) + "!.txt is not a valid quickload file.": QuickReturn = -1: EXIT SUB
+        END IF
+    END IF
+NEXT
+IF QUI THEN
+    SELECT CASE count
+        CASE 0
+            e$ = "ERROR --" + DirName + CHR$(c) + "!.txt is a blank quickload file.": QuickReturn = -1: EXIT SUB
+        CASE 1
+            'l = idecy
+            'a$ = idegetline(l)
+            'l$ = LEFT$(a$, idecx - 1): r$ = RIGHT$(a$, LEN(a$) - idecx + 1)
+            'text$ = l$ + t1$ + r$
+            'textlen = LEN(text$)
+            'l$ = LEFT$(idet$, ideli - 1)
+            'm$ = MKL$(textlen) + text$ + MKL$(textlen)
+            'r$ = RIGHT$(idet$, LEN(idet$) - ideli - LEN(a$) - 7)
+            'idet$ = l$ + m$ + r$
+            'idecx = idecx + LEN(t1$)
+            e$ = t1$: QuickReturn = -1: EXIT SUB
+        CASE ELSE
+            a$ = t2$
+            x3 = 1 'scan from position
+            i = 0 'lines counter
+
+            DO
+
+                x = INSTR(x3, a$, CHR$(13))
+                x2 = INSTR(x3, a$, CHR$(10))
+                IF x = 0 THEN x = x2
+                IF x2 = 0 THEN x2 = x
+                IF x2 < x THEN SWAP x, x2
+                IF x2 > x + 1 THEN x2 = x 'if seperated by more than one character, they are seperate line terminators
+                'x to x2 is the range of the next line terminator (1 or 2 characters)
+
+                IF x THEN
+                    ideinsline idecy + i, converttabs$(MID$(a$, x3, x - x3))
+                    i = i + 1
+                    x3 = x2 + 1
+                ELSE
+                    ideinsline idecy + i, converttabs$(MID$(a$, x3, LEN(a$) - x3 + 1))
+                    i = i + 1
+                    x3 = LEN(a$) + 1
+                END IF
+
+            LOOP UNTIL x3 > LEN(a$)
+            e$ = STR$(count) + " LINES INSERTED": QuickReturn = -1: EXIT SUB
+    END SELECT
+END IF
+
+'DATE$
+l = 0
+DO
+    l = INSTR(UCASE$(t$), "DATE$")
+    IF l THEN
+        t$ = LEFT$(t$, l - 1) + DATE$ + MID$(t$, l + 5)
+    END IF
+LOOP UNTIL l = 0
+
+'TIME$
+l = 0
+DO
+    l = INSTR(UCASE$(t$), "TIME$")
+    IF l THEN
+        t$ = LEFT$(t$, l - 1) + TIME$ + MID$(t$, l + 5)
+    END IF
+LOOP UNTIL l = 0
+
+'Commands that we should only process once and then be done with them.
+IF INSTR(UCASE$(t$), "WIKI") THEN SHELL _HIDE "http://qb64.net/wiki/index.php?title=Main_Page"
+IF INSTR(UCASE$(t$), "QB64") THEN SHELL _HIDE "http://www.qb64.net/"
+IF INSTR(UCASE$(t$), "FORUMS") THEN SHELL _HIDE "http://www.qb64.net/forum/index.php"
+IF INSTR(UCASE$(t$), "WEBCHAT") THEN SHELL _HIDE "http://webchat.freenode.net/"
+IF INSTR(UCASE$(t$), "COMMAND$") THEN t$ = LEFT$(t$, l - 1) + COMMAND$ + MID$(t$, l + 5)
+IF INSTR(UCASE$(t$), "D2R$") THEN t$ = LEFT$(t$, l - 1) + "FUNCTION D2R## (x AS _FLOAT): D2R = 0.0174532925 * x: END FUNCTION" + MID$(t$, l + 5)
+IF INSTR(UCASE$(t$), "D2G$") THEN t$ = LEFT$(t$, l - 1) + "FUNCTION D2G## (x AS _FLOAT): D2G = 1.1111111111 * x: END FUNCTION" + MID$(t$, l + 5)
+IF INSTR(UCASE$(t$), "R2G$") THEN t$ = LEFT$(t$, l - 1) + "FUNCTION R2D## (x AS _FLOAT): R2D = 57.2957795 * x: END FUNCTION" + MID$(t$, l + 5)
+IF INSTR(UCASE$(t$), "R2G$") THEN t$ = LEFT$(t$, l - 1) + "FUNCTION R2G## (x AS _FLOAT): R2G = 0.015707963 * x: END FUNCTION" + MID$(t$, l + 5)
+IF INSTR(UCASE$(t$), "G2D$") THEN t$ = LEFT$(t$, l - 1) + "FUNCTION G2D## (x AS _FLOAT): G2D = 0.9 * x: END FUNCTION" + MID$(t$, l + 5)
+IF INSTR(UCASE$(t$), "G2R$") THEN t$ = LEFT$(t$, l - 1) + "FUNCTION G2R## (x AS _FLOAT): G2R = 63.661977237 * x: END FUNCTION" + MID$(t$, l + 5)
+
+
+'Strip out the commands we only process once
+l = 0
+DO
+    l = INSTR(UCASE$(t$), "D2R$")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "D2G$")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "D2G$")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "R2G$")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "R2D$")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "G2D$")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "G2R$")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "WIKI")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "QB64")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "FORUMS")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "WEBCHAT")
+    IF l = 0 THEN l = INSTR(UCASE$(t$), "COMMAND$")
+    IF l THEN
+        t$ = LEFT$(t$, l - 1) + MID$(t$, l + 5)
+    END IF
+LOOP UNTIL l = 0
+e$ = t$: QuickReturn = -1
+END SUB
+
+SUB VerifyString (t$)
+'ERROR CHECK for unrecognized operations
+j = 1
+DO
+    comp$ = MID$(t$, j, 1)
+    SELECT CASE comp$
+        CASE "0" TO "9", ".", "(", ")": j = j + 1
+        CASE ELSE
+            good = 0
+            FOR i = 1 TO UBOUND(OName)
+                IF MID$(t$, j, LEN(OName(i))) = OName(i) THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
+            NEXT
+            IF NOT good THEN t$ = "ERROR - Bad Operational value. (" + comp$ + ")": EXIT SUB
+            j = j + LEN(OName(i))
+    END SELECT
+LOOP UNTIL j > LEN(t$)
+END SUB
+
+
+FUNCTION BTen$ (InTop AS STRING, Op AS STRING, InBot AS STRING)
+REM $DYNAMIC
+
+InTop = LTRIM$(RTRIM$(InTop))
+InBot = LTRIM$(RTRIM$(InBot))
+
+l = INSTR(InTop, "-")
+IF l = 0 THEN l = INSTR(InTop, "+")
+IF l = 0 THEN InTop = "+" + InTop
+l = INSTR(InBot, "-")
+IF l = 0 THEN l = INSTR(InBot, "+")
+IF l = 0 THEN InBot = "+" + InBot
+
+l = INSTR(InTop, ".")
+IF l = 0 THEN InTop = InTop + "."
+l = INSTR(InBot, ".")
+IF l = 0 THEN InBot = InBot + "."
+
+IF Op$ = "-" THEN
+    Op$ = "+"
+    IF MID$(InBot, 1, 1) = "-" THEN MID$(InBot, 1, 1) = "+" ELSE MID$(InBot, 1, 1) = "-"
+END IF
+
+
+TDP& = Check&(10, InTop$)
+BDP& = Check&(10, InBot$)
+
+IF TDP& < 0 OR BDP& < 0 THEN EXIT FUNCTION
+
+TSign% = Check&(11, InTop$)
+BSign% = Check&(11, InBot$)
+
+' Calculate Array Size
+
+IF Op$ = CHR$(43) OR Op$ = CHR$(45) THEN
+    '     "+" (Add)   OR    "-" (Subtract)
+    Temp& = 9
+ELSEIF Op$ = CHR$(42) OR Op$ = CHR$(50) THEN
+    '      "*" (Multiply) OR "2" (SQRT Multiply)
+    Temp& = 7
+ELSE
+    EXIT FUNCTION
+END IF
+
+' LSA (Left Side of Array)
+LSA& = TDP& - 2
+TLS& = LSA& \ Temp&
+IF LSA& MOD Temp& > 0 THEN
+    TLS& = TLS& + 1
+    DO WHILE (TLPad& + LSA&) MOD Temp& > 0
+        TLPad& = TLPad& + 1
+    LOOP
+END IF
+LSA& = BDP& - 2
+BLS& = LSA& \ Temp&
+IF LSA& MOD Temp& > 0 THEN
+    BLS& = BLS& + 1
+    DO WHILE (BLPad& + LSA&) MOD Temp& > 0
+        BLPad& = BLPad& + 1
+    LOOP
+END IF
+IF TLS& >= BLS& THEN LSA& = TLS& ELSE LSA& = BLS&
+
+' RSA (Right Side of Array)
+RSA& = LEN(InTop$) - TDP&
+TRS& = RSA& \ Temp&
+IF RSA& MOD Temp& > 0 THEN
+    TRS& = TRS& + 1
+    DO WHILE (TRPad& + RSA&) MOD Temp& > 0
+        TRPad& = TRPad& + 1
+    LOOP
+END IF
+RSA& = LEN(InBot$) - BDP&
+BRS& = RSA& \ Temp&
+IF RSA& MOD Temp& > 0 THEN
+    BRS& = BRS& + 1
+    DO WHILE (BRPad& + RSA&) MOD Temp& > 0
+        BRPad& = BRPad& + 1
+    LOOP
+END IF
+IF TRS& >= BRS& THEN RSA& = TRS& ELSE RSA& = BRS&
+
+
+
+IF Op$ = CHR$(43) OR Op$ = CHR$(45) THEN
+    '     "+" (Add)   OR    "-" (Subtract)
+
+    DIM Result(1 TO (LSA& + RSA&)) AS LONG
+
+    IF (Op$ = CHR$(43) AND TSign% = BSign%) OR (Op$ = CHR$(45) AND TSign% <> BSign%) THEN
+        ' Add Absolute Values and Return Top Sign
+
+        ' Left Side
+        FOR I& = 1 TO LSA&
+            ' Top
+            IF I& <= (LSA& - TLS&) THEN
+                ''' Result(I&) = Result(I&) + 0
+            ELSEIF I& = (1 + LSA& - TLS&) THEN
+                Result(I&) = VAL(MID$(InTop$, 2, (9 - TLPad&)))
+                TDP& = 11 - TLPad&
+            ELSE
+                Result(I&) = VAL(MID$(InTop$, TDP&, 9))
+                TDP& = TDP& + 9
+            END IF
+            ' Bottom
+            IF I& <= (LSA& - BLS&) THEN
+                ''' Result(I&) = Result(I&) + 0
+            ELSEIF I& = (1 + LSA& - BLS&) THEN
+                Result(I&) = Result(I&) + VAL(MID$(InBot$, 2, (9 - BLPad&)))
+                BDP& = 11 - BLPad&
+            ELSE
+                Result(I&) = Result(I&) + VAL(MID$(InBot$, BDP&, 9))
+                BDP& = BDP& + 9
+            END IF
+        NEXT I&
+
+        ' Right Side
+        TDP& = TDP& + 1: BDP& = BDP& + 1
+        FOR I& = (LSA& + 1) TO (LSA& + RSA&)
+            ' Top
+            IF I& > (LSA& + TRS&) THEN
+                ''' Result(I&) = Result(I&) + 0
+            ELSEIF I& = (LSA& + TRS&) THEN
+                Result(I&) = (10 ^ TRPad&) * VAL(RIGHT$(InTop$, (9 - TRPad&)))
+            ELSE
+                Result(I&) = VAL(MID$(InTop$, TDP&, 9))
+                TDP& = TDP& + 9
+            END IF
+            ' Bottom
+            IF I& > (LSA& + BRS&) THEN
+                ''' Result(I&) = Result(I&) + 0
+            ELSEIF I& = (LSA& + BRS&) THEN
+                Result(I&) = Result(I&) + (10 ^ BRPad&) * VAL(RIGHT$(InBot$, (9 - BRPad&)))
+            ELSE
+                Result(I&) = Result(I&) + VAL(MID$(InBot$, BDP&, 9))
+                BDP& = BDP& + 9
+            END IF
+        NEXT I&
+
+        ' Carry
+        FOR I& = (LSA& + RSA&) TO 2 STEP -1
+            IF Result(I&) >= 1000000000 THEN
+                Result(I& - 1) = Result(I& - 1) + 1
+                Result(I&) = Result(I&) - 1000000000
+            END IF
+        NEXT I&
+
+        ' Return Sign
+        IF TSign% = 1 THEN RetStr$ = CHR$(43) ELSE RetStr$ = CHR$(45)
+
+    ELSE
+        ' Compare Absolute Values
+
+        IF TDP& > BDP& THEN
+            Compare& = 1
+        ELSEIF TDP& < BDP& THEN
+            Compare& = -1
+        ELSE
+            IF LEN(InTop$) > LEN(InBot$) THEN Compare& = LEN(InBot$) ELSE Compare& = LEN(InTop$)
+            FOR I& = 2 TO Compare&
+                IF VAL(MID$(InTop$, I&, 1)) > VAL(MID$(InBot$, I&, 1)) THEN
+                    Compare& = 1
+                    EXIT FOR
+                ELSEIF VAL(MID$(InTop$, I&, 1)) < VAL(MID$(InBot$, I&, 1)) THEN
+                    Compare& = -1
+                    EXIT FOR
+                END IF
+            NEXT I&
+            IF Compare& > 1 THEN
+                IF LEN(InTop$) > LEN(InBot$) THEN
+                    Compare& = 1
+                ELSEIF LEN(InTop$) < LEN(InBot$) THEN
+                    Compare& = -1
+                ELSE
+                    Compare& = 0
+                END IF
+            END IF
+        END IF
+
+        ' Conditional Subtraction
+
+        IF Compare& = 1 THEN
+            ' Subtract Bottom from Top and Return Top Sign
+
+            ' Top
+            Result(1) = VAL(MID$(InTop$, 2, (9 - TLPad&)))
+            TDP& = 11 - TLPad&
+            FOR I& = 2 TO LSA&
+                Result(I&) = VAL(MID$(InTop$, TDP&, 9))
+                TDP& = TDP& + 9
+            NEXT I&
+            TDP& = TDP& + 1
+            FOR I& = (LSA& + 1) TO (LSA& + TRS& - 1)
+                Result(I&) = VAL(MID$(InTop$, TDP&, 9))
+                TDP& = TDP& + 9
+            NEXT I&
+            Result(LSA& + TRS&) = 10& ^ TRPad& * VAL(RIGHT$(InTop$, (9 - TRPad&)))
+
+            ' Bottom
+            BDP& = (LEN(InBot$) - 17) + BRPad&
+            FOR I& = (LSA& + BRS&) TO (1 + LSA& - BLS&) STEP -1
+                IF I& = LSA& THEN BDP& = BDP& - 1
+                IF I& = (LSA& + BRS&) THEN
+                    Temp& = (10& ^ BRPad&) * VAL(RIGHT$(InBot$, (9 - BRPad&)))
+                ELSEIF I& = (1 + LSA& - BLS&) THEN
+                    Temp& = VAL(MID$(InBot$, 2, (9 - BLPad&)))
+                ELSE
+                    Temp& = VAL(MID$(InBot$, BDP&, 9))
+                    BDP& = BDP& - 9
+                END IF
+                IF Result(I&) < Temp& THEN
+                    ' Borrow
+                    FOR J& = (I& - 1) TO 1 STEP -1
+                        IF Result(J&) = 0 THEN
+                            Result(J&) = 999999999
+                        ELSE
+                            Result(J&) = Result(J&) - 1
+                            EXIT FOR
+                        END IF
+                    NEXT J&
+                    Result(I&) = Result(I&) + 1000000000
+                END IF
+                Result(I&) = Result(I&) - Temp&
+            NEXT I&
+
+            ' Return Sign
+            IF TSign% = 1 THEN RetStr$ = CHR$(43) ELSE RetStr$ = CHR$(45)
+
+        ELSEIF Compare& = -1 THEN
+            ' Subtract Top from Bottom and Return Bottom Sign
+
+            ' Bottom
+            Result(1) = VAL(MID$(InBot$, 2, (9 - BLPad&)))
+            BDP& = 11 - BLPad&
+            FOR I& = 2 TO LSA&
+                Result(I&) = VAL(MID$(InBot$, BDP&, 9))
+                BDP& = BDP& + 9
+            NEXT I&
+            BDP& = BDP& + 1
+            FOR I& = (LSA& + 1) TO (LSA& + BRS& - 1)
+                Result(I&) = VAL(MID$(InBot$, BDP&, 9))
+                BDP& = BDP& + 9
+            NEXT I&
+            Result(LSA& + BRS&) = 10& ^ BRPad& * VAL(RIGHT$(InBot$, (9 - BRPad&)))
+
+            ' Top
+            TDP& = (LEN(InTop$) - 17) + TRPad&
+            FOR I& = (LSA& + TRS&) TO (1 + LSA& - TLS&) STEP -1
+                IF I& = LSA& THEN TDP& = TDP& - 1
+                IF I& = (LSA& + TRS&) THEN
+                    Temp& = (10& ^ TRPad&) * VAL(RIGHT$(InTop$, (9 - TRPad&)))
+                ELSEIF I& = (1 + LSA& - TLS&) THEN
+                    Temp& = VAL(MID$(InTop$, 2, (9 - TLPad&)))
+                ELSE
+                    Temp& = VAL(MID$(InTop$, TDP&, 9))
+                    TDP& = TDP& - 9
+                END IF
+                IF Result(I&) < Temp& THEN
+                    ' Borrow
+                    FOR J& = (I& - 1) TO 1 STEP -1
+                        IF Result(J&) = 0 THEN
+                            Result(J&) = 999999999
+                        ELSE
+                            Result(J&) = Result(J&) - 1
+                            EXIT FOR
+                        END IF
+                    NEXT J&
+                    Result(I&) = Result(I&) + 1000000000
+                END IF
+                Result(I&) = Result(I&) - Temp&
+            NEXT I&
+
+            ' Build Return Sign
+            IF BSign% = 1 THEN RetStr$ = CHR$(43) ELSE RetStr$ = CHR$(45)
+
+        ELSE
+            ' Result will always be 0
+
+            LSA& = 1: RSA& = 1
+            RetStr$ = CHR$(43)
+
+        END IF
+    END IF
+
+    ' Generate Return String
+    RetStr$ = RetStr$ + LTRIM$(STR$(Result(1)))
+    FOR I& = 2 TO LSA&
+        RetStr$ = RetStr$ + RIGHT$(STRING$(8, 48) + LTRIM$(STR$(Result(I&))), 9)
+    NEXT I&
+    RetStr$ = RetStr$ + CHR$(46)
+    FOR I& = (LSA& + 1) TO (LSA& + RSA&)
+        RetStr$ = RetStr$ + RIGHT$(STRING$(8, 48) + LTRIM$(STR$(Result(I&))), 9)
+    NEXT I&
+
+    ERASE Result
+
+ELSEIF Op$ = CHR$(42) THEN
+    ' * (Multiply)
+
+    DIM TArray(1 TO (LSA& + RSA&)) AS LONG
+    DIM BArray(1 TO (LSA& + RSA&)) AS LONG
+    DIM ResDBL(0 TO (LSA& + RSA&)) AS DOUBLE
+
+    ' Push String Data Into Array
+    FOR I& = 1 TO LSA&
+        IF I& <= (LSA& - TLS&) THEN
+            ''' TArray(I&) = TArray(I&) + 0
+        ELSEIF I& = (1 + LSA& - TLS&) THEN
+            TArray(I&) = VAL(MID$(InTop$, 2, (7 - TLPad&)))
+            TDP& = 9 - TLPad&
+        ELSE
+            TArray(I&) = VAL(MID$(InTop$, TDP&, 7))
+            TDP& = TDP& + 7
+        END IF
+        IF I& <= (LSA& - BLS&) THEN
+            ''' BArray(I&) = BArray(I&) + 0
+        ELSEIF I& = (1 + LSA& - BLS&) THEN
+            BArray(I&) = VAL(MID$(InBot$, 2, (7 - BLPad&)))
+            BDP& = 9 - BLPad&
+        ELSE
+            BArray(I&) = VAL(MID$(InBot$, BDP&, 7))
+            BDP& = BDP& + 7
+        END IF
+    NEXT I&
+    TDP& = TDP& + 1: BDP& = BDP& + 1
+    FOR I& = (LSA& + 1) TO (LSA& + RSA&)
+        IF I& > (LSA& + TRS&) THEN
+            ''' TArray(I&) = TArray(I&) + 0
+        ELSEIF I& = (LSA& + TRS&) THEN
+            TArray(I&) = 10 ^ TRPad& * VAL(RIGHT$(InTop$, (7 - TRPad&)))
+        ELSE
+            TArray(I&) = VAL(MID$(InTop$, TDP&, 7))
+            TDP& = TDP& + 7
+        END IF
+        IF I& > (LSA& + BRS&) THEN
+            ''' BArray(I&) = BArray(I&) + 0
+        ELSEIF I& = (LSA& + BRS&) THEN
+            BArray(I&) = 10 ^ BRPad& * VAL(RIGHT$(InBot$, (7 - BRPad&)))
+        ELSE
+            BArray(I&) = VAL(MID$(InBot$, BDP&, 7))
+            BDP& = BDP& + 7
+        END IF
+    NEXT I&
+
+    ' Multiply from Arrays to Array
+    FOR I& = (LSA& + TRS&) TO (1 + LSA& - TLS&) STEP -1
+        FOR J& = (LSA& + BRS&) TO (1 + LSA& - BLS&) STEP -1
+            Temp# = 1# * TArray(I&) * BArray(J&)
+            IF (I& + J&) MOD 2 = 0 THEN
+                TL& = INT(Temp# / 10000000)
+                TR& = Temp# - 10000000# * TL&
+                ResDBL(((I& + J&) \ 2) - 1) = ResDBL(((I& + J&) \ 2) - 1) + TL&
+                ResDBL((I& + J&) \ 2) = ResDBL((I& + J&) \ 2) + 10000000# * TR&
+            ELSE
+                ResDBL((I& + J&) \ 2) = ResDBL((I& + J&) \ 2) + Temp#
+            END IF
+            IF ResDBL((I& + J&) \ 2) >= 100000000000000# THEN
+                Temp# = ResDBL((I& + J&) \ 2)
+                TL& = INT(Temp# / 100000000000000#)
+                ResDBL(((I& + J&) \ 2) - 1) = ResDBL(((I& + J&) \ 2) - 1) + TL&
+                ResDBL((I& + J&) \ 2) = Temp# - 100000000000000# * TL&
+            END IF
+        NEXT J&
+    NEXT I&
+
+    ERASE TArray, BArray
+
+    ' Generate Return String
+    IF (TSign% * BSign%) = 1 THEN RetStr$ = CHR$(43) ELSE RetStr$ = CHR$(45)
+    RetStr$ = RetStr$ + LTRIM$(STR$(ResDBL(0)))
+    FOR I& = 1 TO (LSA&)
+        RetStr$ = RetStr$ + RIGHT$(STRING$(13, 48) + LTRIM$(STR$(ResDBL(I&))), 14)
+    NEXT I&
+    RetStr$ = LEFT$(RetStr$, LEN(RetStr$) - 7) + CHR$(46) + RIGHT$(RetStr$, 7)
+    FOR I& = (LSA& + 1) TO (LSA& + RSA&)
+        RetStr$ = RetStr$ + RIGHT$(STRING$(13, 48) + LTRIM$(STR$(ResDBL(I&))), 14)
+    NEXT I&
+
+    ERASE ResDBL
+
+ELSEIF Op$ = CHR$(50) THEN
+    ' 2 (SQRT Multiply)
+
+    DIM IArray(1 TO (LSA& + RSA&)) AS LONG
+    DIM ResDBL(0 TO (LSA& + RSA&)) AS DOUBLE
+
+    ' Push String Data Into Array
+    FOR I& = 1 TO LSA&
+        IF I& <= (LSA& - TLS&) THEN
+            ''' IArray(I&) = IArray(I&) + 0
+        ELSEIF I& = (1 + LSA& - TLS&) THEN
+            IArray(I&) = VAL(MID$(InTop$, 2, (7 - TLPad&)))
+            TDP& = 9 - TLPad&
+        ELSE
+            IArray(I&) = VAL(MID$(InTop$, TDP&, 7))
+            TDP& = TDP& + 7
+        END IF
+    NEXT I&
+    TDP& = TDP& + 1
+    FOR I& = (LSA& + 1) TO (LSA& + RSA&)
+        IF I& > (LSA& + TRS&) THEN
+            ''' IArray(I&) = IArray(I&) + 0
+        ELSEIF I& = (LSA& + TRS&) THEN
+            IArray(I&) = 10 ^ TRPad& * VAL(RIGHT$(InTop$, (7 - TRPad&)))
+        ELSE
+            IArray(I&) = VAL(MID$(InTop$, TDP&, 7))
+            TDP& = TDP& + 7
+        END IF
+    NEXT I&
+
+    ' SQRT Multiply from Array to Array
+    FOR I& = (LSA& + TRS&) TO 1 STEP -1
+        FOR J& = I& TO 1 STEP -1
+            Temp# = 1# * IArray(I&) * IArray(J&)
+            IF I& <> J& THEN Temp# = Temp# * 2
+            IF (I& + J&) MOD 2 = 0 THEN
+                TL& = INT(Temp# / 10000000)
+                TR& = Temp# - 10000000# * TL&
+                ResDBL(((I& + J&) \ 2) - 1) = ResDBL(((I& + J&) \ 2) - 1) + TL&
+                ResDBL((I& + J&) \ 2) = ResDBL((I& + J&) \ 2) + 10000000# * TR&
+            ELSE
+                ResDBL((I& + J&) \ 2) = ResDBL((I& + J&) \ 2) + Temp#
+            END IF
+            IF ResDBL((I& + J&) \ 2) >= 100000000000000# THEN
+                Temp# = ResDBL((I& + J&) \ 2)
+                TL& = INT(Temp# / 100000000000000#)
+                ResDBL(((I& + J&) \ 2) - 1) = ResDBL(((I& + J&) \ 2) - 1) + TL&
+                ResDBL((I& + J&) \ 2) = Temp# - 100000000000000# * TL&
+            END IF
+        NEXT J&
+    NEXT I&
+
+    ERASE IArray
+
+    ' Generate Return String
+    IF (TSign% * BSign%) = 1 THEN RetStr$ = CHR$(43) ELSE RetStr$ = CHR$(45)
+    RetStr$ = RetStr$ + LTRIM$(STR$(ResDBL(0)))
+    FOR I& = 1 TO (LSA&)
+        RetStr$ = RetStr$ + RIGHT$(STRING$(13, 48) + LTRIM$(STR$(ResDBL(I&))), 14)
+    NEXT I&
+    RetStr$ = LEFT$(RetStr$, LEN(RetStr$) - 7) + CHR$(46) + RIGHT$(RetStr$, 7)
+    ' Don't usually want the full right side for this, just enough to check the
+    ' actual result against the expected result, which is probably an integer.
+    ' Uncomment the three lines below when trying to find an oddball square root.
+    'FOR I& = (LSA& + 1) TO (LSA& + RSA&)
+    '    RetStr$ = RetStr$ + RIGHT$(STRING$(13, 48) + LTRIM$(STR$(ResDBL(I&))), 14)
+    'NEXT I&
+
+    ERASE ResDBL
+
+END IF
+
+' Trim Leading and Trailing Zeroes
+DO WHILE MID$(RetStr$, 2, 1) = CHR$(48) AND MID$(RetStr$, 3, 1) <> CHR$(46)
+    RetStr$ = LEFT$(RetStr$, 1) + RIGHT$(RetStr$, LEN(RetStr$) - 2)
+LOOP
+DO WHILE RIGHT$(RetStr$, 1) = CHR$(48) AND RIGHT$(RetStr$, 2) <> CHR$(46) + CHR$(48)
+    RetStr$ = LEFT$(RetStr$, LEN(RetStr$) - 1)
+LOOP
+
+
+IF MID$(RetStr$, 1, 1) = "+" THEN MID$(RetStr$, 1, 1) = " "
+DO
+    r$ = RIGHT$(RetStr$, 1)
+    IF r$ = "0" THEN RetStr$ = LEFT$(RetStr$, LEN(RetStr$) - 1)
+LOOP UNTIL r$ <> "0"
+
+r$ = RIGHT$(RetStr$, 1)
+IF r$ = "." THEN RetStr$ = LEFT$(RetStr$, LEN(RetStr$) - 1)
+
+BTen$ = RetStr$
+END FUNCTION
+REM $STATIC
+' ---------------------------------------------------------------------------
+' FUNCTION Check& (Op&, InString$)                Multi-Purpose String Tester
+' ---------------------------------------------------------------------------
+'
+' *   Op&   = Type of string to expect and/or operation to perform
+'
+'   { 00A } = (10) Test Base-10-Format String  ( *!* ALTERS InString$ *!* )
+'   { 00B } = (11) Read Sign ("+", "-", or "ñ")
+'
+'   Unlisted values are not used and will return [ Check& = 0 - Op& ].
+'   Different Op& values produce various return values.
+'   Refer to the in-code comments for details.
+'
+' ---------------------------------------------------------------------------
+' FUNCTION Check& (Op&, InString$)                Multi-Purpose String Tester
+' ---------------------------------------------------------------------------
+FUNCTION Check& (Op AS LONG, InString AS STRING)
+REM $DYNAMIC
+
+RetVal& = LEN(InString$)
+
+SELECT CASE Op&
+
+    CASE 10
+        ' {00A} Test String for Base-10-Format ( *!* ALTERS InString$ *!* )
+        ' Returns:
+        ' {& > 0} = DP offset; {& < 0} = FAILED at negative offset
+        '
+        ' After testing passes, the string is trimmed
+        ' of nonessential leading and trailing zeroes.
+
+        IF RetVal& = 0 THEN
+            RetVal& = -1
+        ELSE
+            SELECT CASE ASC(LEFT$(InString$, 1))
+                CASE 43, 45 ' "+", "-"
+                    FOR I& = 2 TO RetVal&
+                        SELECT CASE ASC(MID$(InString$, I&, 1))
+                            CASE 46 ' "."
+                                IF DPC% > 0 THEN
+                                    RetVal& = 0 - I&
+                                    EXIT FOR
+                                ELSE
+                                    DPC% = DPC% + 1
+                                    RetVal& = I&
+                                END IF
+                            CASE 48 TO 57
+                                ' keep going
+                            CASE ELSE
+                                RetVal& = 0 - I&
+                                EXIT FOR
+                        END SELECT
+                    NEXT I&
+                CASE ELSE
+                    RetVal& = -1
+            END SELECT
+            IF DPC% = 0 AND RetVal& > 0 THEN
+                RetVal& = 0 - RetVal&
+            ELSEIF RetVal& = 2 THEN
+                InString$ = LEFT$(InString$, 1) + CHR$(48) + RIGHT$(InString$, LEN(InString$) - 1)
+                RetVal& = RetVal& + 1
+            END IF
+            IF RetVal& = LEN(InString$) THEN InString$ = InString$ + CHR$(48)
+            DO WHILE ASC(RIGHT$(InString$, 1)) = 48 AND RetVal& < (LEN(InString$) - 1)
+                InString$ = LEFT$(InString$, LEN(InString$) - 1)
+            LOOP
+            DO WHILE ASC(MID$(InString$, 2, 1)) = 48 AND RetVal& > 3
+                InString$ = LEFT$(InString$, 1) + RIGHT$(InString$, LEN(InString$) - 2)
+                RetVal& = RetVal& - 1
+            LOOP
+        END IF
+
+
+    CASE 11
+        ' {00B} Read Sign ("+", "-", or "ñ")
+        ' Returns:
+        ' Explicit: +1 = Positive; -1 = Negative; 0 = Unsigned;
+        ' Implied: +64 = Positive; -64 = NULL String
+
+        IF RetVal& = 0 THEN RetVal& = -64
+        FOR I& = 1 TO RetVal&
+            SELECT CASE ASC(MID$(InString$, I&, 1))
+                CASE 32
+                    RetVal& = 64
+                    ' keep going
+                CASE 43
+                    RetVal& = 1
+                    EXIT FOR
+                CASE 45
+                    RetVal& = -1
+                    EXIT FOR
+                CASE 241
+                    RetVal& = 0
+                    EXIT FOR
+                CASE ELSE
+                    RetVal& = 64
+                    EXIT FOR
+            END SELECT
+        NEXT I&
+
+
+    CASE ELSE
+
+        RetVal& = 0 - Op&
+
+END SELECT
+
+Check& = RetVal&
+END FUNCTION
+
+FUNCTION N2S$ (exp$) 'scientific Notation to String
+t$ = LTRIM$(RTRIM$(exp$))
+IF LEFT$(t$, 1) = "-" THEN sign$ = "-": t$ = MID$(t$, 2)
+
+dp = INSTR(t$, "D+"): dm = INSTR(t$, "D-")
+ep = INSTR(t$, "E+"): em = INSTR(t$, "E-")
+check1 = SGN(dp) + SGN(dm) + SGN(ep) + SGN(em)
+IF check1 < 1 OR check1 > 1 THEN N2S = exp$: EXIT SUB 'If no scientic notation is found, or if we find more than 1 type, it's not SN!
+
+SELECT CASE l 'l now tells us where the SN starts at.
+    CASE IS < dp: l = dp
+    CASE IS < dm: l = dm
+    CASE IS < ep: l = ep
+    CASE IS < em: l = em
+END SELECT
+
+l$ = LEFT$(t$, l - 1) 'The left of the SN
+r$ = MID$(t$, l + 1): r&& = VAL(r$) 'The right of the SN, turned into a workable long
+
+
+IF INSTR(l$, ".") THEN 'Location of the decimal, if any
+    IF r&& > 0 THEN
+        r&& = r&& - LEN(l$) + 2
+    ELSE
+        r&& = r&& + 1
+    END IF
+    l$ = LEFT$(l$, 1) + MID$(l$, 3)
+END IF
+
+SELECT CASE r&&
+    CASE 0 'what the heck? We solved it already?
+        'l$ = l$
+    CASE IS < 0
+        FOR i = 1 TO -r&&
+            l$ = "0" + l$
+        NEXT
+        l$ = "0." + l$
+    CASE ELSE
+        FOR i = 1 TO r&&
+            l$ = l$ + "0"
+        NEXT
+END SELECT
+
+N2S$ = sign$ + l$
+END SUB
+

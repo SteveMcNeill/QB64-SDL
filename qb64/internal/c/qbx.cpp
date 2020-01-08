@@ -39,6 +39,7 @@ double func_coth (double num);
 double func_sec (double num);
 double func_csc (double num);
 double func_cot (double num);
+int32 func__instrrev(int32 start,qbs *str,qbs *substr,int32 passed);
 
 extern void sub__memfill(mem_block* dblk,ptrszint doff,ptrszint dbytes,ptrszint soff,ptrszint sbytes);
 extern void sub__memfill_nochecks(ptrszint doff,ptrszint dbytes,ptrszint soff,ptrszint sbytes);

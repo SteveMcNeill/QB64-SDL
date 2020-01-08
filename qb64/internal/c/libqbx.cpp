@@ -31147,3 +31147,32 @@ double func_cot (double num) {
     if (tan(num)==0) {error(5);return 0;}
     return 1/tan(num);
 }
+
+int32 func__instrrev(int32 start,qbs *str,qbs *substr,int32 passed){
+    if (!str->len) return 0;
+    if (substr->len>str->len) return 0;
+    if (!passed) {
+        if (substr->len==str->len) {
+            if (!memcmp(str->chr,substr->chr,str->len)) return 1;
+        }
+        start=str->len-substr->len+1;
+    }
+    if (start<0){
+        start=str->len-substr->len+1;
+    }
+    if (start>str->len) start=str->len-substr->len+1;
+    if (!substr->len) return start-1;
+    if ((start+substr->len-1)>str->len) start=str->len-substr->len+1;
+
+    int32 searchForward=0,lastFound=0,result=0;
+    do {
+        searchForward=func_instr(searchForward+1,str,substr,1);
+        if (searchForward>0) {
+            lastFound=searchForward;
+            if (lastFound<=start) result=lastFound;
+            if (lastFound>start) break;
+        }
+    } while (searchForward>0);
+
+    return result;
+}
