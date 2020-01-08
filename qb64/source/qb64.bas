@@ -4,15 +4,221 @@ $SCREENHIDE
 '$DYNAMIC
 DEFLNG A-Z
 
-
-REDIM SHARED OName(0) AS STRING 'Operation Name
-REDIM SHARED PL(0) AS INTEGER 'Priority Level
+'### STEVE WAS HERE 10/17/2013 ###
+REDIM SHARED OName(1000) AS STRING 'Operation Name
+REDIM SHARED PL(1000) AS INTEGER 'Priority Level
+REDIM SHARED PP_TypeMod(0) AS STRING, PP_ConvertedMod(0) AS STRING 'Prepass Name Conversion variables.
+REDIM SHARED vars(26) AS STRING ' 0 is previous answer, 1 - 26 is A - Z
+DIM SHARED FileName AS STRING, DirName AS STRING
 DIM SHARED QuickReturn AS INTEGER
+DirName = "internal/MathEval/"
+FileName = "internal/MathEval/Math Evaluator User Variables.bin"
+
+Set_OrderOfOperations 'This will also make certain our directories are valid, and if not make them.
+
 
 _TITLE "QB64 SDL (Steve Update 01/08/2020)"
-
 DIM SHARED version AS STRING
 version$ = "0.954 - SU:01/08/2020"
+
+CONST ASC_BACKSLASH = 92
+CONST ASC_FORWARDSLASH = 47
+CONST ASC_LEFTBRACKET = 40
+CONST ASC_RIGHTBRACKET = 41
+CONST ASC_FULLSTOP = 46
+CONST ASC_COLON = 58
+CONST ASC_SEMICOLON = 59
+CONST ASC_UNDERSCORE = 95
+CONST ASC_QUOTE = 34
+
+CONST ASC_LEFTSQUAREBRACKET = 91
+CONST ASC_RIGHTSQUAREBRACKET = 93
+CONST ASC_QUESTIONMARK = 63
+
+
+CONST KEY_LSHIFT = 100304
+CONST KEY_RSHIFT = 100303
+CONST KEY_LCTRL = 100306
+CONST KEY_RCTRL = 100305
+CONST KEY_LALT = 100308
+CONST KEY_RALT = 100307
+CONST KEY_LAPPLE = 100310
+CONST KEY_RAPPLE = 100309
+CONST KEY_F1 = 15104
+CONST KEY_F2 = 15360
+CONST KEY_F3 = 15616
+CONST KEY_F4 = 15872
+CONST KEY_F5 = 16128
+CONST KEY_F6 = 16384
+CONST KEY_F7 = 16640
+CONST KEY_F8 = 16896
+CONST KEY_F9 = 17152
+CONST KEY_F10 = 17408
+CONST KEY_F11 = 34048
+CONST KEY_F12 = 34304
+CONST KEY_INSERT = 20992
+CONST KEY_DELETE = 21248
+CONST KEY_HOME = 18176
+CONST KEY_END = 20224
+CONST KEY_PAGEUP = 18688
+CONST KEY_PAGEDOWN = 20736
+CONST KEY_LEFT = 19200
+CONST KEY_RIGHT = 19712
+CONST KEY_UP = 18432
+CONST KEY_DOWN = 20480
+CONST KEY_ESC = 27
+CONST KEY_ENTER = 13
+
+CONST idecpnum& = 27
+
+CONST Maxdls = 1
+
+CONST HASHFLAG_LABEL = 2
+CONST HASHFLAG_TYPE = 4
+CONST HASHFLAG_RESERVED = 8
+CONST HASHFLAG_OPERATOR = 16
+CONST HASHFLAG_CUSTOMSYNTAX = 32
+CONST HASHFLAG_SUB = 64
+CONST HASHFLAG_FUNCTION = 128
+CONST HASHFLAG_UDT = 256
+CONST HASHFLAG_UDTELEMENT = 512
+CONST HASHFLAG_CONSTANT = 1024
+CONST HASHFLAG_VARIABLE = 2048
+CONST HASHFLAG_ARRAY = 4096
+CONST HASHFLAG_XELEMENTNAME = 8192
+CONST HASHFLAG_XTYPENAME = 16384
+
+TYPE Help_Back_Type
+    sx AS LONG
+    sy AS LONG
+    cx AS LONG
+    cy AS LONG
+END TYPE
+
+TYPE IdeBmkType
+    y AS LONG 'the vertical line
+    x AS LONG 'the horizontal position to move cursor to
+    reserved AS LONG
+    reserved2 AS LONG
+END TYPE
+
+TYPE Download_Type
+    State AS LONG
+    '-1=failed
+    '0=inactive
+    '1=connected and reading data
+    '2=finished!
+    Handle AS LONG
+END TYPE
+
+'--------------------------------------------------------------------------------
+TYPE idedbptype
+    x AS LONG
+    y AS LONG
+    w AS LONG
+    h AS LONG
+    nam AS LONG
+END TYPE
+'--------------------------------------------------------------------------------
+TYPE idedbotype
+    par AS idedbptype
+    x AS LONG
+    y AS LONG
+    w AS LONG
+    h AS LONG
+    typ AS LONG
+    nam AS LONG
+    txt AS LONG
+    dft AS LONG
+    cx AS LONG
+    cy AS LONG
+    foc AS LONG
+    sel AS LONG 'selected item no.
+    stx AS LONG 'selected item in string form
+    v1 AS LONG
+    num AS LONG
+END TYPE
+
+TYPE HashListItem
+    Flags AS LONG
+    Reference AS LONG
+    NextItem AS LONG
+    PrevItem AS LONG
+    LastItem AS LONG 'note: this value is only valid on the first item in the list
+    'note: name is stored in a seperate array of strings
+END TYPE
+
+TYPE Label_Type
+    State AS _UNSIGNED _BYTE '0=label referenced, 1=label created
+    cn AS STRING * 256
+    Scope AS LONG
+    Data_Offset AS _INTEGER64 'offset within data
+    Data_Referenced AS _UNSIGNED _BYTE 'set to 1 if data is referenced (data_offset will be used to create the data offset variable)
+    Error_Line AS LONG 'the line number to reference on errors
+    Scope_Restriction AS LONG 'cannot exist inside this scope (post checked)
+END TYPE
+
+TYPE idstruct
+
+    n AS STRING * 256 'name
+    cn AS STRING * 256 'case sensitive version of n
+
+    arraytype AS LONG 'similar to t
+    arrayelements AS INTEGER
+    staticarray AS INTEGER 'set for arrays declared in the main module with static elements
+
+    mayhave AS STRING * 8 'mayhave and musthave are exclusive of each other
+    musthave AS STRING * 8
+    t AS LONG 'type
+
+    tsize AS LONG
+
+
+    subfunc AS INTEGER 'if function=1, sub=2 (max 100 arguments)
+    internal_subfunc AS INTEGER
+
+    callname AS STRING * 256
+    ccall AS INTEGER
+    args AS INTEGER
+    arg AS STRING * 400 'similar to t
+    argsize AS STRING * 400 'similar to tsize (used for fixed length strings)
+    specialformat AS STRING * 256
+    secondargmustbe AS STRING * 256
+    secondargcantbe AS STRING * 256
+    ret AS LONG 'the value it returns if it is a function (again like t)
+
+    insubfunc AS STRING * 256
+    insubfuncn AS LONG
+
+    share AS INTEGER
+    nele AS STRING * 100
+    nelereq AS STRING * 100
+    linkid AS LONG
+    linkarg AS INTEGER
+    staticscope AS INTEGER
+    'For variables which are arguments passed to a sub/function
+    sfid AS LONG 'id number of variable's parent sub/function
+    sfarg AS INTEGER 'argument/parameter # within call (1=first)
+
+END TYPE
+
+
+
+
+
+'### STEVE WAS HERE 10/11/2013 ###
+TYPE operator
+    func AS LONG 'The number of function to use
+    params AS LONG 'The number of parameters the function takes
+    assoc AS _BYTE '-1 if left assosicative
+    prec AS LONG 'Precedence
+    func_flag AS LONG 'If -1, then uses function syntax, like SIN()
+END TYPE
+
+REDIM SHARED OPS(20) AS operator, op_names$(20), op_count AS LONG
+
+'### END OF STEVE EDIT
+
 
 DIM SHARED debug AS LONG 'debug logging is off by default
 debug = 0
@@ -106,12 +312,6 @@ DIM SHARED Help_LockWrap
 REDIM SHARED Help_LineLen(1)
 REDIM SHARED Back$(1)
 REDIM SHARED Back_Name$(1)
-TYPE Help_Back_Type
-    sx AS LONG
-    sy AS LONG
-    cx AS LONG
-    cy AS LONG
-END TYPE
 REDIM SHARED Help_Back(1) AS Help_Back_Type
 Back$(1) = "QB64 Help Menu"
 Back_Name$(1) = Back2BackName$(Back$(1))
@@ -134,12 +334,6 @@ IdeSystem = 1
 DIM SHARED IdeRecentLink(1 TO 4, 1 TO 2) AS STRING
 DIM SHARED IdeOpenFile AS STRING 'makes IdeOpen directly open the file passed
 
-TYPE IdeBmkType
-    y AS LONG 'the vertical line
-    x AS LONG 'the horizontal position to move cursor to
-    reserved AS LONG
-    reserved2 AS LONG
-END TYPE
 REDIM SHARED IdeBmk(1) AS IdeBmkType
 DIM SHARED IdeBmkN
 
@@ -160,54 +354,7 @@ DIM SHARED KCTRL 'the control key
 DIM SHARED KCONTROL 'PC-CTRL or MAC-APPLE KEY
 DIM SHARED KALT, KOALT, KALTPRESS, KALTRELEASE
 
-CONST ASC_BACKSLASH = 92
-CONST ASC_FORWARDSLASH = 47
-CONST ASC_LEFTBRACKET = 40
-CONST ASC_RIGHTBRACKET = 41
-CONST ASC_FULLSTOP = 46
-CONST ASC_COLON = 58
-CONST ASC_SEMICOLON = 59
-CONST ASC_UNDERSCORE = 95
-CONST ASC_QUOTE = 34
-
-CONST ASC_LEFTSQUAREBRACKET = 91
-CONST ASC_RIGHTSQUAREBRACKET = 93
-CONST ASC_QUESTIONMARK = 63
 DIM SHARED CHR_QUOTE AS STRING: CHR_QUOTE = CHR$(34)
-
-CONST KEY_LSHIFT = 100304
-CONST KEY_RSHIFT = 100303
-CONST KEY_LCTRL = 100306
-CONST KEY_RCTRL = 100305
-CONST KEY_LALT = 100308
-CONST KEY_RALT = 100307
-CONST KEY_LAPPLE = 100310
-CONST KEY_RAPPLE = 100309
-CONST KEY_F1 = 15104
-CONST KEY_F2 = 15360
-CONST KEY_F3 = 15616
-CONST KEY_F4 = 15872
-CONST KEY_F5 = 16128
-CONST KEY_F6 = 16384
-CONST KEY_F7 = 16640
-CONST KEY_F8 = 16896
-CONST KEY_F9 = 17152
-CONST KEY_F10 = 17408
-CONST KEY_F11 = 34048
-CONST KEY_F12 = 34304
-CONST KEY_INSERT = 20992
-CONST KEY_DELETE = 21248
-CONST KEY_HOME = 18176
-CONST KEY_END = 20224
-CONST KEY_PAGEUP = 18688
-CONST KEY_PAGEDOWN = 20736
-CONST KEY_LEFT = 19200
-CONST KEY_RIGHT = 19712
-CONST KEY_UP = 18432
-CONST KEY_DOWN = 20480
-CONST KEY_ESC = 27
-CONST KEY_ENTER = 13
-
 
 DIM SHARED ResolveStaticFunctions
 REDIM SHARED ResolveStaticFunction_File(1 TO 100) AS STRING
@@ -322,7 +469,6 @@ use_global_byte_elements = 0
 
 'setup optional codepages
 DIM SHARED idecpindex
-CONST idecpnum& = 27
 DIM SHARED idecpname(1 TO idecpnum) AS STRING
 DIM SHARED idecp(1 TO idecpnum) AS STRING
 '
@@ -383,16 +529,8 @@ idecp$(27) = "000000000000000100000002000000030000000400000005000000060000000700
 
 '######## update.bas: init ########
 'data for managing multiple file downloading
-CONST Maxdls = 1
+
 DIM SHARED DLs AS LONG
-TYPE Download_Type
-    State AS LONG
-    '-1=failed
-    '0=inactive
-    '1=connected and reading data
-    '2=finished!
-    Handle AS LONG
-END TYPE
 DIM SHARED DL(1 TO Maxdls) AS Download_Type
 DIM SHARED DL_Data(1 TO Maxdls) AS STRING
 DIM SHARED Download_String AS STRING
@@ -520,33 +658,6 @@ DIM SHARED ideinsert AS INTEGER
 DIM SHARED idepathsep AS STRING * 1
 
 '--------------------------------------------------------------------------------
-TYPE idedbptype
-    x AS LONG
-    y AS LONG
-    w AS LONG
-    h AS LONG
-    nam AS LONG
-END TYPE
-'--------------------------------------------------------------------------------
-TYPE idedbotype
-    par AS idedbptype
-    x AS LONG
-    y AS LONG
-    w AS LONG
-    h AS LONG
-    typ AS LONG
-    nam AS LONG
-    txt AS LONG
-    dft AS LONG
-    cx AS LONG
-    cy AS LONG
-    foc AS LONG
-    sel AS LONG 'selected item no.
-    stx AS LONG 'selected item in string form
-    v1 AS LONG
-    num AS LONG
-END TYPE
-'--------------------------------------------------------------------------------
 DIM SHARED idefocusline 'simply stores the location of the line to highlight in red
 DIM SHARED ideautorun
 DIM SHARED menu$(1 TO 10, 0 TO 20)
@@ -649,15 +760,29 @@ idebackupsize = v&
 
 CLOSE #150
 
+IF os$ = "WIN" THEN
+
+    'begin update check
+    IF ideupdatecheck THEN
+        a$ = DATE$: dateval = VAL(MID$(a$, 4, 2)) + VAL(MID$(a$, 1, 2)) * 32 + VAL(MID$(a$, 7, 4)) * 416 'create unique date value
+        IF ideupdatedaily = 0 OR dateval <> ideupdatelast THEN
+            'note: regardless of success or failure, daily checks are attempted once, so the 'last' value is updated here
+            ideupdatelast = dateval
+            OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
+            IF LOF(150) >= 1048 THEN
+                SEEK #150, 1045
+                PUT #150, , ideupdatelast
+            END IF
+            CLOSE #150
+            'connect
+            UpdateHandle = BeginDownload("www.qb64.net/update2.txt")
+            ideupdatetimerval = TIMER
+        END IF 'update check required
+    END IF 'ideupdatecheck on
+
+END IF 'win
+
 'hash table data
-TYPE HashListItem
-    Flags AS LONG
-    Reference AS LONG
-    NextItem AS LONG
-    PrevItem AS LONG
-    LastItem AS LONG 'note: this value is only valid on the first item in the list
-    'note: name is stored in a seperate array of strings
-END TYPE
 DIM SHARED HashFind_NextListItem AS LONG
 DIM SHARED HashFind_Reverse AS LONG
 DIM SHARED HashFind_SearchFlags AS LONG
@@ -700,30 +825,6 @@ REDIM SHARED HashListName(1 TO HashListSize) AS STRING * 256
 REDIM SHARED HashListFree(1 TO HashListFreeSize) AS LONG
 REDIM SHARED HashTable(16777215) AS LONG '64MB lookup table with indexes to the hashlist
 
-CONST HASHFLAG_LABEL = 2
-CONST HASHFLAG_TYPE = 4
-CONST HASHFLAG_RESERVED = 8
-CONST HASHFLAG_OPERATOR = 16
-CONST HASHFLAG_CUSTOMSYNTAX = 32
-CONST HASHFLAG_SUB = 64
-CONST HASHFLAG_FUNCTION = 128
-CONST HASHFLAG_UDT = 256
-CONST HASHFLAG_UDTELEMENT = 512
-CONST HASHFLAG_CONSTANT = 1024
-CONST HASHFLAG_VARIABLE = 2048
-CONST HASHFLAG_ARRAY = 4096
-CONST HASHFLAG_XELEMENTNAME = 8192
-CONST HASHFLAG_XTYPENAME = 16384
-
-TYPE Label_Type
-    State AS _UNSIGNED _BYTE '0=label referenced, 1=label created
-    cn AS STRING * 256
-    Scope AS LONG
-    Data_Offset AS _INTEGER64 'offset within data
-    Data_Referenced AS _UNSIGNED _BYTE 'set to 1 if data is referenced (data_offset will be used to create the data offset variable)
-    Error_Line AS LONG 'the line number to reference on errors
-    Scope_Restriction AS LONG 'cannot exist inside this scope (post checked)
-END TYPE
 DIM SHARED nLabels, Labels_Ubound
 Labels_Ubound = 100
 REDIM SHARED Labels(1 TO Labels_Ubound) AS Label_Type
@@ -884,49 +985,6 @@ DIM SHARED udtetypesize(1000) AS LONG
 DIM SHARED udtearrayelements(1000) AS LONG
 DIM SHARED udtenext(1000) AS LONG
 
-TYPE idstruct
-
-    n AS STRING * 256 'name
-    cn AS STRING * 256 'case sensitive version of n
-
-    arraytype AS LONG 'similar to t
-    arrayelements AS INTEGER
-    staticarray AS INTEGER 'set for arrays declared in the main module with static elements
-
-    mayhave AS STRING * 8 'mayhave and musthave are exclusive of each other
-    musthave AS STRING * 8
-    t AS LONG 'type
-
-    tsize AS LONG
-
-
-    subfunc AS INTEGER 'if function=1, sub=2 (max 100 arguments)
-    internal_subfunc AS INTEGER
-
-    callname AS STRING * 256
-    ccall AS INTEGER
-    args AS INTEGER
-    arg AS STRING * 400 'similar to t
-    argsize AS STRING * 400 'similar to tsize (used for fixed length strings)
-    specialformat AS STRING * 256
-    secondargmustbe AS STRING * 256
-    secondargcantbe AS STRING * 256
-    ret AS LONG 'the value it returns if it is a function (again like t)
-
-    insubfunc AS STRING * 256
-    insubfuncn AS LONG
-
-    share AS INTEGER
-    nele AS STRING * 100
-    nelereq AS STRING * 100
-    linkid AS LONG
-    linkarg AS INTEGER
-    staticscope AS INTEGER
-    'For variables which are arguments passed to a sub/function
-    sfid AS LONG 'id number of variable's parent sub/function
-    sfarg AS INTEGER 'argument/parameter # within call (1=first)
-
-END TYPE
 
 DIM SHARED id AS idstruct
 
@@ -1231,7 +1289,7 @@ IF c = 9 THEN 'run
     END IF
 
     'hack! (a new message should be sent to the IDE stating C++ compilation was successful)
-    COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+    COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
 
     LOCATE idewy - 3, 2: PRINT "Starting program...";
     PCOPY 3, 0
@@ -1637,6 +1695,7 @@ IF idemode THEN GOTO ideret1
 lineinput3load sourcefile$
 
 DO
+
     wholeline$ = lineinput3$
     stevewashere:
 
@@ -1862,18 +1921,12 @@ DO
 
 
 
+
                         stevewashere2:
-
-
                         IF n >= 1 AND firstelement$ = "CONST" THEN
                             'l$ = "CONST"
                             'DEF... do not change type, the expression is stored in a suitable type
                             'based on its value if type isn't forced/specified
-
-
-
-
-
                             'convert periods to _046_
                             i2 = INSTR(a$, sp + "." + sp)
                             IF i2 THEN
@@ -1886,125 +1939,48 @@ DO
                                 firstelement$ = getelement(a$, 1): secondelement$ = getelement(a$, 2): thirdelement$ = getelement(a$, 3)
                             END IF
 
-
                             'Steve Tweak to add _RGB32 and _MATH support to CONST
                             'Our alteration to allow for multiple uses of RGB and RGBA inside a CONST //SMcNeill
                             altered = 0
-
-                            'Edit 02/23/2014 to add space between = and _ for statements like CONST x=_RGB(123,0,0) and stop us from gettting an error.
-                            DO
-                                l = INSTR(wholestv$, "=_")
-                                IF l THEN
-                                    wholestv$ = LEFT$(wholestv$, l) + " " + MID$(wholestv$, l + 1)
-                                END IF
-                            LOOP UNTIL l = 0
-                            'End of Edit on 02/23/2014
-
-                            DO
-                                finished = -1
-                                l = INSTR(l + 1, UCASE$(wholestv$), " _RGBA")
-                                IF l > 0 THEN
-                                    altered = -1
-                                    l$ = LEFT$(wholestv$, l - 1)
-                                    vp = INSTR(l, wholestv$, "(")
-                                    IF vp > 0 THEN
-                                        E = INSTR(vp + 1, wholestv$, ")")
-                                        IF E > 0 THEN
-                                            'get our 3 colors or 4 if we need RGBA values
-                                            first = INSTR(vp, wholestv$, ",")
-                                            second = INSTR(first + 1, wholestv$, ",")
-                                            third = INSTR(second + 1, wholestv$, ",")
-                                            fourth = INSTR(third + 1, wholestv$, ",") 'If we need RGBA we need this one as well
-                                            red$ = MID$(wholestv$, vp + 1, first - vp - 1)
-                                            green$ = MID$(wholestv$, first + 1, second - first - 1)
-                                            blue$ = MID$(wholestv$, second + 1, third - second - 1)
-                                            alpha$ = MID$(wholestv$, third + 1)
-                                            IF MID$(wholestv$, l + 6, 2) = "32" THEN
-                                                val$ = "32"
-                                            ELSE
-                                                val$ = MID$(wholestv$, fourth + 1)
-                                            END IF
-                                            SELECT CASE VAL(val$)
-                                                CASE 0, 1, 2, 7, 8, 9, 10, 11, 12, 13, 256
-                                                    wi& = _NEWIMAGE(240, 120, VAL(val$))
-                                                    clr~& = _RGBA(VAL(red$), VAL(green$), VAL(blue$), VAL(alpha$), wi&)
-                                                    _FREEIMAGE wi&
-                                                CASE 32
-                                                    clr~& = _RGBA32(VAL(red$), VAL(green$), VAL(blue$), VAL(alpha$))
-                                                CASE ELSE
-                                                    a$ = "Invalid Screen Mode.": GOTO errmes
-                                            END SELECT
-
-                                            wholestv$ = l$ + STR$(clr~&) + RIGHT$(wholestv$, LEN(wholestv$) - E)
-                                            finished = 0
-                                        ELSE
-                                            'no finishing bracket
-                                            a$ = ") Expected": GOTO errmes
-                                        END IF
-                                    ELSE
-                                        'no starting bracket
-                                        a$ = "( Expected": GOTO errmes
-                                    END IF
-                                END IF
-                            LOOP UNTIL finished
-
-                            DO
-                                finished = -1
-                                l = INSTR(l + 1, UCASE$(wholestv$), " _RGB")
-                                IF l > 0 THEN
-                                    altered = -1
-                                    l$ = LEFT$(wholestv$, l - 1)
-                                    vp = INSTR(l, wholestv$, "(")
-                                    IF vp > 0 THEN
-                                        E = INSTR(vp + 1, wholestv$, ")")
-                                        IF E > 0 THEN
-                                            first = INSTR(vp, wholestv$, ",")
-                                            second = INSTR(first + 1, wholestv$, ",")
-                                            third = INSTR(second + 1, wholestv$, ",")
-                                            red$ = MID$(wholestv$, vp + 1, first - vp - 1)
-                                            green$ = MID$(wholestv$, first + 1, second - first - 1)
-                                            blue$ = MID$(wholestv$, second + 1)
-                                            IF MID$(wholestv$, l + 5, 2) = "32" THEN
-                                                val$ = "32"
-                                            ELSE
-                                                val$ = MID$(wholestv$, third + 1)
-                                            END IF
-
-                                            SELECT CASE VAL(val$)
-                                                CASE 0, 1, 2, 7, 8, 9, 10, 11, 12, 13, 256
-                                                    wi& = _NEWIMAGE(240, 120, VAL(val$))
-                                                    clr~& = _RGB(VAL(red$), VAL(green$), VAL(blue$), wi&)
-                                                    _FREEIMAGE wi&
-                                                CASE 32
-                                                    clr~& = _RGB32(VAL(red$), VAL(green$), VAL(blue$))
-                                                CASE ELSE
-                                                    a$ = "Invalid Screen Mode.": GOTO errmes
-                                            END SELECT
-
-                                            wholestv$ = l$ + STR$(clr~&) + RIGHT$(wholestv$, LEN(wholestv$) - E)
-                                            finished = 0
-                                        ELSE
-                                            a$ = ") Expected": GOTO errmes
-                                        END IF
-                                    ELSE
-                                        a$ = "( Expected": GOTO errmes
-                                    END IF
-                                END IF
-                            LOOP UNTIL finished
-
-                            ' ### END OF STEVE EDIT FOR EXPANDED CONST SUPPORT ###
-
                             'New Edit by Steve on 02/23/2014 to add support for the new Math functions
 
                             l = 0: Emergency_Exit = 0 'A counter where if we're inside the same DO-Loop for more than 10,000 times, we assume it's an endless loop that didn't process properly and toss out an error message instead of locking up the program.
                             DO
                                 l = INSTR(l + 1, wholestv$, "=")
                                 IF l THEN
-                                    l2 = INSTR(l + 1, wholestv$, ",") 'Look for a comma after that
-                                    IF l2 = 0 THEN 'If there's no comma, then we're working to the end of the line
+                                    'look for first instance of a comma or a left parenthesis
+                                    comma = 0: paren = 0
+                                    FOR t = l + 1 TO LEN(wholestv$)
+                                        SELECT CASE MID$(wholestv$, t, 1)
+                                            CASE ",": l2 = t: comma = 1: EXIT FOR
+                                            CASE "(": l2 = t: paren = 1: EXIT FOR
+                                        END SELECT
+                                    NEXT
+                                    IF t >= LEN(wholestv$) THEN
+                                        'we went to the end of the line without any parenethis or commas
                                         l2 = LEN(wholestv$)
-                                    ELSE
-                                        l2 = l2 - 1 'else we only want to take what's before that comma and see if we can use it
+                                    ELSEIF comma THEN
+                                        'we found a comma before we found a parenthesis
+                                        'this would look something like CONST x = 3, y = 4
+                                        l2 = t - 1 'we only want to take what's before that comma and see if we can use it in our math substitution routines.
+                                    ELSEIF paren THEN
+                                        'we found a left parenthesis before we found a comma
+                                        'this might look like CONST Red = _RGB32(255,0,0), Green = _RGB32(0,255,0)
+                                        'now we move right, one step at a time, counting left parenthesis
+                                        'and subtracting right parenthesis
+                                        'until we reach 0,  and then we look for a comma after
+                                        FOR l2 = t + 1 TO LEN(wholestv$)
+                                            SELECT CASE MID$(wholestv$, l2, 1)
+                                                CASE "(": paren = paren + 1
+                                                CASE ")"
+                                                    paren = paren - 1
+                                                    IF paren < 0 THEN a$ = "Invalid Syntax -- Too many )": GOTO errmes
+                                                CASE ","
+                                                    IF paren = 0 THEN l2 = l2 - 1: EXIT FOR
+                                            END SELECT
+                                        NEXT
+                                        IF paren > 0 THEN a$ = "Invalid Syntax -- Too many (": GOTO errmes
+                                        IF l2 > LEN(wholestv$) THEN l2 = LEN(wholestv$)
                                     END IF
                                     temp$ = RTRIM$(LTRIM$(MID$(wholestv$, l + 1, l2 - l)))
                                     temp1$ = RTRIM$(LTRIM$(Evaluate_Expression$(temp$)))
@@ -2012,7 +1988,9 @@ DO
                                         'The math routine should have did its replacement for us.
                                         altered = -1
                                         wholestv$ = LEFT$(wholestv$, l) + temp1$ + MID$(wholestv$, l2 + 1)
+
                                     ELSE
+                                        'IF LEFT$(temp1$, 5) = "ERROR" THEN a$ = temp1$: GOTO errmes
                                         'We should leave it as it is and let the normal CONST routine handle things from here on out and see if it passes the rest of the error checks.
                                     END IF
                                     l = l + 1
@@ -2022,6 +2000,8 @@ DO
                             LOOP UNTIL l = 0
                             'End of Math Support Edit
 
+                            'Forced error message so we can get a diagnostic of what type of change we're making -- if any.
+                            'a$ = "EVAL TO:" + wholestv$: GOTO errmes
 
                             'Steve edit to update the CONST with the Math and _RGB functions
                             IF altered THEN
@@ -2031,11 +2011,6 @@ DO
                                 GOTO ideprepass
                             END IF
                             'End of Final Edits to CONST
-
-
-
-
-
 
                             IF n < 3 THEN a$ = "Expected CONST name = value/expression": GOTO errmes
                             i = 2
@@ -2214,14 +2189,14 @@ DO
 
 
                         'DEFINE
-                        d = 0
-                        IF firstelement$ = "DEFINT" THEN d = 1
-                        IF firstelement$ = "DEFLNG" THEN d = 1
-                        IF firstelement$ = "DEFSNG" THEN d = 1
-                        IF firstelement$ = "DEFDBL" THEN d = 1
-                        IF firstelement$ = "DEFSTR" THEN d = 1
-                        IF firstelement$ = "_DEFINE" THEN d = 1
-                        IF d THEN
+                        D = 0
+                        IF firstelement$ = "DEFINT" THEN D = 1
+                        IF firstelement$ = "DEFLNG" THEN D = 1
+                        IF firstelement$ = "DEFSNG" THEN D = 1
+                        IF firstelement$ = "DEFDBL" THEN D = 1
+                        IF firstelement$ = "DEFSTR" THEN D = 1
+                        IF firstelement$ = "_DEFINE" THEN D = 1
+                        IF D THEN
                             predefining = 1: GOTO predefine
                             predefined: predefining = 0
                             GOTO finishedlinepp
@@ -5054,7 +5029,7 @@ DO
             PRINT #12, "}else{"
             PRINT #12, "if (fornext_value" + u$ + ">fornext_finalvalue" + u$ + ") break;"
             PRINT #12, "}"
-            PRINT #12, "fornext_error" + u$ + ":"
+            PRINT #12, "fornext_error" + u$ + ":;"
 
             layoutdone = 1: IF LEN(layout$) THEN layout$ = layout$ + sp + l$ ELSE layout$ = l$
 
@@ -8791,6 +8766,7 @@ DO
 
                 IF firstelement$ = "WRITE" THEN 'write
                     xwrite ca$, n
+                    IF Error_Happened THEN GOTO errmes
                     GOTO finishedline
                 END IF '"write"
 
@@ -11230,6 +11206,9 @@ END IF 'updatehandle
 IF ConsoleMode THEN SYSTEM 1
 END 1
 
+'To modularize the QB64 source code, I decided to start out by extracting the existing SUBS and FUNCTIONS.
+'This is the FUNCTIONS, which normally appear in QB64.bas
+
 FUNCTION FileHasExtension (f$)
 FOR i = LEN(f$) TO 1 STEP -1
     a = ASC(f$, i)
@@ -11246,143 +11225,6 @@ FOR i = LEN(f$) TO 1 STEP -1
 NEXT
 RemoveFileExtension$ = f$
 END FUNCTION
-
-SUB ideASCIIbox
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-
-i = 0
-idepar p, 78, 13, "ASCII Character Chart"
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 13
-o(i).txt = idenewtxt("#OK")
-o(i).dft = 1
-
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    x1 = p.x + 1
-    y1 = p.y + 1
-    i = 0
-    FOR x = 0 TO 25
-        LOCATE y1, x1 + x * 3
-        COLOR 8, 7
-        IF x <> 0 THEN
-            PRINT str2$(x);
-            IF x < 10 THEN PRINT "-³"; ELSE PRINT "´";
-        ELSE
-            PRINT "  ³";
-        END IF
-        FOR y = 0 TO 9
-            LOCATE y1 + y + 1, x1 + x * 3
-            IF i <= 255 THEN
-                COLOR 8, 7: PRINT str2$(y);
-                COLOR 0, 7: PRINT CHR$(i);
-                COLOR 8, 7: PRINT "³";
-            ELSE
-                COLOR 8, 7: PRINT "  ³";
-            END IF
-            i = i + 1
-        NEXT
-    NEXT
-
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF K$ = CHR$(13) OR K$ = CHR$(27) OR (focus = 1 AND info <> 0) THEN
-        EXIT SUB
-    END IF
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-
-
-END FUNCTION
-
 
 FUNCTION idef1box$ (lnks$, lnks)
 
@@ -11503,11 +11345,7 @@ DO 'main loop
     mousedown = 0
     mouseup = 0
 LOOP
-
-
-
 END FUNCTION
-
 
 FUNCTION Back2BackName$ (a$)
 IF a$ = "Keyword Reference - Alphabetical" THEN Back2BackName$ = "Alphabetical": EXIT FUNCTION
@@ -11607,660 +11445,12 @@ LOOP UNTIL ABS(TIMER - t!) > 20
 CLOSE #c
 END FUNCTION
 
-SUB Help_AddTxt (t$, col, link)
-
-IF t$ = CHR$(13) THEN Help_NewLine: EXIT SUB
-
-FOR i = 1 TO LEN(t$)
-
-    c = ASC(t$, i)
-
-
-    IF Help_BG_Col = 0 AND Help_LockWrap = 0 THEN
-
-        'addtxt handles all wrapping issues
-        IF c = 32 THEN
-
-            IF Help_Pos = Help_ww THEN Help_NewLine: GOTO special
-
-            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 32
-            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = col + Help_BG_Col * 16
-            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link AND 255
-            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link \ 256
-
-            Help_Wrap_Pos = Help_Txt_Len 'pos to backtrack to when wrapping content
-            Help_Pos = Help_Pos + 1
-            GOTO special
-        END IF
-
-        IF Help_Pos > Help_ww THEN
-            IF Help_Wrap_Pos THEN 'attempt to wrap
-                'backtrack, insert new line, continue
-
-                b$ = MID$(Help_Txt$, Help_Wrap_Pos + 1, Help_Txt_Len - Help_Wrap_Pos)
-
-                Help_Txt_Len = Help_Wrap_Pos
-
-                Help_NewLine
-
-                MID$(Help_Txt$, Help_Txt_Len + 1, LEN(b$)) = b$: Help_Txt_Len = Help_Txt_Len + LEN(b$)
-
-                Help_Pos = Help_Pos + LEN(b$) \ 4
-            END IF
-        END IF
-
-    END IF 'bg_col=0
-
-    c = ASC(t$, i)
-    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = c
-    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = col + Help_BG_Col * 16
-    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link AND 255
-    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link \ 256
-
-    Help_Pos = Help_Pos + 1
-    special:
-NEXT
-
-END SUB
-
-SUB Help_NewLine
-IF Help_Pos > help_w THEN help_w = Help_Pos
-
-Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 13
-Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = col + Help_BG_Col * 16
-Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 0
-Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 0
-
-help_h = help_h + 1
-Help_Line$ = Help_Line$ + MKL$(Help_Txt_Len + 1)
-Help_Wrap_Pos = 0
-
-IF Help_Underline THEN
-    Help_Underline = 0
-    w = Help_Pos
-    Help_Pos = 1
-    Help_AddTxt STRING$(w - 1, 196), Help_Col, 0
-    Help_NewLine
-END IF
-Help_Pos = 1
-
-IF Help_NewLineIndent THEN
-    Help_AddTxt SPACE$(Help_NewLineIndent), Help_Col, 0
-END IF
-
-
-END SUB
-
-SUB Help_PreView
-
-OPEN "help_preview.txt" FOR OUTPUT AS #1
-FOR i = 1 TO LEN(Help_Txt$) STEP 4
-    c = ASC(Help_Txt$, i)
-    c$ = CHR$(c)
-    IF c = 13 THEN c$ = CHR$(13) + CHR$(10)
-    PRINT #1, c$;
-NEXT
-CLOSE #1
-
-CLS
-FOR i = 1 TO LEN(Help_Txt$) STEP 4
-    c = ASC(Help_Txt$, i)
-    col = ASC(Help_Txt$, i + 1)
-    IF c = 13 THEN
-        COLOR col AND 15, col \ 16
-        PRINT SPACE$(help_w - POS(0));
-        COLOR 15, 0
-        PRINT SPACE$(_WIDTH - POS(0) + 1);
-        COLOR col AND 15, col \ 16
-        SLEEP
-    ELSE
-        COLOR col AND 15, col \ 16
-        PRINT CHR$(c);
-    END IF
-NEXT
-END SUB
-
-
 FUNCTION Help_Col 'helps to calculate the default color
 col = Help_Col_Normal
 IF Help_Italic THEN col = Help_Col_Italic
 IF Help_Bold THEN col = Help_Col_Bold 'Note: Bold overrides italic
 Help_Col = col
 END FUNCTION
-
-
-
-SUB WikiParse (a$)
-'PRINT "Parsing...": _DISPLAY
-
-'wiki page interpret
-
-'clear info
-help_h = 0: help_w = 0: Help_Line$ = "": Help_Link$ = "": Help_LinkN = 0
-Help_Txt$ = SPACE$(1000000)
-Help_Txt_Len = 0
-
-Help_Pos = 1: Help_Wrap_Pos = 0
-Help_Line$ = MKL$(1)
-Help_LockWrap = 0
-Help_Bold = 0: Help_Italic = 0
-Help_Underline = 0
-Help_BG_Col = 0
-
-link = 0: elink = 0: cb = 0
-
-col = Help_Col
-
-'Syntax Notes:
-' '''=bold
-' ''=italic
-' {{macroname|macroparam}} or simply {{macroname}}
-'  eg. {{KW|PRINT}}=a key word, a link to a page
-'      {{Cl|PRINT}}=a key word in a code example, will be printed in bold and aqua
-'      {{Parameter|expression}}=a parameter, in italics
-'      {{PageSyntax}} {{PageDescription}} {{PageExamples}}
-'      {{CodeStart}} {{CodeEnd}} {{OutputStart}} {{OutputEnd}}
-'      {{PageSeeAlso}} {{PageNavigation}}
-' [[SPACE$]]=a link to wikipage called "SPACE$"
-' [[INTEGER|integer]]=a link, link's name is on left and text to appear is on right
-' *=a dot point
-' **=a sub(ie. further indented) dot point
-' &quot;=a quotation mark
-' :=indent (if beginning a new line)
-' CHR$(10)=new line character
-
-DIM c$(16)
-FOR ii = 1 TO 16
-    c$(ii) = SPACE$(ii)
-NEXT
-
-n = LEN(a$)
-i = 1
-DO WHILE i <= n
-
-    c = ASC(a$, i): c$ = CHR$(c)
-    FOR i1 = 1 TO 16
-        ii = i
-        FOR i2 = 1 TO i1
-            IF ii < n THEN
-                ASC(c$(i1), i2) = ASC(a$, ii)
-            ELSE
-                ASC(c$(i1), i2) = 32
-            END IF
-            ii = ii + 1
-        NEXT
-    NEXT
-
-    IF c = 38 THEN '"&"
-
-        s$ = "&lt;code&gt;": IF c$(LEN(s$)) = s$ THEN i = i + LEN(s$) - 1: GOTO Special
-        s$ = "&lt;/code&gt;": IF c$(LEN(s$)) = s$ THEN i = i + LEN(s$) - 1: GOTO Special
-
-        s$ = "&quot;"
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            c$ = CHR$(34): c = ASC(c$)
-            GOTO SpecialChr
-        END IF
-
-        s$ = "&amp;"
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            c$ = "&": c = ASC(c$)
-            GOTO SpecialChr
-        END IF
-
-        s$ = "&lt;center&gt;"
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            GOTO Special
-        END IF
-
-        s$ = "&lt;/center&gt;"
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            GOTO Special
-        END IF
-
-        s$ = "&lt;p style="
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            FOR ii = i TO LEN(a$) - 3
-                IF MID$(a$, ii, 4) = "&gt;" THEN i = ii + 3: EXIT FOR
-            NEXT
-            GOTO Special
-        END IF
-        s$ = "&lt;/p"
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            FOR ii = i TO LEN(a$) - 3
-                IF MID$(a$, ii, 4) = "&gt;" THEN i = ii + 3: EXIT FOR
-            NEXT
-            GOTO Special
-        END IF
-
-        s$ = "&gt;"
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            c$ = ">": c = ASC(c$)
-            GOTO SpecialChr
-        END IF
-        s$ = "&lt;"
-        IF c$(LEN(s$)) = s$ THEN
-            i = i + LEN(s$) - 1
-            c$ = "<": c = ASC(c$)
-            GOTO SpecialChr
-        END IF
-
-        IF c$(2) = CHR$(194) + CHR$(160) THEN 'some kind of white-space formatting unicode combo
-            i = i + 1
-            GOTO Special
-        END IF
-
-        SpecialChr:
-
-    END IF 'c=38 '"&"
-
-    'Links
-    IF c = 91 THEN '"["
-        IF c$(2) = "[[" AND link = 0 THEN
-            i = i + 1
-            link = 1
-            link$ = ""
-            GOTO Special
-        END IF
-    END IF
-    IF link = 1 THEN
-        IF c$(2) = "]]" OR c$(2) = "}}" THEN
-            i = i + 1
-            link = 0
-            text$ = link$
-            i2 = INSTR(link$, "|")
-            IF i2 THEN
-                text$ = RIGHT$(link$, LEN(link$) - i2)
-                link$ = LEFT$(link$, i2 - 1)
-            END IF
-
-            IF INSTR(link$, "#") THEN 'local page links not supported yet
-                Help_AddTxt text$, 8, 0
-                GOTO Special
-            END IF
-
-            Help_LinkN = Help_LinkN + 1
-            Help_Link$ = Help_Link$ + "PAGE:" + link$ + Help_Link_Sep$
-
-            IF Help_BG_Col = 0 THEN
-                Help_AddTxt text$, Help_Col_Link, Help_LinkN
-            ELSE
-                Help_AddTxt text$, Help_Col_Bold, Help_LinkN
-            END IF
-            GOTO Special
-        END IF
-        link$ = link$ + c$
-        GOTO Special
-    END IF
-
-
-    'External links
-    IF c = 91 THEN '"["
-        IF c$(6) = "[http:" AND elink = 0 THEN
-            elink = 2
-            elink$ = ""
-            GOTO Special
-        END IF
-    END IF
-    IF elink = 2 THEN
-        IF c$ = " " THEN
-            elink = 1
-            GOTO Special
-        END IF
-        elink$ = elink$ + c$
-        GOTO Special
-    END IF
-    IF elink >= 1 THEN
-        IF c$ = "]" THEN
-            elink = 0
-            elink$ = " " + elink$
-            Help_LockWrap = 1: Help_Wrap_Pos = 0
-            Help_AddTxt elink$, 8, 0
-            Help_LockWrap = 0
-            elink$ = ""
-            GOTO Special
-        END IF
-    END IF
-
-    IF c = 123 THEN '"{"
-        IF c$(5) = "{{KW|" THEN 'this is really a link!
-            i = i + 4
-            link = 1
-            link$ = ""
-            GOTO Special
-        END IF
-        IF c$(5) = "{{Cl|" THEN 'this is really a link too (in code example)
-            i = i + 4
-            link = 1
-            link$ = ""
-            GOTO Special
-        END IF
-        IF c$(2) = "{{" THEN
-            i = i + 1
-            cb = 1
-            cb$ = ""
-            GOTO Special
-        END IF
-    END IF
-
-    IF cb = 1 THEN
-        IF c$ = "|" OR c$(2) = "}}" THEN
-            IF c$(2) = "}}" THEN i = i + 1
-            cb = 0
-
-            IF cb$ = "PageSyntax" THEN Help_AddTxt "Syntax:" + CHR$(13), Help_Col_Section, 0
-            IF cb$ = "PageDescription" THEN Help_AddTxt "Descripton:" + CHR$(13), Help_Col_Section, 0
-            IF cb$ = "PageExamples" THEN Help_AddTxt "Code Examples:" + CHR$(13), Help_Col_Section, 0
-            IF cb$ = "PageSeeAlso" THEN Help_AddTxt "See also:" + CHR$(13), Help_Col_Section, 0
-
-            IF cb$ = "CodeStart" THEN
-                Help_NewLine
-                Help_BG_Col = 1
-                'Skip non-meaningful content before section begins
-                ws = 1
-                FOR ii = i + 1 TO LEN(a$)
-                    IF ASC(a$, ii) = 10 THEN EXIT FOR
-                    IF ASC(a$, ii) <> 32 AND ASC(a$, ii) <> 39 THEN ws = 0
-                NEXT
-                IF ws THEN i = ii
-            END IF
-            IF cb$ = "CodeEnd" THEN Help_BG_Col = 0
-            IF cb$ = "OutputStart" THEN
-                Help_NewLine
-                Help_BG_Col = 2
-                'Skip non-meaningful content before section begins
-                ws = 1
-                FOR ii = i + 1 TO LEN(a$)
-                    IF ASC(a$, ii) = 10 THEN EXIT FOR
-                    IF ASC(a$, ii) <> 32 AND ASC(a$, ii) <> 39 THEN ws = 0
-                NEXT
-                IF ws THEN i = ii
-            END IF
-            IF cb$ = "OutputEnd" THEN Help_BG_Col = 0
-
-            GOTO Special
-
-        END IF
-
-        cb$ = cb$ + c$ 'reading maro name
-        GOTO Special
-    END IF 'cb=1
-
-    IF c$(2) = "}}" THEN 'probably the end of a text section of macro'd text
-        i = i + 1
-        GOTO Special
-    END IF
-
-
-
-    IF c$(4) = " == " THEN
-        i = i + 3
-        Help_Underline = 1
-        GOTO Special
-    END IF
-    IF c$(3) = "== " THEN
-        i = i + 2
-        Help_Underline = 1
-        GOTO Special
-    END IF
-    IF c$(3) = " ==" THEN
-        i = i + 2
-        GOTO Special
-    END IF
-    IF c$(2) = "==" THEN
-        i = i + 1
-        Help_Underline = 1
-        GOTO Special
-    END IF
-
-
-    IF c$(3) = "'''" THEN
-        i = i + 2
-        IF Help_Bold = 0 THEN Help_Bold = 1 ELSE Help_Bold = 0
-        col = Help_Col
-        GOTO Special
-    END IF
-
-    IF c$(2) = "''" THEN
-        i = i + 1
-        IF Help_Italic = 0 THEN Help_Italic = 1 ELSE Help_Italic = 0
-        col = Help_Col
-        GOTO Special
-    END IF
-
-    IF nl = 1 THEN
-
-        IF c$(3) = "** " THEN
-            i = i + 2
-            Help_AddTxt "    þ ", col, 0
-            Help_NewLineIndent = Help_NewLineIndent + 6
-            GOTO Special
-        END IF
-        IF c$(2) = "* " THEN
-            i = i + 1
-            Help_AddTxt "þ ", col, 0
-            Help_NewLineIndent = Help_NewLineIndent + 2
-            GOTO Special
-        END IF
-        IF c$(2) = "**" THEN
-            i = i + 1
-            Help_AddTxt "    þ ", col, 0
-            Help_NewLineIndent = Help_NewLineIndent + 6
-            GOTO Special
-        END IF
-        IF c$ = "*" THEN
-            Help_AddTxt "þ ", col, 0
-            Help_NewLineIndent = Help_NewLineIndent + 2
-            GOTO Special
-        END IF
-
-    END IF
-
-    s$ = "{|"
-    IF c$(LEN(s$)) = s$ THEN
-        i = i + 1
-        FOR ii = i TO LEN(a$) - 1
-            IF MID$(a$, ii, 2) = "|}" THEN i = ii + 1: EXIT FOR
-        NEXT
-        GOTO Special
-    END IF
-
-    IF c$(3) = CHR$(226) + CHR$(128) + CHR$(166) THEN '...
-        i = i + 2
-        Help_AddTxt "...", col, 0
-        GOTO Special
-    END IF
-
-    IF c$ = CHR$(226) THEN 'UNICODE UTF8 extender "â", it's a very good bet the following 2 characters will be 2 bytes of UNICODE
-        i = i + 2
-        GOTO Special
-    END IF
-
-    IF c$ = ":" AND nl = 1 THEN
-        Help_AddTxt "    ", col, 0
-        Help_NewLineIndent = Help_NewLineIndent + 4
-        i = i + 1: GOTO special2
-    END IF
-
-    s$ = "__NOTOC__" + CHR$(10)
-    IF c$(LEN(s$)) = s$ THEN
-        i = i + LEN(s$) - 1
-        GOTO Special
-    END IF
-    s$ = "__NOTOC__"
-    IF c$(LEN(s$)) = s$ THEN
-        i = i + LEN(s$) - 1
-        GOTO Special
-    END IF
-
-    s$ = "&lt;div"
-    IF c$(LEN(s$)) = s$ THEN
-        i = i + LEN(s$) - 1
-        FOR ii = i TO LEN(a$) - 1
-            IF MID$(a$, ii, 12) = "&lt;/div&gt;" THEN i = ii + 11: EXIT FOR
-        NEXT
-        GOTO Special
-    END IF
-
-
-    IF c$(4) = "----" THEN
-        i = i + 3
-        Help_AddTxt "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", 8, 0
-        GOTO Special
-    END IF
-
-
-
-    IF c$ = CHR$(10) THEN
-        Help_NewLineIndent = 0
-
-        IF Help_Txt_Len >= 8 THEN
-            IF ASC(Help_Txt$, Help_Txt_Len - 3) = 13 AND ASC(Help_Txt$, Help_Txt_Len - 7) = 13 THEN GOTO skipdoubleblanks
-        END IF
-
-        Help_AddTxt CHR$(13), col, 0
-
-        skipdoubleblanks:
-        nl = 1
-        i = i + 1: GOTO special2
-    END IF
-
-    Help_AddTxt CHR$(c), col, 0
-
-    Special:
-    i = i + 1
-    nl = 0
-    special2:
-LOOP
-
-'Trim Help_Txt$
-Help_Txt$ = LEFT$(Help_Txt$, Help_Txt_Len) + CHR$(13) 'chr13 stops reads past end of content
-
-'generate preview file
-'OPEN "help_preview.txt" FOR OUTPUT AS #1
-'FOR i = 1 TO LEN(Help_Txt$) STEP 4
-'    c = ASC(Help_Txt$, i)
-'    c$ = CHR$(c)
-'    IF c = 13 THEN c$ = CHR$(13) + CHR$(10)
-'    PRINT #1, c$;
-'NEXT
-'CLOSE #1
-
-'PRINT "Finished parsing!": _DISPLAY
-
-
-IF Help_PageLoaded$ = "Keyword Reference - Alphabetical" THEN
-
-    fh = FREEFILE
-    OPEN "internal\help\links.bin" FOR OUTPUT AS #fh
-    a$ = SPACE$(1000)
-    FOR cy = 1 TO help_h
-        'isolate and REVERSE select link
-        l = CVL(MID$(Help_Line$, (cy - 1) * 4 + 1, 4))
-        x = l
-        x2 = 1
-        c = ASC(Help_Txt$, x)
-        oldlnk = 0
-        lnkx1 = 0: lnkx2 = 0
-        DO UNTIL c = 13
-            ASC(a$, x2) = c
-            lnk = CVI(MID$(Help_Txt$, x + 2, 2))
-            IF oldlnk = 0 AND lnk <> 0 THEN lnkx1 = x2
-            IF (lnk = 0 OR ASC(Help_Txt$, x + 4) = 13) AND lnkx1 <> 0 THEN
-                lnkx2 = x2: IF lnk = 0 THEN lnkx2 = lnkx2 - 1
-
-                IF lnkx1 <> 3 THEN GOTO ignorelink
-                IF ASC(a$, 1) <> 254 THEN GOTO ignorelink
-
-                'retrieve lnk info
-                lnk2 = lnk: IF lnk2 = 0 THEN lnk2 = oldlnk
-                l1 = 1
-                FOR lx = 1 TO lnk2 - 1
-                    l1 = INSTR(l1, Help_Link$, Help_Link_Sep$) + 1
-                NEXT
-                l2 = INSTR(l1, Help_Link$, Help_Link_Sep$) - 1
-                l$ = MID$(Help_Link$, l1, l2 - l1 + 1)
-                'assume PAGE
-                l$ = RIGHT$(l$, LEN(l$) - 5)
-
-                a2$ = MID$(a$, lnkx1, lnkx2 - lnkx1 + 1)
-
-                IF INSTR(a2$, "(") THEN a2$ = LEFT$(a2$, INSTR(a2$, "(") - 1)
-                IF INSTR(a2$, " ") THEN a2$ = LEFT$(a2$, INSTR(a2$, " ") - 1)
-                IF INSTR(a2$, "...") THEN
-                    a3$ = RIGHT$(a2$, LEN(a2$) - INSTR(a2$, "...") - 2)
-
-                    skip = 0
-                    FOR ci = 1 TO LEN(a3$)
-                        ca = ASC(a3$, ci)
-                        IF ca >= 97 AND ca <= 122 THEN skip = 1
-                        IF ca = 44 THEN skip = 1
-                    NEXT
-                    IF skip = 0 THEN PRINT #fh, a3$ + "," + l$
-
-                    a2$ = LEFT$(a2$, INSTR(a2$, "...") - 1)
-                END IF
-
-                skip = 0
-                FOR ci = 1 TO LEN(a2$)
-                    ca = ASC(a2$, ci)
-                    IF ca >= 97 AND ca <= 122 THEN skip = 1
-                    IF ca = 44 THEN skip = 1
-                NEXT
-                IF skip = 0 THEN PRINT #fh, a2$ + "," + l$
-                oa2$ = a2$
-
-                a2$ = l$
-                IF INSTR(a2$, "(") THEN a2$ = LEFT$(a2$, INSTR(a2$, "(") - 1)
-                IF INSTR(a2$, " ") THEN a2$ = LEFT$(a2$, INSTR(a2$, " ") - 1)
-                IF INSTR(a2$, "...") THEN
-                    a3$ = RIGHT$(a2$, LEN(a2$) - INSTR(a2$, "...") - 2)
-
-                    skip = 0
-                    FOR ci = 1 TO LEN(a3$)
-                        ca = ASC(a3$, ci)
-                        IF ca >= 97 AND ca <= 122 THEN skip = 1
-                        IF ca = 44 THEN skip = 1
-                    NEXT
-                    IF skip = 0 THEN PRINT #fh, a3$ + "," + l$
-
-                    a2$ = LEFT$(a2$, INSTR(a2$, "...") - 1)
-                END IF
-
-                skip = 0
-                FOR ci = 1 TO LEN(a2$)
-                    ca = ASC(a2$, ci)
-                    IF ca >= 97 AND ca <= 122 THEN skip = 1
-                    IF ca = 44 THEN skip = 1
-                NEXT
-                IF skip = 0 AND a2$ <> oa2$ THEN PRINT #fh, a2$ + "," + l$
-
-                ignorelink:
-
-                lnkx1 = 0: lnkx2 = 0
-            END IF
-            x = x + 4: c = ASC(Help_Txt$, x)
-            x2 = x2 + 1
-            oldlnk = lnk
-        LOOP
-    NEXT
-    CLOSE #fh
-
-END IF
-
-
-
-
-
-END SUB
-
 
 FUNCTION idesearchedbox$
 
@@ -12428,55 +11618,7 @@ DO 'main loop
     mousedown = 0
     mouseup = 0
 LOOP
-
-
-
 END FUNCTION
-
-
-SUB IdeImportBookmarks (f2$)
-IdeBmkN = 0
-f$ = crlf + f2$ + crlf
-fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$: CLOSE #fh
-x = INSTR(UCASE$(a$), UCASE$(f$))
-IF x THEN 'retrieve bookmark data
-    l = CVL(MID$(a$, x + LEN(f$), 4))
-    x1 = x + LEN(f$) + 4
-    d$ = MID$(a$, x1, l)
-    n = l \ 16
-    FOR i = 1 TO n
-        by = CVL(MID$(d$, (i - 1) * 16 + 1, 4))
-        bx = CVL(MID$(d$, (i - 1) * 16 + 1 + 4, 4))
-        IF by <= iden THEN
-            IdeBmkN = IdeBmkN + 1
-            IF IdeBmkN > UBOUND(IdeBmk) THEN x = UBOUND(IdeBmk) * 2: REDIM _PRESERVE IdeBmk(x) AS IdeBmkType
-            IdeBmk(IdeBmkN).y = by
-            IdeBmk(IdeBmkN).x = bx
-            IdeBmk(IdeBmkN).reserved = 0: IdeBmk(IdeBmkN).reserved2 = 0
-        END IF
-    NEXT
-END IF
-END SUB
-
-SUB IdeSaveBookmarks (f2$)
-f$ = crlf + f2$ + crlf
-fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$: CLOSE #fh
-x = INSTR(UCASE$(a$), UCASE$(f$))
-IF x THEN 'remove any old bookmark data
-    l = CVL(MID$(a$, x + LEN(f$), 4))
-    x2 = x + LEN(f$) + 4 + l - 1
-    a$ = LEFT$(a$, x - 1) + RIGHT$(a$, LEN(a$) - x2)
-END IF
-'add new bookmark data
-'build bookmark data
-d$ = ""
-FOR i = 1 TO IdeBmkN
-    d$ = d$ + MKL$(IdeBmk(i).y) + MKL$(IdeBmk(i).x) + MKL$(IdeBmk(i).reserved) + MKL$(IdeBmk(i).reserved2)
-NEXT
-a$ = f$ + MKL$(LEN(d$)) + d$ + a$
-fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR OUTPUT AS #fh: CLOSE #fh
-fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR BINARY AS #fh: PUT #fh, , a$: CLOSE #fh
-END SUB
 
 FUNCTION iderecentbox$
 
@@ -12619,74 +11761,7 @@ DO 'main loop
     mousedown = 0
     mouseup = 0
 LOOP
-
-
-
 END FUNCTION
-
-
-
-SUB IdeMakeFileMenu
-m = 1: i = 0
-menu$(m, i) = "File": i = i + 1
-menu$(m, i) = "#New": i = i + 1
-menu$(m, i) = "#Open...": i = i + 1
-menu$(m, i) = "#Save": i = i + 1
-menu$(m, i) = "Save #As...": i = i + 1
-fh = FREEFILE
-OPEN ".\internal\temp\recent.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$
-a$ = RIGHT$(a$, LEN(a$) - 2)
-FOR r = 1 TO 5
-    IF r <= 4 THEN IdeRecentLink(r, 1) = ""
-    ai = INSTR(a$, crlf)
-    IF ai THEN
-        IF r = 1 THEN menu$(m, i) = "-": i = i + 1
-        f$ = LEFT$(a$, ai - 1): IF ai = LEN(a$) - 1 THEN a$ = "" ELSE a$ = RIGHT$(a$, LEN(a$) - ai - 3)
-        IF r <= 4 THEN IdeRecentLink(r, 2) = f$
-        IF r = 5 THEN f$ = "#Recent..."
-        IF LEN(f$) > 25 THEN f$ = "úúú" + RIGHT$(f$, 22)
-        IF r <= 4 THEN IdeRecentLink(r, 1) = f$
-        menu$(m, i) = f$: i = i + 1
-    END IF
-NEXT
-CLOSE #fh
-IF os$ = "WIN" THEN
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "#Update": i = i + 1
-END IF
-menu$(m, i) = "-": i = i + 1
-menu$(m, i) = "E#xit": i = i + 1
-menusize(m) = i - 1
-END SUB
-
-SUB IdeAddRecent (f2$)
-f$ = crlf + f2$ + crlf
-fh = FREEFILE
-OPEN ".\internal\temp\recent.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$
-x = INSTR(UCASE$(a$), UCASE$(f$))
-IF x THEN
-    a$ = f$ + LEFT$(a$, x - 1) + RIGHT$(a$, LEN(a$) - (x + LEN(f$) - 1))
-ELSE
-    a$ = f$ + a$
-END IF
-PUT #fh, 1, a$
-CLOSE #fh
-IdeMakeFileMenu
-END SUB
-
-SUB IdeAddSearched (s2$)
-s$ = crlf + s2$ + crlf
-fh = FREEFILE
-OPEN ".\internal\temp\searched.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$
-x = INSTR(UCASE$(a$), UCASE$(s$))
-IF x THEN
-    a$ = s$ + LEFT$(a$, x - 1) + RIGHT$(a$, LEN(a$) - (x + LEN(s$) - 1))
-ELSE
-    a$ = s$ + a$
-END IF
-PUT #fh, 1, a$
-CLOSE #fh
-END SUB
 
 FUNCTION allocarray (n2$, elements$, elementsize)
 dimsharedlast = dimshared: dimshared = 0
@@ -13246,71 +12321,7 @@ gotarrayindex:
 r$ = idnumber$ + sp3 + r$
 arrayreference$ = r$
 'PRINT "arrayreference returning:" + r$
-
 END FUNCTION
-
-SUB assign (a$, n)
-FOR i = 1 TO n
-    c = ASC(getelement$(a$, i))
-    IF c = 40 THEN b = b + 1 '(
-    IF c = 41 THEN b = b - 1 ')
-    IF c = 61 AND b = 0 THEN '=
-        IF i = 1 THEN Give_Error "Expected ... =": EXIT SUB
-        IF i = n THEN Give_Error "Expected = ...": EXIT SUB
-
-        a2$ = fixoperationorder(getelements$(a$, 1, i - 1))
-        IF Error_Happened THEN EXIT SUB
-        l$ = tlayout$ + sp + "=" + sp
-
-        'note: evaluating a2$ will fail if it is setting a function's return value without this check (as the function, not the return-variable) will be found by evaluate)
-        IF i = 2 THEN 'lhs has only 1 element
-            try = findid(a2$)
-            IF Error_Happened THEN EXIT SUB
-            DO WHILE try
-                IF id.t THEN
-                    IF subfuncn = id.insubfuncn THEN 'avoid global before local
-                        IF (id.t AND ISUDT) = 0 THEN
-                            makeidrefer a2$, typ
-                            GOTO assignsimplevariable
-                        END IF
-                    END IF
-                END IF
-                IF try = 2 THEN findanotherid = 1: try = findid(a2$) ELSE try = 0
-                IF Error_Happened THEN EXIT SUB
-            LOOP
-        END IF
-
-        a2$ = evaluate$(a2$, typ): IF Error_Happened THEN EXIT SUB
-        assignsimplevariable:
-        IF (typ AND ISREFERENCE) = 0 THEN Give_Error "Expected variable =": EXIT SUB
-        setrefer a2$, typ, getelements$(a$, i + 1, n), 0
-        IF Error_Happened THEN EXIT SUB
-        tlayout$ = l$ + tlayout$
-
-        EXIT SUB
-
-    END IF '=,b=0
-NEXT
-Give_Error "Expected =": EXIT SUB
-END SUB
-
-SUB clearid
-id = cleariddata
-END SUB
-
-SUB closemain
-xend
-PRINT #12, "return NULL;"
-
-
-PRINT #12, "}"
-PRINT #15, "}" 'end case
-PRINT #15, "}"
-PRINT #15, "error(3);" 'no valid return possible
-
-closedmain = 1
-
-END SUB
 
 FUNCTION countelements (a$)
 n = numelements(a$)
@@ -17224,7 +16235,7 @@ IF targettyp = -7 THEN '? -> _MEM structure helper {offset, fullsize, typeval, e
             Give_Error "_MEM cannot reference variable-length strings": EXIT FUNCTION
         END IF
         t = 8
-        evaluatetotyp$ = "(ptrszint)" + e$ + "," + bytes$ + "," + str2(t) + "," + bytes$ + ",sf_mem_lock"
+        evaluatetotyp$ = "(ptrszint)" + e$ + "->chr," + bytes$ + "," + str2(t) + "," + bytes$ + ",sf_mem_lock"
         EXIT FUNCTION
     END IF
 
@@ -18558,8 +17569,6 @@ p = i + 1
 GOTO getelementspecialnext
 END FUNCTION
 
-
-
 FUNCTION getelement$ (a$, elenum)
 IF a$ = "" THEN EXIT FUNCTION 'no elements!
 
@@ -18604,40 +17613,6 @@ n = n + 1
 p = i + 1
 GOTO getelementsnext
 END FUNCTION
-
-SUB getid (i AS LONG)
-IF i = -1 THEN Give_Error "-1 passed to getid!": EXIT SUB
-
-id = ids(i)
-
-currentid = i
-END SUB
-
-SUB insertelements (a$, i, elements$)
-IF i = 0 THEN
-    IF a$ = "" THEN
-        a$ = elements$
-        EXIT SUB
-    END IF
-    a$ = elements$ + sp + a$
-    EXIT SUB
-END IF
-
-a2$ = ""
-n = numelements(a$)
-
-
-
-
-FOR i2 = 1 TO n
-    IF i2 > 1 THEN a2$ = a2$ + sp
-    a2$ = a2$ + getelement$(a$, i2)
-    IF i = i2 THEN a2$ = a2$ + sp + elements$
-NEXT
-
-a$ = a2$
-
-END SUB
 
 FUNCTION isnumber (a$)
 IF LEN(a$) = 0 THEN EXIT FUNCTION
@@ -19718,12 +18693,6 @@ lineformat$ = a2$
 
 END FUNCTION
 
-
-SUB makeidrefer (ref$, typ AS LONG)
-ref$ = str2$(currentid)
-typ = id.t + ISREFERENCE
-END SUB
-
 FUNCTION numelements (a$)
 IF a$ = "" THEN EXIT FUNCTION
 n = 1
@@ -19883,8 +18852,12 @@ IF id.arraytype THEN
 
     IF (typ AND ISSTRING) THEN
         IF (typ AND ISFIXEDLENGTH) THEN
-            offset$ = "&((uint8*)(" + n$ + "[0]))[(" + a$ + ")*" + str2(id.tsize) + "]"
-            r$ = "qbs_new_fixed(" + offset$ + "," + str2(id.tsize) + ",1)"
+            IF a$ = "0" THEN
+                r$ = "((uint8*)(" + n$ + "[0]))[(" + a$ + ")*" + str2(id.tsize) + "]"
+            ELSE
+                offset$ = "&((uint8*)(" + n$ + "[0]))[(" + a$ + ")*" + str2(id.tsize) + "]"
+                r$ = "qbs_new_fixed(" + offset$ + "," + str2(id.tsize) + ",1)"
+            END IF
         ELSE
             r$ = "((qbs*)(((uint64*)(" + n$ + "[0]))[" + a$ + "]))"
         END IF
@@ -19976,10 +18949,10430 @@ IF id.t THEN
     refer$ = r$
     EXIT FUNCTION
 END IF 'variable
+END FUNCTION
+
+FUNCTION symboltype (s$) 'returns type or 0(not a valid symbol)
+'note: sets symboltype_size for fixed length strings
+'created: 2011 (fast & comprehensive)
+IF LEN(s$) = 0 THEN EXIT FUNCTION
+'treat common cases first
+a = ASC(s$)
+l = LEN(s$)
+IF a = 37 THEN '%
+    IF l = 1 THEN symboltype = 16: EXIT FUNCTION
+    IF l > 2 THEN EXIT FUNCTION
+    IF ASC(s$, 2) = 37 THEN symboltype = 8: EXIT FUNCTION
+    IF ASC(s$, 2) = 38 THEN symboltype = OFFSETTYPE - ISPOINTER: EXIT FUNCTION '%&
+    EXIT FUNCTION
+END IF
+IF a = 38 THEN '&
+    IF l = 1 THEN symboltype = 32: EXIT FUNCTION
+    IF l > 2 THEN EXIT FUNCTION
+    IF ASC(s$, 2) = 38 THEN symboltype = 64: EXIT FUNCTION
+    EXIT FUNCTION
+END IF
+IF a = 33 THEN '!
+    IF l = 1 THEN symboltype = 32 + ISFLOAT: EXIT FUNCTION
+    EXIT FUNCTION
+END IF
+IF a = 35 THEN '#
+    IF l = 1 THEN symboltype = 64 + ISFLOAT: EXIT FUNCTION
+    IF l > 2 THEN EXIT FUNCTION
+    IF ASC(s$, 2) = 35 THEN symboltype = 64 + ISFLOAT: EXIT FUNCTION
+    EXIT FUNCTION
+END IF
+IF a = 36 THEN '$
+    IF l = 1 THEN symboltype = ISSTRING: EXIT FUNCTION
+    IF isuinteger(RIGHT$(s$, l - 1)) THEN
+        IF l >= (1 + 10) THEN
+            IF l > (1 + 10) THEN EXIT FUNCTION
+            IF s$ > "$2147483647" THEN EXIT FUNCTION
+        END IF
+        symboltype_size = VAL(RIGHT$(s$, l - 1))
+        symboltype = ISSTRING + ISFIXEDLENGTH
+        EXIT FUNCTION
+    END IF
+    EXIT FUNCTION
+END IF
+IF a = 96 THEN '`
+    IF l = 1 THEN symboltype = 1 + ISOFFSETINBITS: EXIT FUNCTION
+    IF isuinteger(RIGHT$(s$, l - 1)) THEN
+        IF l > 3 THEN EXIT FUNCTION
+        n = VAL(RIGHT$(s$, l - 1))
+        IF n > 56 THEN EXIT FUNCTION
+        symboltype = n + ISOFFSETINBITS: EXIT FUNCTION
+    END IF
+    EXIT FUNCTION
+END IF
+IF a = 126 THEN '~
+    IF l = 1 THEN EXIT FUNCTION
+    a = ASC(s$, 2)
+    IF a = 37 THEN '%
+        IF l = 2 THEN symboltype = 16 + ISUNSIGNED: EXIT FUNCTION
+        IF l > 3 THEN EXIT FUNCTION
+        IF ASC(s$, 3) = 37 THEN symboltype = 8 + ISUNSIGNED: EXIT FUNCTION
+        IF ASC(s$, 3) = 38 THEN symboltype = UOFFSETTYPE - ISPOINTER: EXIT FUNCTION '~%&
+        EXIT FUNCTION
+    END IF
+    IF a = 38 THEN '&
+        IF l = 2 THEN symboltype = 32 + ISUNSIGNED: EXIT FUNCTION
+        IF l > 3 THEN EXIT FUNCTION
+        IF ASC(s$, 3) = 38 THEN symboltype = 64 + ISUNSIGNED: EXIT FUNCTION
+        EXIT FUNCTION
+    END IF
+    IF a = 96 THEN '`
+        IF l = 2 THEN symboltype = 1 + ISOFFSETINBITS + ISUNSIGNED: EXIT FUNCTION
+        IF isuinteger(RIGHT$(s$, l - 2)) THEN
+            IF l > 4 THEN EXIT FUNCTION
+            n = VAL(RIGHT$(s$, l - 2))
+            IF n > 56 THEN EXIT FUNCTION
+            symboltype = n + ISOFFSETINBITS + ISUNSIGNED: EXIT FUNCTION
+        END IF
+        EXIT FUNCTION
+    END IF
+END IF '~
+END FUNCTION
+
+FUNCTION removesymbol$ (varname$)
+i = INSTR(varname$, "~"): IF i THEN GOTO foundsymbol
+i = INSTR(varname$, "`"): IF i THEN GOTO foundsymbol
+i = INSTR(varname$, "%"): IF i THEN GOTO foundsymbol
+i = INSTR(varname$, "&"): IF i THEN GOTO foundsymbol
+i = INSTR(varname$, "!"): IF i THEN GOTO foundsymbol
+i = INSTR(varname$, "#"): IF i THEN GOTO foundsymbol
+i = INSTR(varname$, "$"): IF i THEN GOTO foundsymbol
+EXIT FUNCTION
+foundsymbol:
+IF i = 1 THEN Give_Error "Expected variable name before symbol": EXIT FUNCTION
+symbol$ = RIGHT$(varname$, LEN(varname$) - i + 1)
+IF symboltype(symbol$) = 0 THEN Give_Error "Invalid symbol": EXIT FUNCTION
+removesymbol$ = symbol$
+varname$ = LEFT$(varname$, i - 1)
+END FUNCTION
+
+FUNCTION scope$
+IF id.share THEN scope$ = module$ + "__": EXIT FUNCTION
+scope$ = module$ + "_" + subfunc$ + "_"
+END FUNCTION
+
+FUNCTION seperateargs (a$, ca$, pass&)
+pass& = 0
+
+FOR i = 1 TO OptMax: separgs(i) = "": NEXT
+FOR i = 1 TO OptMax + 1: separgslayout(i) = "": NEXT
+FOR i = 1 TO OptMax
+    Lev(i) = 0
+    EntryLev(i) = 0
+    DitchLev(i) = 0
+    DontPass(i) = 0
+    TempList(i) = 0
+    PassRule(i) = 0
+    LevelEntered(i) = 0
+NEXT
+
+DIM id2 AS idstruct
+
+id2 = id
+
+IF id2.args = 0 THEN EXIT FUNCTION 'no arguments!
+
+
+s$ = id2.specialformat
+s$ = RTRIM$(s$)
+
+'build a special format if none exists
+IF s$ = "" THEN
+    FOR i = 1 TO id2.args
+        IF i <> 1 THEN s$ = s$ + ",?" ELSE s$ = "?"
+    NEXT
+END IF
+
+'note: dim'd arrays moved to global to prevent high recreation cost
+
+PassFlag = 1
+nextentrylevel = 0
+nextentrylevelset = 1
+level = 0
+lastt = 0
+ditchlevel = 0
+FOR i = 1 TO LEN(s$)
+    s2$ = MID$(s$, i, 1)
+
+    IF s2$ = "[" THEN
+        level = level + 1
+        LevelEntered(level) = 0
+        GOTO nextsymbol
+    END IF
+
+    IF s2$ = "]" THEN
+        level = level - 1
+        IF level < ditchlevel THEN ditchlevel = level
+        GOTO nextsymbol
+    END IF
+
+    IF s2$ = "{" THEN
+        lastt = lastt + 1: Lev(lastt) = level: PassRule(lastt) = 0
+        DitchLev(lastt) = ditchlevel: ditchlevel = level 'store & reset ditch level
+        i = i + 1
+        i2 = INSTR(i, s$, "}")
+        numopts = 0
+        nextopt:
+        numopts = numopts + 1
+        i3 = INSTR(i + 1, s$, "|")
+        IF i3 <> 0 AND i3 < i2 THEN
+            Opt(lastt, numopts) = MID$(s$, i, i3 - i)
+            i = i3 + 1: GOTO nextopt
+        END IF
+        Opt(lastt, numopts) = MID$(s$, i, i2 - i)
+        T(lastt) = numopts
+        'calculate words in each option
+        FOR x = 1 TO T(lastt)
+            w = 1
+            x2 = 1
+            newword:
+            IF INSTR(x2, RTRIM$(Opt(lastt, x)), " ") THEN w = w + 1: x2 = INSTR(x2, RTRIM$(Opt(lastt, x)), " ") + 1: GOTO newword
+            OptWords(lastt, x) = w
+        NEXT
+        i = i2
+
+        'set entry level routine
+        EntryLev(lastt) = level 'default level when continuing a previously entered level
+        IF LevelEntered(level) = 0 THEN
+            EntryLev(lastt) = 0
+            FOR i2 = 1 TO level - 1
+                IF LevelEntered(i2) = 1 THEN EntryLev(lastt) = i2
+            NEXT
+        END IF
+        LevelEntered(level) = 1
+
+        GOTO nextsymbol
+    END IF
+
+    IF s2$ = "?" THEN
+        lastt = lastt + 1: Lev(lastt) = level: PassRule(lastt) = 0
+        DitchLev(lastt) = ditchlevel: ditchlevel = level 'store & reset ditch level
+        T(lastt) = 0
+        'set entry level routine
+        EntryLev(lastt) = level 'default level when continuing a previously entered level
+        IF LevelEntered(level) = 0 THEN
+            EntryLev(lastt) = 0
+            FOR i2 = 1 TO level - 1
+                IF LevelEntered(i2) = 1 THEN EntryLev(lastt) = i2
+            NEXT
+        END IF
+        LevelEntered(level) = 1
+
+        GOTO nextsymbol
+    END IF
+
+    'assume "special" character (like ( ) , . - etc.)
+    lastt = lastt + 1: Lev(lastt) = level: PassRule(lastt) = 0
+    DitchLev(lastt) = ditchlevel: ditchlevel = level 'store & reset ditch level
+    T(lastt) = 1: Opt(lastt, 1) = s2$: OptWords(lastt, 1) = 1: DontPass(lastt) = 1
+
+    'set entry level routine
+    EntryLev(lastt) = level 'default level when continuing a previously entered level
+    IF LevelEntered(level) = 0 THEN
+        EntryLev(lastt) = 0
+        FOR i2 = 1 TO level - 1
+            IF LevelEntered(i2) = 1 THEN EntryLev(lastt) = i2
+        NEXT
+    END IF
+    LevelEntered(level) = 1
+
+    GOTO nextsymbol
+
+    nextsymbol:
+NEXT
+
+
+IF debug THEN
+    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #1:1--------"
+    FOR i = 1 TO lastt
+        PRINT #9, i, "OPT=" + CHR$(34) + RTRIM$(Opt(i, 1)) + CHR$(34)
+        PRINT #9, i, "OPTWORDS="; OptWords(i, 1)
+        PRINT #9, i, "T="; T(i)
+        PRINT #9, i, "DONTPASS="; DontPass(i)
+        PRINT #9, i, "PASSRULE="; PassRule(i)
+        PRINT #9, i, "LEV="; Lev(i)
+        PRINT #9, i, "ENTRYLEV="; EntryLev(i)
+    NEXT
+END IF
+
+
+'Any symbols already have dontpass() set to 1
+'This sets any {}blocks with only one option/word (eg. {PRINT}) at the lowest level to dontpass()=1
+'because their content is manadatory and there is no choice as to which word to use
+FOR x = 1 TO lastt
+    IF Lev(x) = 0 THEN
+        IF T(x) = 1 THEN DontPass(x) = 1
+    END IF
+NEXT
+
+IF debug THEN
+    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #1:2--------"
+    FOR i = 1 TO lastt
+        PRINT #9, i, "OPT=" + CHR$(34) + RTRIM$(Opt(i, 1)) + CHR$(34)
+        PRINT #9, i, "OPTWORDS="; OptWords(i, 1)
+        PRINT #9, i, "T="; T(i)
+        PRINT #9, i, "DONTPASS="; DontPass(i)
+        PRINT #9, i, "PASSRULE="; PassRule(i)
+        PRINT #9, i, "LEV="; Lev(i)
+        PRINT #9, i, "ENTRYLEV="; EntryLev(i)
+    NEXT
+END IF
+
+
+
+
+x1 = 0 'the 'x' position of the beginning element of the current levelled block
+MustPassOpt = 0 'the 'x' position of the FIRST opt () in the block which must be passed
+MustPassOptNeedsFlag = 0 '{}blocks don't need a flag, ? blocks do
+
+'Note: For something like [{HELLO}x] a choice between passing 'hello' or passing a flag to signify x was specified
+'      has to be made, in such cases, a flag is preferable to wasting a full new int32 on 'hello'
+
+templistn = 0
+FOR l = 1 TO 32767
+    scannextlevel = 0
+    FOR x = 1 TO lastt
+        IF Lev(x) > l THEN scannextlevel = 1
+
+        IF x1 THEN
+            IF EntryLev(x) < l THEN 'end of block reached
+                IF MustPassOpt THEN
+                    'If there's an opt () which must be passed that will be identified,
+                    'all the 1 option {}blocks can be assumed...
+                    IF MustPassOptNeedsFlag THEN
+                        'The MustPassOpt requires a flag, so use the same flag for everything
+                        FOR x2 = 1 TO templistn
+                            PassRule(TempList(x2)) = PassFlag
+                        NEXT
+                        PassFlag = PassFlag * 2
+                    ELSE
+                        'The MustPassOpt is a {}block which doesn't need a flag, so everything else needs to
+                        'reference it
+                        FOR x2 = 1 TO templistn
+                            IF TempList(x2) <> MustPassOpt THEN PassRule(TempList(x2)) = -MustPassOpt
+                        NEXT
+                    END IF
+                ELSE
+                    'if not, use a unique flag for everything in this block
+                    FOR x2 = 1 TO templistn: PassRule(TempList(x2)) = PassFlag: NEXT
+                    IF templistn <> 0 THEN PassFlag = PassFlag * 2
+                END IF
+                x1 = 0
+            END IF
+        END IF
+
+
+        IF Lev(x) = l THEN 'on same level
+            IF EntryLev(x) < l THEN 'just (re)entered this level (not continuing along it)
+                x1 = x 'set x1 to the starting element of this level
+                MustPassOpt = 0
+                templistn = 0
+            END IF
+        END IF
+
+        IF x1 THEN
+            IF Lev(x) = l THEN 'same level
+
+                IF T(x) <> 1 THEN
+                    'It isn't a symbol or a {}block with only one option therefore this opt () must be passed
+                    IF MustPassOpt = 0 THEN
+                        MustPassOpt = x 'Only record the first instance (it MAY require a flag)
+                        IF T(x) = 0 THEN MustPassOptNeedsFlag = 1 ELSE MustPassOptNeedsFlag = 0
+                    ELSE
+                        'Update current MustPassOpt to non-flag-based {}block if possible (to save flag usage)
+                        '(Consider [{A|B}?], where a flag is not required)
+                        IF MustPassOptNeedsFlag = 1 THEN
+                            IF T(x) > 1 THEN
+                                MustPassOpt = x: MustPassOptNeedsFlag = 0
+                            END IF
+                        END IF
+                    END IF
+                    'add to list
+                    templistn = templistn + 1: TempList(templistn) = x
+                END IF
+
+                IF T(x) = 1 THEN
+                    'It is a symbol or a {}block with only one option
+                    'a {}block with only one option MAY not need to be passed
+                    'depending on if anything else is in this block could make the existance of this opt () assumed
+                    'Note: Symbols which are not encapsulated inside a {}block never need to be passed
+                    '      Symbols already have dontpass() set to 1
+                    IF DontPass(x) = 0 THEN templistn = templistn + 1: TempList(templistn) = x: DontPass(x) = 1
+                END IF
+
+            END IF
+        END IF
+
+    NEXT
+
+    'scan last run (mostly just a copy of code from above)
+    IF x1 THEN
+        IF MustPassOpt THEN
+            'If there's an opt () which must be passed that will be identified,
+            'all the 1 option {}blocks can be assumed...
+            IF MustPassOptNeedsFlag THEN
+                'The MustPassOpt requires a flag, so use the same flag for everything
+                FOR x2 = 1 TO templistn
+                    PassRule(TempList(x2)) = PassFlag
+                NEXT
+                PassFlag = PassFlag * 2
+            ELSE
+                'The MustPassOpt is a {}block which doesn't need a flag, so everything else needs to
+                'reference it
+                FOR x2 = 1 TO templistn
+                    IF TempList(x2) <> MustPassOpt THEN PassRule(TempList(x2)) = -MustPassOpt
+                NEXT
+            END IF
+        ELSE
+            'if not, use a unique flag for everything in this block
+            FOR x2 = 1 TO templistn: PassRule(TempList(x2)) = PassFlag: NEXT
+            IF templistn <> 0 THEN PassFlag = PassFlag * 2
+        END IF
+        x1 = 0
+    END IF
+
+    IF scannextlevel = 0 THEN EXIT FOR
+NEXT
+
+IF debug THEN
+    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #1:3--------"
+    FOR i = 1 TO lastt
+        PRINT #9, i, "OPT=" + CHR$(34) + RTRIM$(Opt(i, 1)) + CHR$(34)
+        PRINT #9, i, "OPTWORDS="; OptWords(i, 1)
+        PRINT #9, i, "T="; T(i)
+        PRINT #9, i, "DONTPASS="; DontPass(i)
+        PRINT #9, i, "PASSRULE="; PassRule(i)
+        PRINT #9, i, "LEV="; Lev(i)
+        PRINT #9, i, "ENTRYLEV="; EntryLev(i)
+    NEXT
+END IF
+
+
+
+FOR i = 1 TO lastt: separgs(i) = "null": NEXT
+
+
+
+
+'Consider: "?,[?]"
+'Notes: The comma is mandatory but the second ? is entirely optional
+'Consider: "[?[{B}?]{A}]?"
+'Notes: As unlikely as the above is, it is still valid, but pivots on the outcome of {A} being present
+'Consider: "[?]{A}"
+'Consider: "[?{A}][?{B}][?{C}]?"
+'Notes: The trick here is to realize {A} has greater priority than {B}, so all lines of enquiry must
+'       be exhausted before considering {B}
+
+'Use inquiry approach to solve format
+'Each line of inquiry must be exhausted
+'An expression ("?") simply means a branch where you can scan ahead
+
+Branches = 0
+DIM BranchFormatPos(1 TO 100) AS LONG
+DIM BranchTaken(1 TO 100) AS LONG
+'1=taken (this usually involves moving up a level)
+'0=not taken
+DIM BranchInputPos(1 TO 100) AS LONG
+DIM BranchWithExpression(1 TO 100) AS LONG
+'non-zero=expression expected before next item for format item value represents
+'0=no expression allowed before next item
+DIM BranchLevel(1 TO 100) AS LONG 'Level before this branch was/wasn't taken
+
+n = numelements(ca$)
+i = 1 'Position within ca$
+
+level = 0
+Expression = 0
+FOR x = 1 TO lastt
+
+    ContinueScan:
+
+    IF DitchLev(x) < level THEN 'dropping down to a lower level
+        'we can only go as low as the 'ditch' will allow us, which will limit our options
+        level = DitchLev(x)
+    END IF
+
+    IF EntryLev(x) <= level THEN 'possible to enter level
+
+        'But was this optional or were we forced to be on this level?
+        IF EntryLev(x) < Lev(x) THEN
+            optional = 1
+            IF level > EntryLev(x) THEN optional = 0
+        ELSE
+            'entrylev=lev
+            optional = 0
+        END IF
+
+        t = T(x)
+
+        IF t = 0 THEN 'A "?" expression
+            IF Expression THEN
+                '*********backtrack************
+                'We are tracking an expression which we assumed would be present but was not
+                GOTO Backtrack
+                '******************************
+            END IF
+            IF optional THEN
+                Branches = Branches + 1
+                BranchFormatPos(Branches) = x
+                BranchTaken(Branches) = 1
+                BranchInputPos(Branches) = i
+                BranchWithExpression(Branches) = 0
+                BranchLevel(Branches) = level
+                level = Lev(x)
+            END IF
+            Expression = x
+        END IF 'A "?" expression
+
+        IF t THEN
+
+            currentlev = level
+
+            'Add new branch if new level will be entered
+            IF optional THEN
+                Branches = Branches + 1
+                BranchFormatPos(Branches) = x
+                BranchTaken(Branches) = 1
+                BranchInputPos(Branches) = i
+                BranchWithExpression(Branches) = Expression
+                BranchLevel(Branches) = level
+            END IF
+
+            'Scan for Opt () options
+            i1 = i: i2 = i
+            IF Expression THEN i2 = n
+            'Scan a$ for opt () x
+            'Note: Finding the closest opt option is necessary
+            'Note: This needs to be bracket sensitive
+            OutOfRange = 2147483647
+            position = OutOfRange
+            which = 0
+            IF i <= n THEN 'Past end of contect check
+                FOR o = 1 TO t
+                    words = OptWords(x, o)
+                    b = 0
+                    FOR i3 = i1 TO i2
+                        IF i3 + words - 1 <= n THEN 'enough elements exist
+                            c$ = getelement$(a$, i3)
+                            IF b = 0 THEN
+                                'Build comparison string (spacing elements)
+                                FOR w = 2 TO words
+                                    c$ = c$ + " " + getelement$(a$, i3 + w - 1)
+                                NEXT w
+                                'Compare
+                                IF c$ = RTRIM$(Opt(x, o)) THEN
+                                    'Record Match
+                                    IF i3 < position THEN
+                                        position = i3
+                                        which = o
+                                        bvalue = b
+                                        EXIT FOR 'Exit the i3 loop
+                                    END IF 'position check
+                                END IF 'match
+                            END IF
+
+                            IF ASC(c$) = 44 AND b = 0 THEN
+                                EXIT FOR 'Expressions cannot contain a "," in their base level
+                                'Because this wasn't interceppted by the above code it isn't the Opt either
+                            END IF
+                            IF ASC(c$) = 40 THEN
+                                b = b + 1
+                            END IF
+                            IF ASC(c$) = 41 THEN
+                                b = b - 1
+                                IF b = -1 THEN EXIT FOR 'Exited current bracketting level, making any following match invalid
+                            END IF
+
+                        END IF 'enough elements exist
+                    NEXT i3
+                NEXT o
+            END IF 'Past end of contect check
+
+            IF position <> OutOfRange THEN 'Found?
+                'Found...
+                level = Lev(x) 'Adjust level
+                IF Expression THEN
+                    'Found...Expression...
+                    'Has an expression been provided?
+                    IF position > i AND bvalue = 0 THEN
+                        'Found...Expression...Provided...
+                        separgs(Expression) = getelements$(ca$, i, position - 1)
+                        Expression = 0
+                        i = position
+                    ELSE
+                        'Found...Expression...Omitted...
+                        '*********backtrack************
+                        GOTO OptCheckBacktrack
+                        '******************************
+                    END IF
+                END IF 'Expression
+                i = i + OptWords(x, which)
+                separgslayout(x) = CHR$(LEN(RTRIM$(Opt(x, which)))) + RTRIM$(Opt(x, which))
+                separgs(x) = CHR$(0) + str2(which)
+            ELSE
+                'Not Found...
+                '*********backtrack************
+                OptCheckBacktrack:
+                'Was this optional?
+                IF Lev(x) > EntryLev(x) THEN 'Optional Opt ()?
+                    'Not Found...Optional...
+                    'Simply don't enter the optional higher level and continue as normal
+                    BranchTaken(Branches) = 0
+                    level = currentlev 'We aren't entering the level after all, so our level should remain at the opt's entrylevel
+                ELSE
+                    Backtrack:
+                    'Not Found...Mandatory...
+                    '1)Erase previous branches where both options have been tried
+                    FOR branch = Branches TO 1 STEP -1 'Remove branches until last taken branch is found
+                        IF BranchTaken(branch) THEN EXIT FOR
+                        Branches = Branches - 1 'Remove branch (it has already been tried with both possible combinations)
+                    NEXT
+                    IF Branches = 0 THEN 'All options have been exhausted
+                        seperateargs_error = 1
+                        seperateargs_error_message = "Syntax error"
+                        EXIT FUNCTION
+                    END IF
+                    '2)Toggle taken branch to untaken and revert
+                    BranchTaken(Branches) = 0 'toggle branch to untaken
+                    Expression = BranchWithExpression(Branches)
+                    i = BranchInputPos(Branches)
+                    x = BranchFormatPos(Branches)
+                    level = BranchLevel(Branches)
+                    '3)Erase any content created after revert position
+                    IF Expression THEN separgs(Expression) = "null"
+                    FOR x2 = x TO lastt
+                        separgs(x2) = "null"
+                        separgslayout(x2) = ""
+                    NEXT
+                END IF 'Optional Opt ()?
+                '******************************
+
+            END IF 'Found?
+
+        END IF 't
+
+    END IF 'possible to enter level
+
+NEXT x
+
+'Final expression?
+IF Expression THEN
+    IF i <= n THEN
+        separgs(Expression) = getelements$(ca$, i, n)
+
+        'can this be an expression?
+        'check it passes bracketting and comma rules
+        b = 0
+        FOR i2 = i TO n
+            c$ = getelement$(a$, i2)
+            IF ASC(c$) = 44 AND b = 0 THEN
+                GOTO Backtrack
+            END IF
+            IF ASC(c$) = 40 THEN
+                b = b + 1
+            END IF
+            IF ASC(c$) = 41 THEN
+                b = b - 1
+                IF b = -1 THEN GOTO Backtrack
+            END IF
+        NEXT
+        IF b <> 0 THEN GOTO Backtrack
+
+        i = n + 1 'So it passes the test below
+    ELSE
+        GOTO Backtrack
+    END IF
+END IF 'Expression
+
+IF i <> n + 1 THEN GOTO Backtrack 'Trailing content?
+
+IF debug THEN
+    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #2--------"
+    FOR i = 1 TO lastt
+        PRINT #9, i, separgs(i)
+    NEXT
+END IF
+
+'   DIM PassRule(1 TO 100) AS LONG
+'   '0 means no pass rule
+'   'negative values refer to an opt () element
+'   'positive values refer to a flag value
+'   PassFlag = 1
+
+
+IF PassFlag <> 1 THEN seperateargs = 1 'Return whether a 'passed' flags variable is required
+pass& = 0 'The 'passed' value (shared by argument reference)
+
+'Note: The separgs() elements will be compacted to the C++ function arguments
+x = 1 'The new index to move compacted content to within separgs()
+
+FOR i = 1 TO lastt
+
+    IF DontPass(i) = 0 THEN
+
+        IF PassRule(i) > 0 THEN
+            IF separgs(i) <> "null" THEN pass& = pass& OR PassRule(i) 'build 'passed' flags
+        END IF
+
+        separgs(x) = separgs(i)
+        separgslayout(x) = separgslayout(i)
+
+        IF LEN(separgs(x)) THEN
+            IF ASC(separgs(x)) = 0 THEN
+                'switch omit layout tag from item to layout info
+                separgs(x) = RIGHT$(separgs(x), LEN(separgs(x)) - 1)
+                separgslayout(x) = separgslayout(x) + CHR$(0)
+            END IF
+        END IF
+
+        IF separgs(x) = "null" THEN separgs(x) = "NULL"
+        x = x + 1
+
+    ELSE
+        'its gonna be skipped!
+        'add layout to the next one to be safe
+
+        'for syntax such as [{HELLO}] which uses a flag instead of being passed
+        IF PassRule(i) > 0 THEN
+            IF separgs(i) <> "null" THEN pass& = pass& OR PassRule(i) 'build 'passed' flags
+        END IF
+
+        separgslayout(i + 1) = separgslayout(i) + separgslayout(i + 1)
+
+    END IF
+NEXT
+separgslayout(x) = separgslayout(i) 'set final layout
+
+'x = x - 1
+'PRINT "total arguments:"; x
+'PRINT "pass omit (0/1):"; omit
+'PRINT "pass&="; pass&
+END FUNCTION
+
+FUNCTION str2$ (v AS LONG)
+str2$ = LTRIM$(RTRIM$(STR$(v)))
+END FUNCTION
+
+FUNCTION str2u64$ (v~&&)
+str2u64$ = LTRIM$(RTRIM$(STR$(v~&&)))
+END FUNCTION
+
+FUNCTION str2i64$ (v&&)
+str2i64$ = LTRIM$(RTRIM$(STR$(v&&)))
+END FUNCTION
+
+FUNCTION typ2ctyp$ (t AS LONG, tstr AS STRING)
+ctyp$ = ""
+'typ can be passed as either: (the unused value is ignored)
+'i. as a typ value in t
+'ii. as a typ symbol (eg. "~%") in tstr
+'iii. as a typ name (eg. _UNSIGNED INTEGER) in tstr
+IF tstr$ = "" THEN
+    IF (t AND ISARRAY) THEN EXIT FUNCTION 'cannot return array types
+    IF (t AND ISSTRING) THEN typ2ctyp$ = "qbs": EXIT FUNCTION
+    b = t AND 511
+    IF (t AND ISUDT) THEN typ2ctyp$ = "void": EXIT FUNCTION
+    IF (t AND ISOFFSETINBITS) THEN
+        IF b <= 32 THEN ctyp$ = "int32" ELSE ctyp$ = "int64"
+        IF (t AND ISUNSIGNED) THEN ctyp$ = "u" + ctyp$
+        typ2ctyp$ = ctyp$: EXIT FUNCTION
+    END IF
+    IF (t AND ISFLOAT) THEN
+        IF b = 32 THEN ctyp$ = "float"
+        IF b = 64 THEN ctyp$ = "double"
+        IF b = 256 THEN ctyp$ = "long double"
+    ELSE
+        IF b = 8 THEN ctyp$ = "int8"
+        IF b = 16 THEN ctyp$ = "int16"
+        IF b = 32 THEN ctyp$ = "int32"
+        IF b = 64 THEN ctyp$ = "int64"
+        IF typ AND ISOFFSET THEN ctyp$ = "ptrszint"
+        IF (t AND ISUNSIGNED) THEN ctyp$ = "u" + ctyp$
+    END IF
+    IF t AND ISOFFSET THEN
+        ctyp$ = "ptrszint": IF (t AND ISUNSIGNED) THEN ctyp$ = "uptrszint"
+    END IF
+    typ2ctyp$ = ctyp$: EXIT FUNCTION
+END IF
+
+ts$ = tstr$
+'is ts$ a symbol?
+IF ts$ = "$" THEN ctyp$ = "qbs"
+IF ts$ = "!" THEN ctyp$ = "float"
+IF ts$ = "#" THEN ctyp$ = "double"
+IF ts$ = "##" THEN ctyp$ = "long double"
+IF LEFT$(ts$, 1) = "~" THEN unsgn = 1: ts$ = RIGHT$(ts$, LEN(ts$) - 1)
+IF LEFT$(ts$, 1) = "`" THEN
+    n$ = RIGHT$(ts$, LEN(ts$) - 1)
+    b = 1
+    IF n$ <> "" THEN
+        IF isuinteger(n$) = 0 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
+        b = VAL(n$)
+        IF b > 57 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
+    END IF
+    IF b <= 32 THEN ctyp$ = "int32" ELSE ctyp$ = "int64"
+    IF unsgn THEN ctyp$ = "u" + ctyp$
+    typ2ctyp$ = ctyp$: EXIT FUNCTION
+END IF
+IF ts$ = "%&" THEN
+    typ2ctyp$ = "ptrszint": IF (t AND ISUNSIGNED) THEN typ2ctyp$ = "uptrszint"
+    EXIT FUNCTION
+END IF
+IF ts$ = "%%" THEN ctyp$ = "int8"
+IF ts$ = "%" THEN ctyp$ = "int16"
+IF ts$ = "&" THEN ctyp$ = "int32"
+IF ts$ = "&&" THEN ctyp$ = "int64"
+IF ctyp$ <> "" THEN
+    IF unsgn THEN ctyp$ = "u" + ctyp$
+    typ2ctyp$ = ctyp$: EXIT FUNCTION
+END IF
+'is tstr$ a named type? (eg. 'LONG')
+s$ = type2symbol$(tstr$)
+IF Error_Happened THEN EXIT FUNCTION
+IF LEN(s$) THEN
+    typ2ctyp$ = typ2ctyp$(0, s$)
+    IF Error_Happened THEN EXIT FUNCTION
+    EXIT FUNCTION
+END IF
+
+Give_Error "Invalid type": EXIT FUNCTION
+
+END FUNCTION
+
+FUNCTION type2symbol$ (typ$)
+t$ = typ$
+FOR i = 1 TO LEN(t$)
+    IF MID$(t$, i, 1) = sp THEN MID$(t$, i, 1) = " "
+NEXT
+e$ = "Cannot convert type (" + typ$ + ") to symbol"
+t2$ = "_UNSIGNED _BIT": s$ = "~`1": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_UNSIGNED _BYTE": s$ = "~%%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_UNSIGNED INTEGER": s$ = "~%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_UNSIGNED LONG": s$ = "~&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_UNSIGNED _INTEGER64": s$ = "~&&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_UNSIGNED _OFFSET": s$ = "~%&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_BIT": s$ = "`1": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_BYTE": s$ = "%%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "INTEGER": s$ = "%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "LONG": s$ = "&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_INTEGER64": s$ = "&&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_OFFSET": s$ = "%&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "SINGLE": s$ = "!": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "DOUBLE": s$ = "#": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "_FLOAT": s$ = "##": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+t2$ = "STRING": s$ = "$": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
+Give_Error e$: EXIT FUNCTION
+t2sfound:
+type2symbol$ = s$
+IF LEN(t2$) <> LEN(t$) THEN
+    IF s$ <> "$" AND s$ <> "~`1" AND s$ <> "`1" THEN Give_Error e$: EXIT FUNCTION
+    t$ = RIGHT$(t$, LEN(t$) - LEN(t2$))
+    IF LEFT$(t$, 3) <> " * " THEN Give_Error e$: EXIT FUNCTION
+    t$ = RIGHT$(t$, LEN(t$) - 3)
+    IF isuinteger(t$) = 0 THEN Give_Error e$: EXIT FUNCTION
+    v = VAL(t$)
+    IF v = 0 THEN Give_Error e$: EXIT FUNCTION
+    IF s$ <> "$" AND v > 56 THEN Give_Error e$: EXIT FUNCTION
+    IF s$ = "$" THEN
+        s$ = s$ + str2$(v)
+    ELSE
+        s$ = LEFT$(s$, LEN(s$) - 1) + str2$(v)
+    END IF
+    type2symbol$ = s$
+END IF
+END FUNCTION
+
+'Strips away bits/indentifiers which make locating a variables source difficult
+FUNCTION typecomp (typ)
+typ2 = typ
+IF (typ2 AND ISINCONVENTIONALMEMORY) THEN typ2 = typ2 - ISINCONVENTIONALMEMORY
+typecomp = typ2
+END FUNCTION
+
+FUNCTION typname2typ& (t2$)
+typname2typsize = 0 'the default
+
+t$ = t2$
+
+'symbol?
+ts$ = t$
+IF ts$ = "$" THEN typname2typ& = STRINGTYPE: EXIT FUNCTION
+IF ts$ = "!" THEN typname2typ& = SINGLETYPE: EXIT FUNCTION
+IF ts$ = "#" THEN typname2typ& = DOUBLETYPE: EXIT FUNCTION
+IF ts$ = "##" THEN typname2typ& = FLOATTYPE: EXIT FUNCTION
+
+'fixed length string?
+IF LEFT$(ts$, 1) = "$" THEN
+    n$ = RIGHT$(ts$, LEN(ts$) - 1)
+    IF isuinteger(n$) = 0 THEN Give_Error "Invalid index after STRING * type": EXIT FUNCTION
+    b = VAL(n$)
+    IF b = 0 THEN Give_Error "Invalid index after STRING * type": EXIT FUNCTION
+    typname2typsize = b
+    typname2typ& = STRINGTYPE + ISFIXEDLENGTH
+    EXIT FUNCTION
+END IF
+
+'unsigned?
+IF LEFT$(ts$, 1) = "~" THEN unsgn = 1: ts$ = RIGHT$(ts$, LEN(ts$) - 1)
+
+'bit-type?
+IF LEFT$(ts$, 1) = "`" THEN
+    n$ = RIGHT$(ts$, LEN(ts$) - 1)
+    b = 1
+    IF n$ <> "" THEN
+        IF isuinteger(n$) = 0 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
+        b = VAL(n$)
+        IF b > 56 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
+    END IF
+    IF unsgn THEN typname2typ& = UBITTYPE + (b - 1) ELSE typname2typ& = BITTYPE + (b - 1)
+    EXIT FUNCTION
+END IF
+
+t = 0
+IF ts$ = "%%" THEN t = BYTETYPE
+IF ts$ = "%" THEN t = INTEGERTYPE
+IF ts$ = "&" THEN t = LONGTYPE
+IF ts$ = "&&" THEN t = INTEGER64TYPE
+IF ts$ = "%&" THEN t = OFFSETTYPE
+
+IF t THEN
+    IF unsgn THEN t = t + ISUNSIGNED
+    typname2typ& = t: EXIT FUNCTION
+END IF
+'not a valid symbol
+
+'type name?
+FOR i = 1 TO LEN(t$)
+    IF MID$(t$, i, 1) = sp THEN MID$(t$, i, 1) = " "
+NEXT
+IF t$ = "STRING" THEN typname2typ& = STRINGTYPE: EXIT FUNCTION
+
+IF LEFT$(t$, 9) = "STRING * " THEN
+
+    n$ = RIGHT$(t$, LEN(t$) - 9)
+
+    'constant check 2011
+    hashfound = 0
+    hashname$ = n$
+    hashchkflags = HASHFLAG_CONSTANT
+    hashres = HashFindRev(hashname$, hashchkflags, hashresflags, hashresref)
+    DO WHILE hashres
+        IF constsubfunc(hashresref) = subfuncn OR constsubfunc(hashresref) = 0 THEN
+            IF constdefined(hashresref) THEN
+                hashfound = 1
+                EXIT DO
+            END IF
+        END IF
+        IF hashres <> 1 THEN hashres = HashFindCont(hashresflags, hashresref) ELSE hashres = 0
+    LOOP
+    IF hashfound THEN
+        i2 = hashresref
+        t = consttype(i2)
+        IF t AND ISSTRING THEN Give_Error "Expected STRING * numeric-constant": EXIT FUNCTION
+        'convert value to general formats
+        IF t AND ISFLOAT THEN
+            v## = constfloat(i2)
+            v&& = v##
+            v~&& = v&&
+        ELSE
+            IF t AND ISUNSIGNED THEN
+                v~&& = constuinteger(i2)
+                v&& = v~&&
+                v## = v&&
+            ELSE
+                v&& = constinteger(i2)
+                v## = v&&
+                v~&& = v&&
+            END IF
+        END IF
+        IF v&& < 1 OR v&& > 9999999999 THEN Give_Error "STRING * out-of-range constant": EXIT FUNCTION
+        b = v&&
+        GOTO constantlenstr
+    END IF
+
+    IF isuinteger(n$) = 0 OR LEN(n$) > 10 THEN Give_Error "Invalid number/constant after STRING * type": EXIT FUNCTION
+    b = VAL(n$)
+    IF b = 0 OR LEN(n$) > 10 THEN Give_Error "Invalid number after STRING * type": EXIT FUNCTION
+    constantlenstr:
+    typname2typsize = b
+    typname2typ& = STRINGTYPE + ISFIXEDLENGTH
+    EXIT FUNCTION
+END IF
+
+IF t$ = "SINGLE" THEN typname2typ& = SINGLETYPE: EXIT FUNCTION
+IF t$ = "DOUBLE" THEN typname2typ& = DOUBLETYPE: EXIT FUNCTION
+IF t$ = "_FLOAT" THEN typname2typ& = FLOATTYPE: EXIT FUNCTION
+IF LEFT$(t$, 10) = "_UNSIGNED " THEN u = 1: t$ = RIGHT$(t$, LEN(t$) - 10)
+IF LEFT$(t$, 4) = "_BIT" THEN
+    IF t$ = "_BIT" THEN
+        IF u THEN typname2typ& = UBITTYPE ELSE typname2typ& = BITTYPE
+        EXIT FUNCTION
+    END IF
+    IF LEFT$(t$, 7) <> "_BIT * " THEN Give_Error "Expected _BIT * number": EXIT FUNCTION
+
+    n$ = RIGHT$(t$, LEN(t$) - 7)
+    IF isuinteger(n$) = 0 THEN Give_Error "Invalid size after _BIT *": EXIT FUNCTION
+    b = VAL(n$)
+    IF b = 0 OR b > 56 THEN Give_Error "Invalid size after _BIT *": EXIT FUNCTION
+    t = BITTYPE - 1 + b: IF u THEN t = t + ISUNSIGNED
+    typname2typ& = t
+    EXIT FUNCTION
+END IF
+
+t = 0
+IF t$ = "_BYTE" THEN t = BYTETYPE
+IF t$ = "INTEGER" THEN t = INTEGERTYPE
+IF t$ = "LONG" THEN t = LONGTYPE
+IF t$ = "_INTEGER64" THEN t = INTEGER64TYPE
+IF t$ = "_OFFSET" THEN t = OFFSETTYPE
+IF t THEN
+    IF u THEN t = t + ISUNSIGNED
+    typname2typ& = t
+    EXIT FUNCTION
+END IF
+IF u THEN EXIT FUNCTION '_UNSIGNED (nothing)
+
+'UDT?
+FOR i = 1 TO lasttype
+    IF t$ = RTRIM$(udtxname(i)) THEN
+        typname2typ& = ISUDT + ISPOINTER + i
+        EXIT FUNCTION
+    END IF
+NEXT
+
+'return 0 (failed)
+END FUNCTION
+
+FUNCTION uniquenumber&
+uniquenumbern = uniquenumbern + 1
+uniquenumber& = uniquenumbern
+END FUNCTION
+
+FUNCTION validlabel (LABEL2$)
+create = CreatingLabel: CreatingLabel = 0
+validlabel = 0
+IF LEN(LABEL2$) = 0 THEN EXIT FUNCTION
+clabel$ = LABEL2$
+label$ = UCASE$(LABEL2$)
+
+n = numelements(label$)
+
+IF n = 1 THEN
+
+    'Note: Reserved words and internal sub/function names are invalid
+    hashres = HashFind(label$, HASHFLAG_RESERVED + HASHFLAG_SUB + HASHFLAG_FUNCTION, hashresflags, hashresref)
+    DO WHILE hashres
+        IF hashresflags AND (HASHFLAG_SUB + HASHFLAG_FUNCTION) THEN
+            IF ids(hashresref).internal_subfunc THEN EXIT FUNCTION
+
+            IF hashresflags AND HASHFLAG_SUB THEN 'could be a label or a sub call!
+
+                'analyze format
+                IF ASC(ids(hashresref).specialformat) = 32 THEN
+                    IF ids(hashresref).args = 0 THEN onecommandsub = 1 ELSE onecommandsub = 0
+                ELSE
+                    IF ASC(ids(hashresref).specialformat) <> 91 THEN '"["
+                        onecommandsub = 0
+                    ELSE
+                        onecommandsub = 1
+                        a$ = RTRIM$(ids(hashresref).specialformat)
+                        b = 1
+                        FOR x = 2 TO LEN(a$)
+                            a = ASC(a$, x)
+                            IF a = 91 THEN b = b + 1
+                            IF a = 93 THEN b = b - 1
+                            IF b = 0 AND x <> LEN(a$) THEN onecommandsub = 0: EXIT FOR
+                        NEXT
+                    END IF
+                END IF
+                IF create <> 0 AND onecommandsub = 1 THEN
+                    IF INSTR(SubNameLabels$, sp + UCASE$(label$) + sp) = 0 THEN PossibleSubNameLabels$ = PossibleSubNameLabels$ + UCASE$(label$) + sp: EXIT FUNCTION 'treat as sub call
+                END IF
+
+            END IF 'sub name
+
+        ELSE
+            'reserved
+            EXIT FUNCTION
+        END IF
+        IF hashres <> 1 THEN hashres = HashFindCont(hashresflags, hashresref) ELSE hashres = 0
+    LOOP
+
+    'Numeric label?
+    'quasi numbers are possible, but:
+    'a) They may only have one decimal place
+    'b) They must be typed with the exact same characters to match
+    t$ = label$
+    'numeric?
+    a = ASC(t$)
+    IF (a >= 48 AND a <= 57) OR a = 46 THEN
+
+        'refer to original formatting if possible (eg. 1.10 not 1.1)
+        x = INSTR(t$, CHR$(44))
+        IF x THEN
+            t$ = RIGHT$(t$, LEN(t$) - x)
+        END IF
+
+        'note: The symbols ! and # are valid trailing symbols in QBASIC, regardless of the number's size,
+        '      so they are allowed in QB64 for compatibility reasons
+        addsymbol$ = removesymbol$(t$)
+        IF Error_Happened THEN EXIT FUNCTION
+        IF LEN(addsymbol$) THEN
+            IF INSTR(addsymbol$, "$") THEN EXIT FUNCTION
+            IF addsymbol$ <> "#" AND addsymbol$ <> "!" THEN addsymbol$ = ""
+        END IF
+
+        IF a = 46 THEN dp = 1
+        FOR x = 2 TO LEN(t$)
+            a = ASC(MID$(t$, x, 1))
+            IF a = 46 THEN dp = dp + 1
+            IF (a < 48 OR a > 57) AND a <> 46 THEN EXIT FUNCTION 'not numeric
+        NEXT x
+        IF dp > 1 THEN EXIT FUNCTION 'too many decimal points
+        IF dp = 1 AND LEN(t$) = 1 THEN EXIT FUNCTION 'cant have '.' as a label
+
+        tlayout$ = t$ + addsymbol$
+
+        i = INSTR(t$, "."): IF i THEN MID$(t$, i, 1) = "p"
+        IF addsymbol$ = "#" THEN t$ = t$ + "d"
+        IF addsymbol$ = "!" THEN t$ = t$ + "s"
+
+        IF LEN(t$) > 40 THEN EXIT FUNCTION
+
+        LABEL2$ = t$
+        validlabel = 1
+        EXIT FUNCTION
+    END IF 'numeric
+
+END IF 'n=1
+
+'Alpha-numeric label?
+'Build label
+
+'structure check (???.???.???.???)
+IF (n AND 1) = 0 THEN EXIT FUNCTION 'must be an odd number of elements
+FOR nx = 2 TO n - 1 STEP 2
+    a$ = getelement$(LABEL2$, nx)
+    IF a$ <> "." THEN EXIT FUNCTION 'every 2nd element must be a period
+NEXT
+
+'cannot begin with numeric
+c = ASC(clabel$): IF c >= 48 AND c <= 57 THEN EXIT FUNCTION
+
+'elements check
+label3$ = ""
+FOR nx = 1 TO n STEP 2
+    label$ = getelement$(clabel$, nx)
+
+    'alpha-numeric?
+    FOR x = 1 TO LEN(label$)
+        IF alphanumeric(ASC(label$, x)) = 0 THEN EXIT FUNCTION
+    NEXT
+
+    'build label
+    IF label3$ = "" THEN label3$ = UCASE$(label$): tlayout$ = label$ ELSE label3$ = label3$ + fix046$ + UCASE$(label$): tlayout$ = tlayout$ + "." + label$
+NEXT nx
+
+validlabel = 1
+LABEL2$ = label3$
+
+END FUNCTION
+
+FUNCTION evaluateconst$ (a2$, t AS LONG)
+a$ = a2$
+IF debug THEN PRINT #9, "evaluateconst:in:" + a$
+
+
+DIM block(1000) AS STRING
+DIM status(1000) AS INTEGER
+'0=unprocessed (can be "")
+'1=processed
+DIM btype(1000) AS LONG 'for status=1 blocks
+
+'put a$ into blocks
+n = numelements(a$)
+FOR i = 1 TO n
+    block(i) = getelement$(a$, i)
+NEXT
+
+evalconstevalbrack:
+
+'find highest bracket level
+l = 0
+b = 0
+FOR i = 1 TO n
+    IF block(i) = "(" THEN b = b + 1
+    IF block(i) = ")" THEN b = b - 1
+    IF b > l THEN l = b
+NEXT
+
+'if brackets exist, evaluate that item first
+IF l THEN
+
+    b = 0
+    e$ = ""
+    FOR i = 1 TO n
+
+        IF block(i) = ")" THEN
+            IF b = l THEN block(i) = "": EXIT FOR
+            b = b - 1
+        END IF
+
+        IF b >= l THEN
+            IF LEN(e$) = 0 THEN e$ = block(i) ELSE e$ = e$ + sp + block(i)
+            block(i) = ""
+        END IF
+
+        IF block(i) = "(" THEN
+            b = b + 1
+            IF b = l THEN i2 = i: block(i) = ""
+        END IF
+
+    NEXT i
+
+    status(i) = 1
+    block(i) = evaluateconst$(e$, btype(i))
+    IF Error_Happened THEN EXIT FUNCTION
+    GOTO evalconstevalbrack
+
+END IF 'l
+
+'linear equation remains with some pre-calculated & non-pre-calc blocks
+
+'problem: type QBASIC assumes and type required to store calc. value may
+'         differ dramatically. in qbasic, this would have caused an overflow,
+'         but in qb64 it MUST work. eg. 32767% * 32767%
+'solution: all interger calc. will be performed using a signed _INTEGER64
+'          all float calc. will be performed using a _FLOAT
+
+'convert non-calc block numbers into binary form with QBASIC-like type
+FOR i = 1 TO n
+    IF status(i) = 0 THEN
+        IF LEN(block(i)) THEN
+
+            a = ASC(block(i))
+            IF (a = 45 AND LEN(block(i)) > 1) OR (a >= 48 AND a <= 57) THEN 'number?
+
+                'integers
+                e$ = RIGHT$(block(i), 3)
+                IF e$ = "~&&" THEN btype(i) = UINTEGER64TYPE - ISPOINTER: GOTO gotconstblkityp
+                IF e$ = "~%%" THEN btype(i) = UBYTETYPE - ISPOINTER: GOTO gotconstblkityp
+                e$ = RIGHT$(block(i), 2)
+                IF e$ = "&&" THEN btype(i) = INTEGER64TYPE - ISPOINTER: GOTO gotconstblkityp
+                IF e$ = "%%" THEN btype(i) = BYTETYPE - ISPOINTER: GOTO gotconstblkityp
+                IF e$ = "~%" THEN btype(i) = UINTEGERTYPE - ISPOINTER: GOTO gotconstblkityp
+                IF e$ = "~&" THEN btype(i) = ULONGTYPE - ISPOINTER: GOTO gotconstblkityp
+                e$ = RIGHT$(block(i), 1)
+                IF e$ = "%" THEN btype(i) = INTEGERTYPE - ISPOINTER: GOTO gotconstblkityp
+                IF e$ = "&" THEN btype(i) = LONGTYPE - ISPOINTER: GOTO gotconstblkityp
+
+                'ubit-type?
+                IF INSTR(block(i), "~`") THEN
+                    x = INSTR(block(i), "~`")
+                    IF x = LEN(block(i)) - 1 THEN block(i) = block(i) + "1"
+                    btype(i) = UBITTYPE - ISPOINTER - 1 + VAL(RIGHT$(block(i), LEN(block(i)) - x - 1))
+                    block(i) = _MK$(_INTEGER64, VAL(LEFT$(block(i), x - 1)))
+                    status(i) = 1
+                    GOTO gotconstblktyp
+                END IF
+
+                'bit-type?
+                IF INSTR(block(i), "`") THEN
+                    x = INSTR(block(i), "`")
+                    IF x = LEN(block(i)) THEN block(i) = block(i) + "1"
+                    btype(i) = BITTYPE - ISPOINTER - 1 + VAL(RIGHT$(block(i), LEN(block(i)) - x))
+                    block(i) = _MK$(_INTEGER64, VAL(LEFT$(block(i), x - 1)))
+                    status(i) = 1
+                    GOTO gotconstblktyp
+                END IF
+
+                'floats
+                IF INSTR(block(i), "E") THEN
+                    block(i) = _MK$(_FLOAT, VAL(block(i)))
+                    btype(i) = SINGLETYPE - ISPOINTER
+                    status(i) = 1
+                    GOTO gotconstblktyp
+                END IF
+                IF INSTR(block(i), "D") THEN
+                    block(i) = _MK$(_FLOAT, VAL(block(i)))
+                    btype(i) = DOUBLETYPE - ISPOINTER
+                    status(i) = 1
+                    GOTO gotconstblktyp
+                END IF
+                IF INSTR(block(i), "F") THEN
+                    block(i) = _MK$(_FLOAT, VAL(block(i)))
+                    btype(i) = FLOATTYPE - ISPOINTER
+                    status(i) = 1
+                    GOTO gotconstblktyp
+                END IF
+
+                Give_Error "Invalid CONST expression.1": EXIT FUNCTION
+
+                gotconstblkityp:
+                block(i) = LEFT$(block(i), LEN(block(i)) - LEN(e$))
+                block(i) = _MK$(_INTEGER64, VAL(block(i)))
+                status(i) = 1
+                gotconstblktyp:
+
+            END IF 'a
+
+            IF a = 34 THEN 'string?
+                'no changes need to be made to block(i) which is of format "CHARACTERS",size
+                btype(i) = STRINGTYPE - ISPOINTER
+                status(i) = 1
+            END IF
+
+        END IF 'len<>0
+    END IF 'status
+NEXT
+
+'remove NULL blocks
+n2 = 0
+FOR i = 1 TO n
+    IF block(i) <> "" THEN
+        n2 = n2 + 1
+        block(n2) = block(i)
+        status(n2) = status(i)
+        btype(n2) = btype(i)
+    END IF
+NEXT
+n = n2
+
+'only one block?
+IF n = 1 THEN
+    IF status(1) = 0 THEN Give_Error "Invalid CONST expression.2": EXIT FUNCTION
+    t = btype(1)
+    evaluateconst$ = block(1)
+    EXIT FUNCTION
+END IF 'n=1
+
+'evaluate equation (equation cannot contain any STRINGs)
+
+'[negation/not][variable]
+e$ = block(1)
+IF status(1) = 0 THEN
+    IF n <> 2 THEN Give_Error "Invalid CONST expression.4": EXIT FUNCTION
+    IF status(2) = 0 THEN Give_Error "Invalid CONST expression.5": EXIT FUNCTION
+    IF btype(2) AND ISSTRING THEN Give_Error "Invalid CONST expression.6": EXIT FUNCTION
+    o$ = block(1)
+
+    IF o$ = "ñ" THEN
+        IF btype(2) AND ISFLOAT THEN
+            r## = -_CV(_FLOAT, block(2))
+            evaluateconst$ = _MK$(_FLOAT, r##)
+        ELSE
+            r&& = -_CV(_INTEGER64, block(2))
+            evaluateconst$ = _MK$(_INTEGER64, r&&)
+        END IF
+        t = btype(2)
+        EXIT FUNCTION
+    END IF
+
+    IF o$ = "NOT" THEN
+        IF btype(2) AND ISFLOAT THEN
+            r&& = _CV(_FLOAT, block(2))
+        ELSE
+            r&& = _CV(_INTEGER64, block(2))
+        END IF
+        r&& = NOT r&&
+        t = btype(2)
+        IF t AND ISFLOAT THEN t = LONGTYPE - ISPOINTER 'markdown to LONG
+        evaluateconst$ = _MK$(_INTEGER64, r&&)
+        EXIT FUNCTION
+    END IF
+
+    Give_Error "Invalid CONST expression.7": EXIT FUNCTION
+END IF
+
+'[variable][bool-operator][variable]...
+
+'get first variable
+et = btype(1)
+ev$ = block(1)
+
+i = 2
+
+evalconstequ:
+
+'get operator
+IF i >= n THEN Give_Error "Invalid CONST expression.8": EXIT FUNCTION
+o$ = block(i)
+i = i + 1
+IF isoperator(o$) = 0 THEN Give_Error "Invalid CONST expression.9": EXIT FUNCTION
+IF i > n THEN Give_Error "Invalid CONST expression.10": EXIT FUNCTION
+
+'string/numeric mismatch?
+IF (btype(i) AND ISSTRING) <> (et AND ISSTRING) THEN Give_Error "Invalid CONST expression.11": EXIT FUNCTION
+
+IF et AND ISSTRING THEN
+    IF o$ <> "+" THEN Give_Error "Invalid CONST expression.12": EXIT FUNCTION
+    'concat strings
+    s1$ = RIGHT$(ev$, LEN(ev$) - 1)
+    s1$ = LEFT$(s1$, INSTR(s1$, CHR$(34)) - 1)
+    s1size = VAL(RIGHT$(ev$, LEN(ev$) - LEN(s1$) - 3))
+    s2$ = RIGHT$(block(i), LEN(block(i)) - 1)
+    s2$ = LEFT$(s2$, INSTR(s2$, CHR$(34)) - 1)
+    s2size = VAL(RIGHT$(block(i), LEN(block(i)) - LEN(s2$) - 3))
+    ev$ = CHR$(34) + s1$ + s2$ + CHR$(34) + "," + str2$(s1size + s2size)
+    GOTO econstmarkedup
+END IF
+
+'prepare left and right values
+IF et AND ISFLOAT THEN
+    linteger = 0
+    l## = _CV(_FLOAT, ev$)
+    l&& = l##
+ELSE
+    linteger = 1
+    l&& = _CV(_INTEGER64, ev$)
+    l## = l&&
+END IF
+IF btype(i) AND ISFLOAT THEN
+    rinteger = 0
+    r## = _CV(_FLOAT, block(i))
+    r&& = r##
+ELSE
+    rinteger = 1
+    r&& = _CV(_INTEGER64, block(i))
+    r## = r&&
+END IF
+
+IF linteger = 1 AND rinteger = 1 THEN
+    IF o$ = "+" THEN r&& = l&& + r&&: GOTO econstmarkupi
+    IF o$ = "-" THEN r&& = l&& - r&&: GOTO econstmarkupi
+    IF o$ = "*" THEN r&& = l&& * r&&: GOTO econstmarkupi
+    IF o$ = "^" THEN r## = l&& ^ r&&: GOTO econstmarkupf
+    IF o$ = "/" THEN r## = l&& / r&&: GOTO econstmarkupf
+    IF o$ = "\" THEN r&& = l&& \ r&&: GOTO econstmarkupi
+    IF o$ = "MOD" THEN r&& = l&& MOD r&&: GOTO econstmarkupi
+    IF o$ = "=" THEN r&& = l&& = r&&: GOTO econstmarkupi16
+    IF o$ = ">" THEN r&& = l&& > r&&: GOTO econstmarkupi16
+    IF o$ = "<" THEN r&& = l&& < r&&: GOTO econstmarkupi16
+    IF o$ = ">=" THEN r&& = l&& >= r&&: GOTO econstmarkupi16
+    IF o$ = "<=" THEN r&& = l&& <= r&&: GOTO econstmarkupi16
+    IF o$ = "<>" THEN r&& = l&& <> r&&: GOTO econstmarkupi16
+    IF o$ = "IMP" THEN r&& = l&& IMP r&&: GOTO econstmarkupi
+    IF o$ = "EQV" THEN r&& = l&& EQV r&&: GOTO econstmarkupi
+    IF o$ = "XOR" THEN r&& = l&& XOR r&&: GOTO econstmarkupi
+    IF o$ = "OR" THEN r&& = l&& OR r&&: GOTO econstmarkupi
+    IF o$ = "AND" THEN r&& = l&& AND r&&: GOTO econstmarkupi
+END IF
+
+IF o$ = "+" THEN r## = l## + r##: GOTO econstmarkupf
+IF o$ = "-" THEN r## = l## - r##: GOTO econstmarkupf
+IF o$ = "*" THEN r## = l## * r##: GOTO econstmarkupf
+IF o$ = "^" THEN r## = l## ^ r##: GOTO econstmarkupf
+IF o$ = "/" THEN r## = l## / r##: GOTO econstmarkupf
+IF o$ = "\" THEN r&& = l## \ r##: GOTO econstmarkupi32
+IF o$ = "MOD" THEN r&& = l## MOD r##: GOTO econstmarkupi32
+IF o$ = "=" THEN r&& = l## = r##: GOTO econstmarkupi16
+IF o$ = ">" THEN r&& = l## > r##: GOTO econstmarkupi16
+IF o$ = "<" THEN r&& = l## < r##: GOTO econstmarkupi16
+IF o$ = ">=" THEN r&& = l## >= r##: GOTO econstmarkupi16
+IF o$ = "<=" THEN r&& = l## <= r##: GOTO econstmarkupi16
+IF o$ = "<>" THEN r&& = l## <> r##: GOTO econstmarkupi16
+IF o$ = "IMP" THEN r&& = l## IMP r##: GOTO econstmarkupi32
+IF o$ = "EQV" THEN r&& = l## EQV r##: GOTO econstmarkupi32
+IF o$ = "XOR" THEN r&& = l## XOR r##: GOTO econstmarkupi32
+IF o$ = "OR" THEN r&& = l## OR r##: GOTO econstmarkupi32
+IF o$ = "AND" THEN r&& = l## AND r##: GOTO econstmarkupi32
+
+Give_Error "Invalid CONST expression.13": EXIT FUNCTION
+
+econstmarkupi16:
+et = INTEGERTYPE - ISPOINTER
+ev$ = _MK$(_INTEGER64, r&&)
+GOTO econstmarkedup
+
+econstmarkupi32:
+et = LONGTYPE - ISPOINTER
+ev$ = _MK$(_INTEGER64, r&&)
+GOTO econstmarkedup
+
+econstmarkupi:
+IF et <> btype(i) THEN
+    'keep unsigned?
+    u = 0: IF (et AND ISUNSIGNED) <> 0 AND (btype(i) AND ISUNSIGNED) <> 0 THEN u = 1
+    lb = et AND 511: rb = btype(i) AND 511
+    ob = 0
+    IF lb = rb THEN
+        IF (et AND ISOFFSETINBITS) <> 0 AND (btype(i) AND ISOFFSETINBITS) <> 0 THEN ob = 1
+        b = lb
+    END IF
+    IF lb > rb THEN
+        IF (et AND ISOFFSETINBITS) <> 0 THEN ob = 1
+        b = lb
+    END IF
+    IF lb < rb THEN
+        IF (btype(i) AND ISOFFSETINBITS) <> 0 THEN ob = 1
+        b = rb
+    END IF
+    et = b
+    IF ob THEN et = et + ISOFFSETINBITS
+    IF u THEN et = et + ISUNSIGNED
+END IF
+ev$ = _MK$(_INTEGER64, r&&)
+GOTO econstmarkedup
+
+econstmarkupf:
+lfb = 0: rfb = 0
+lib = 0: rib = 0
+IF et AND ISFLOAT THEN lfb = et AND 511 ELSE lib = et AND 511
+IF btype(i) AND ISFLOAT THEN rfb = btype(i) AND 511 ELSE rib = btype(i) AND 511
+f = 32
+IF lib > 16 OR rib > 16 THEN f = 64
+IF lfb > 32 OR rfb > 32 THEN f = 64
+IF lib > 32 OR rib > 32 THEN f = 256
+IF lfb > 64 OR rfb > 64 THEN f = 256
+et = ISFLOAT + f
+ev$ = _MK$(_FLOAT, r##)
+
+econstmarkedup:
+
+i = i + 1
+
+IF i <= n THEN GOTO evalconstequ
+
+t = et
+evaluateconst$ = ev$
+
+END FUNCTION
+
+FUNCTION typevalue2symbol$ (t)
+
+IF t AND ISSTRING THEN
+    IF t AND ISFIXEDLENGTH THEN Give_Error "Cannot convert expression type to symbol": EXIT FUNCTION
+    typevalue2symbol$ = "$"
+    EXIT FUNCTION
+END IF
+
+s$ = ""
+
+IF t AND ISUNSIGNED THEN s$ = "~"
+
+b = t AND 511
+
+IF t AND ISOFFSETINBITS THEN
+    IF b > 1 THEN s$ = s$ + "`" + str2$(b) ELSE s$ = s$ + "`"
+    typevalue2symbol$ = s$
+    EXIT FUNCTION
+END IF
+
+IF t AND ISFLOAT THEN
+    IF b = 32 THEN s$ = "!"
+    IF b = 64 THEN s$ = "#"
+    IF b = 256 THEN s$ = "##"
+    typevalue2symbol$ = s$
+    EXIT FUNCTION
+END IF
+
+IF b = 8 THEN s$ = s$ + "%%"
+IF b = 16 THEN s$ = s$ + "%"
+IF b = 32 THEN s$ = s$ + "&"
+IF b = 64 THEN s$ = s$ + "&&"
+typevalue2symbol$ = s$
+
+END FUNCTION
+
+
+FUNCTION id2fulltypename$
+t = id.t
+IF t = 0 THEN t = id.arraytype
+size = id.tsize
+bits = t AND 511
+IF t AND ISUDT THEN
+    a$ = RTRIM$(udtxcname(t AND 511))
+    id2fulltypename$ = a$: EXIT FUNCTION
+END IF
+IF t AND ISSTRING THEN
+    IF t AND ISFIXEDLENGTH THEN a$ = "STRING * " + str2(size) ELSE a$ = "STRING"
+    id2fulltypename$ = a$: EXIT FUNCTION
+END IF
+IF t AND ISOFFSETINBITS THEN
+    IF bits > 1 THEN a$ = "_BIT * " + str2(bits) ELSE a$ = "_BIT"
+    IF t AND ISUNSIGNED THEN a$ = "_UNSIGNED " + a$
+    id2fulltypename$ = a$: EXIT FUNCTION
+END IF
+IF t AND ISFLOAT THEN
+    IF bits = 32 THEN a$ = "SINGLE"
+    IF bits = 64 THEN a$ = "DOUBLE"
+    IF bits = 256 THEN a$ = "_FLOAT"
+ELSE 'integer-based
+    IF bits = 8 THEN a$ = "_BYTE"
+    IF bits = 16 THEN a$ = "INTEGER"
+    IF bits = 32 THEN a$ = "LONG"
+    IF bits = 64 THEN a$ = "_INTEGER64"
+    IF t AND ISUNSIGNED THEN a$ = "_UNSIGNED " + a$
+END IF
+id2fulltypename$ = a$
+END FUNCTION
+
+FUNCTION symbol2fulltypename$ (s2$)
+'note: accepts both symbols and type names
+s$ = s2$
+
+IF LEFT$(s$, 1) = "~" THEN
+    u = 1
+    IF LEN(typ$) = 1 THEN Give_Error "Expected ~...": EXIT FUNCTION
+    s$ = RIGHT$(s$, LEN(s$) - 1)
+    u$ = "_UNSIGNED "
+END IF
+
+IF s$ = "%%" THEN t$ = u$ + "_BYTE": GOTO gotsym2typ
+IF s$ = "%" THEN t$ = u$ + "INTEGER": GOTO gotsym2typ
+IF s$ = "&" THEN t$ = u$ + "LONG": GOTO gotsym2typ
+IF s$ = "&&" THEN t$ = u$ + "_INTEGER64": GOTO gotsym2typ
+IF s$ = "%&" THEN t$ = u$ + "_OFFSET": GOTO gotsym2typ
+
+IF LEFT$(s$, 1) = "`" THEN
+    IF LEN(s$) = 1 THEN
+        t$ = u$ + "_BIT * 1"
+        GOTO gotsym2typ
+    END IF
+    n$ = RIGHT$(s$, LEN(s$) - 1)
+    IF isuinteger(n$) = 0 THEN Give_Error "Expected number after symbol `": EXIT FUNCTION
+    t$ = u$ + "_BIT * " + n$
+    GOTO gotsym2typ
+END IF
+
+IF u = 1 THEN Give_Error "Expected type symbol after ~": EXIT FUNCTION
+
+IF s$ = "!" THEN t$ = "SINGLE": GOTO gotsym2typ
+IF s$ = "#" THEN t$ = "DOUBLE": GOTO gotsym2typ
+IF s$ = "##" THEN t$ = "_FLOAT": GOTO gotsym2typ
+IF s$ = "$" THEN t$ = "STRING": GOTO gotsym2typ
+
+IF LEFT$(s$, 1) = "$" THEN
+    n$ = RIGHT$(s$, LEN(s$) - 1)
+    IF isuinteger(n$) = 0 THEN Give_Error "Expected number after symbol $": EXIT FUNCTION
+    t$ = "STRING * " + n$
+    GOTO gotsym2typ
+END IF
+
+t$ = s$
+
+gotsym2typ:
+
+IF RIGHT$(" " + t$, 5) = " _BIT" THEN t$ = t$ + " * 1" 'clarify (_UNSIGNED) _BIT as (_UNSIGNED) _BIT * 1
+
+FOR i = 1 TO LEN(t$)
+    IF ASC(t$, i) = ASC(sp) THEN ASC(t$, i) = 32
+NEXT
+
+symbol2fulltypename$ = t$
+
+END FUNCTION
+
+
+FUNCTION lineinput3$
+'returns CHR$(13) if no more lines are available
+l = LEN(lineinput3buffer$)
+IF lineinput3index > l THEN lineinput3$ = CHR$(13): EXIT FUNCTION
+c13 = INSTR(lineinput3index, lineinput3buffer$, CHR$(13))
+c10 = INSTR(lineinput3index, lineinput3buffer$, CHR$(10))
+IF c10 = 0 AND c13 = 0 THEN
+    lineinput3$ = MID$(lineinput3buffer$, lineinput3index, l - lineinput3index + 1)
+    lineinput3index = l + 1
+    EXIT FUNCTION
+END IF
+IF c10 = 0 THEN c10 = 2147483647
+IF c13 = 0 THEN c13 = 2147483647
+IF c10 < c13 THEN
+    '10 before 13
+    lineinput3$ = MID$(lineinput3buffer$, lineinput3index, c10 - lineinput3index)
+    lineinput3index = c10 + 1
+    IF lineinput3index <= l THEN
+        IF ASC(MID$(lineinput3buffer$, lineinput3index, 1)) = 13 THEN lineinput3index = lineinput3index + 1
+    END IF
+ELSE
+    '13 before 10
+    lineinput3$ = MID$(lineinput3buffer$, lineinput3index, c13 - lineinput3index)
+    lineinput3index = c13 + 1
+    IF lineinput3index <= l THEN
+        IF ASC(MID$(lineinput3buffer$, lineinput3index, 1)) = 10 THEN lineinput3index = lineinput3index + 1
+    END IF
+END IF
+END FUNCTION
+
+FUNCTION getfilepath$ (f$)
+FOR i = LEN(f$) TO 1 STEP -1
+    a$ = MID$(f$, i, 1)
+    IF a$ = "/" OR a$ = "\" THEN
+        getfilepath$ = LEFT$(f$, i)
+        EXIT FUNCTION
+    END IF
+NEXT
+getfilepath$ = ""
+END FUNCTION
+
+FUNCTION eleucase$ (a$)
+'this function upper-cases all elements except for quoted strings
+'check first element
+IF LEN(a$) = 0 THEN EXIT FUNCTION
+i = 1
+IF ASC(a$) = 34 THEN
+    i2 = INSTR(a$, sp)
+    IF i2 = 0 THEN eleucase$ = a$: EXIT FUNCTION
+    a2$ = LEFT$(a$, i2 - 1)
+    i = i2
+END IF
+'check other elements
+sp34$ = sp + CHR$(34)
+IF i < LEN(a$) THEN
+    DO WHILE INSTR(i, a$, sp34$)
+        i2 = INSTR(i, a$, sp34$)
+        a2$ = a2$ + UCASE$(MID$(a$, i, i2 - i + 1)) 'everything prior including spacer
+        i3 = INSTR(i2 + 1, a$, sp): IF i3 = 0 THEN i3 = LEN(a$) ELSE i3 = i3 - 1
+        a2$ = a2$ + MID$(a$, i2 + 1, i3 - (i2 + 1) + 1) 'everything from " to before next spacer or end
+        i = i3 + 1
+        IF i > LEN(a$) THEN EXIT DO
+    LOOP
+END IF
+a2$ = a2$ + UCASE$(MID$(a$, i, LEN(a$) - i + 1))
+eleucase$ = a2$
+END FUNCTION
+
+
+
+'NEW IDE SPECIFIC
+'------------------------------ IDE MODULE ------------------------------
+
+DEFSNG A-Z
+
+DEFLNG A-Z
+
+
+'DIM SHARED idecommand AS STRING
+'DIM SHARED idereturn AS STRING
+'DIM SHARED ideerror AS LONG
+'DIM SHARED idecompiled AS LONG
+'DIM SHARED idemode
+'DIM SHARED ideerrorline AS LONG 'set by qb64-error(...) to the line number it would have reported, this number
+'is later passed to the ide in message #8
+'DIM SHARED idemessage AS STRING 'set by qb64-error(...) to the error message to be reported, this
+'is later passed to the ide in message #8
+
+'the function ?=ide(?) should always be passed 0, it returns a message code number, any further information
+'is passed back in idereturn
+
+'message code numbers:
+'0  no ide present  (auto defined array ide() return 0)
+
+'1  launch ide & with passed filename (compiler->ide)
+
+'2  begin new compilation with returned line of code (compiler<-ide)
+'   [2][line of code]
+
+'3  request next line (compiler->ide)
+'   [3]
+
+'4  next line of code returned (compiler<-ide)
+'   [4][line of code]
+
+'5  no more lines of code exist (compiler<-ide)
+'   [5]
+
+'6  code is OK/ready (compiler->ide)
+'   [6]
+
+'7  repass the code from the beginning (compiler->ide)
+'   [7]
+
+'8  an error has occurred with 'this' message on 'this' line(compiler->ide)
+'   [8][error message][line as LONG]
+
+'9  C++ compile (if necessary) and run with 'this' name (compiler<-ide)
+'   [9][name(no path, no .bas)]
+
+'10 The line requires more time to process
+'       Pass-back 'line of code' using method [4] when ready
+'   [10][line of code]
+
+'11 ".EXE file created" message
+
+'12     The name of the exe I'll create is '...' (compiler->ide)
+'   [12][exe name without .exe]
+
+'255    A qb error happened in the IDE (compiler->ide)
+'   note: detected by the fact that ideerror was not set to 0
+'   [255]
+
+FUNCTION ide (ignore)
+'Note: ide is a function which optimizes the interaction between the IDE and compiler (ide2)
+'      by avoiding unnecessary bloat associated with entering the main IDE function 'ide2'
+
+IF ASC(idecommand$) = 3 THEN 'request next line (compiler->ide)
+    IF idecompiledline < iden THEN
+        IF idecompiledline < idesy OR idecompiledline > idesy + (idewy - 9) THEN 'off screen?
+            IF _EXIT AND 1 THEN ideexit = 1
+            IF ideexit = 0 THEN
+                GetInput 'check for new input
+                IF iCHANGED = 0 AND mB = 0 THEN
+
+                    '-------------------- layout considerations --------------------
+                    'previous line was OK, so use layout if available
+                    IF ideautolayout <> 0 OR ideautoindent <> 0 THEN
+                        IF LEN(layout$) THEN
+
+                            'calculate recommended indent level
+                            l = LEN(layout$)
+                            FOR i = 1 TO l
+                                IF ASC(layout$, i) <> 32 OR i = l THEN
+                                    IF ASC(layout$, i) = 32 THEN
+                                        layout$ = "": indent = i
+                                    ELSE
+                                        indent = i - 1
+                                        layout$ = RIGHT$(layout$, LEN(layout$) - i + 1)
+                                    END IF
+                                    EXIT FOR
+                                END IF
+                            NEXT
+
+                            IF ideautolayout THEN
+                                layout2$ = layout$: i2 = 1
+                                ignoresp = 0
+                                FOR i = 1 TO LEN(layout$)
+                                    a = ASC(layout$, i)
+                                    IF a = 34 THEN
+                                        ignoresp = ignoresp + 1: IF ignoresp = 2 THEN ignoresp = 0
+                                    END IF
+                                    IF ignoresp = 0 THEN
+                                        IF a = sp_asc THEN ASC(layout2$, i2) = 32: i2 = i2 + 1: GOTO skipchar
+                                        IF a = sp2_asc THEN GOTO skipchar
+                                    END IF
+                                    ASC(layout2$, i2) = a: i2 = i2 + 1
+                                    skipchar:
+                                NEXT
+                                layout$ = LEFT$(layout2$, i2 - 1)
+                            END IF
+
+                            IF ideautoindent = 0 THEN
+                                'note: can assume auto-format
+                                'calculate old indent (if any)
+                                indent = 0
+                                l = LEN(idecompiledline$)
+                                FOR i = 1 TO l
+                                    IF ASC(idecompiledline$, i) <> 32 OR i = l THEN
+                                        indent = i - 1
+                                        EXIT FOR
+                                    END IF
+                                NEXT
+                                indent$ = SPACE$(indent)
+                            ELSE
+                                indent$ = SPACE$(indent * ideautoindentsize)
+                            END IF
+
+                            IF ideautolayout = 0 THEN
+                                'note: can assume auto-indent
+                                l = LEN(idecompiledline$)
+                                layout$ = ""
+                                FOR i = 1 TO l
+                                    IF ASC(idecompiledline$, i) <> 32 OR i = l THEN
+                                        layout$ = RIGHT$(idecompiledline$, l - i + 1)
+                                        EXIT FOR
+                                    END IF
+                                NEXT
+                            END IF
+
+                            IF LEN(layout$) THEN
+                                layout$ = indent$ + layout$
+                                IF idecompiledline$ <> layout$ THEN
+                                    idesetline idecompiledline, layout$
+                                END IF
+                            END IF 'len(layout$) after modification
+
+                        END IF 'len(layout$)
+
+                    END IF 'using layout/indent
+                    '---------------------------------------------------------------
+
+                    idecompiledline = idecompiledline + 1
+                    idecompiledline$ = idegetline(idecompiledline)
+                    ide = 4
+                    idereturn$ = idecompiledline$
+                    EXIT FUNCTION
+                END IF
+                IF iCHANGED THEN iCHECKLATER = 1
+            END IF 'ideexit
+        END IF 'not on screen
+    END IF 'idecompiledline<iden
+END IF
+
+ide = ide2(0)
+END FUNCTION
+
+FUNCTION ide2 (ignore)
+c$ = idecommand$
+
+'report any IDE errors which have occurred
+IF ideerror THEN
+    mustdisplay = 1
+    IF ideerror = 1 THEN ideerrormessage "IDE module error"
+    IF ideerror = 2 THEN ideerrormessage "File not found"
+    IF ideerror = 3 THEN ideerrormessage "File access error": CLOSE #150
+    IF ideerror = 4 THEN ideerrormessage "Path not found"
+END IF
+ideerror = 1 'unknown IDE error
+
+IF LEFT$(c$, 1) = CHR$(12) THEN
+    f$ = RIGHT$(c$, LEN(c$) - 1)
+    LOCATE , , 0
+    COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+    LOCATE idewy - 3, 2
+
+    IF os$ = "LNX" THEN
+        PRINT "Creating executable file named " + CHR$(34) + f$ + extension$ + CHR$(34) + "..."
+    ELSE
+        PRINT "Creating .EXE file named " + CHR$(34) + f$ + extension$ + CHR$(34) + "..."
+    END IF
+
+    PCOPY 3, 0
+    ide2 = 9: idereturn$ = f$
+    EXIT FUNCTION
+END IF
+
+IF c$ = CHR$(100) THEN 'special call for next line (usually for the purpose of line continuation)
+    idecompiledline = idecompiledline + 1 'must increment (to trigger no more lines avail. message later)
+    IF idecompiledline < iden THEN
+        idecompiledline$ = idegetline(idecompiledline)
+        idereturn$ = idecompiledline$
+    ELSE
+        idecompiledline$ = ""
+        idereturn$ = idecompiledline$ 'no more lines
+    END IF
+    EXIT FUNCTION
+END IF
+
+IF idelaunched = 0 THEN
+    idelaunched = 1
+
+    WIDTH idewx, idewy
+    _FONT 16
+
+    'change codepage
+    IF idecpindex THEN
+        FOR x = 128 TO 255
+            u = VAL("&H" + MID$(idecp(idecpindex), x * 8 + 1, 8) + "&")
+            IF u = 0 THEN u = 9744
+            _MAPUNICODE u TO x
+        NEXT
+    END IF
+
+    IF idecustomfont THEN
+        idecustomfonthandle = _LOADFONT(idecustomfontfile$, idecustomfontheight, "MONOSPACE")
+        IF idecustomfonthandle = -1 THEN
+            'failed! - revert to default settings
+            idecustomfont = 0: idecustomfontfile$ = "c:\windows\fonts\lucon.ttf": idecustomfontheight = 21
+        ELSE
+            _FONT idecustomfonthandle
+        END IF
+    END IF
+
+    m = 1: i = 0
+    IdeMakeFileMenu
+
+    m = m + 1: i = 0
+    menu$(m, i) = "Edit": i = i + 1
+    menu$(m, i) = "Cu#t  Shift+Del or CTRL+X": i = i + 1
+    menu$(m, i) = "#Copy  Ctrl+Ins or CTRL+C": i = i + 1
+    menu$(m, i) = "#Paste  Shift+Ins or CTRL+V": i = i + 1
+    menu$(m, i) = "Cl#ear  Del": i = i + 1
+    menu$(m, i) = "Select #All  CTRL+A": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "#Undo  CTRL+Z": i = i + 1
+    menu$(m, i) = "#Redo  CTRL+Y": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "Comment (add ')": i = i + 1
+    menu$(m, i) = "Uncomment (remove ')": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "New #SUB...": i = i + 1
+    menu$(m, i) = "New #FUNCTION...": i = i + 1
+    menusize(m) = i - 1
+
+    m = m + 1: i = 0
+    menu$(m, i) = "View": i = i + 1
+    menu$(m, i) = "#SUBs...  F2": i = i + 1
+    menusize(m) = i - 1
+
+    m = m + 1: i = 0
+    menu$(m, i) = "Search": i = i + 1
+    menu$(m, i) = "#Find...": i = i + 1
+    menu$(m, i) = "#Repeat Last Find  (Shift+) F3": i = i + 1
+    menu$(m, i) = "#Change...": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "Add/Remove #Bookmark  ALT+Left": i = i + 1
+    menu$(m, i) = "#Next Bookmark  ALT+Down": i = i + 1
+    menu$(m, i) = "#Previous Bookmark  ALT+Up": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "#Go to line...": i = i + 1
+
+    menusize(m) = i - 1
+
+    m = m + 1: i = 0
+    menu$(m, i) = "Run": i = i + 1
+    menu$(m, i) = "#Start  F5": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "Start (#Detached)  Ctrl+F5": i = i + 1
+    IF os$ = "LNX" THEN
+        menu$(m, i) = "Make E#xecutable Only  F11": i = i + 1
+    ELSE
+        menu$(m, i) = "Make E#XE Only  F11": i = i + 1
+    END IF
+    menusize(m) = i - 1
+
+    m = m + 1: i = 0
+    menu$(m, i) = "Options": i = i + 1
+    menu$(m, i) = "#Display...": i = i + 1
+    menu$(m, i) = "#Language...": i = i + 1
+    menu$(m, i) = "#Code layout...": i = i + 1
+    IF os$ = "WIN" THEN
+        menu$(m, i) = "#Update...": i = i + 1
+    END IF
+    menu$(m, i) = "#Backup/Undo...": i = i + 1
+    menusize(m) = i - 1
+
+    m = m + 1: i = 0
+    menu$(m, i) = "Help": i = i + 1
+    menu$(m, i) = "#View  Shift+F1": i = i + 1
+    menu$(m, i) = "#Contents page": i = i + 1
+    menu$(m, i) = "Keyword #index": i = i + 1
+    menu$(m, i) = "#Keywords by usage": i = i + 1
+    menu$(m, i) = "ASCII c#hart": i = i + 1
+    menu$(m, i) = "#Math": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "#Update current page": i = i + 1
+    menu$(m, i) = "Update all #pages": i = i + 1
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "#About...": i = i + 1
+    menusize(m) = i - 1
+
+
+
+    menus = m
+
+    IF os$ = "WIN" THEN
+        idepathsep$ = "\"
+    END IF
+    IF os$ = "LNX" THEN
+        idepathsep$ = "/"
+    END IF
+
+    initmouse
+    a$ = "QWERTYUIOP????ASDFGHJKL?????ZXCVBNM": x = 16: FOR i = 1 TO LEN(a$): idealtcode(ASC(MID$(a$, i, 1))) = x: x = x + 1: NEXT
+
+    ideroot$ = idezgetroot$
+    idepath$ = ideroot$
+
+    'new blank text field
+    idet$ = MKL$(0) + MKL$(0): idel = 1: ideli = 1: iden = 1: IdeBmkN = 0
+    ideunsaved = -1
+    idechangemade = 1
+
+    redraweverything:
+
+    idesx = 1
+    idesy = 1
+    idecx = 1
+    idecy = 1
+
+    redraweverything2:
+
+
+    menubar$ = "   "
+    FOR i = 1 TO menus - 1
+        menubar$ = menubar$ + menu$(i, 0) + "  "
+    NEXT
+    menubar$ = menubar$ + SPACE$(idewx - LEN(menubar$) - LEN(menu$(i, 0)) - 2)
+    menubar$ = menubar$ + menu$(i, 0) + "  "
+
+
+    SCREEN , , 3, 0
+    VIEW PRINT 1 TO idewy + idesubwindow
+    LOCATE , , , 8, 8
+
+    'static background
+    COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
+    COLOR 7, 1: idebox 1, 2, idewx, idewy - 5
+
+
+    COLOR 7, 1: idebox 1, idewy - 4, idewx, 5
+    'edit corners
+    COLOR 7, 1: LOCATE idewy - 4, 1: PRINT "Ã";: LOCATE idewy - 4, idewx: PRINT "´";
+
+    IF idehelp = 1 THEN
+        COLOR 7, 0: idebox 1, idewy, idewx, idesubwindow + 1
+        COLOR 7, 0: LOCATE idewy, 1: PRINT "Ã";: LOCATE idewy, idewx: PRINT "´";
+        COLOR 7, 0: LOCATE idewy, idewx - 3: PRINT "´XÃ";
+    END IF
+
+    'add status title
+    COLOR 7, 1: LOCATE idewy - 4, (idewx - 8) / 2: PRINT " Status "
+    'status bar
+    COLOR 0, 3: LOCATE idewy + idesubwindow, 1: PRINT SPACE$(idewx);
+    q = idevbar(idewx, idewy - 3, 3, 1, 1)
+    q = idevbar(idewx, 3, idewy - 8, 1, 1)
+    q = idehbar(2, idewy - 5, idewx - 2, 1, 1)
+
+
+    DEF SEG = 0
+    ideshowtext
+
+    IF retval = 1 THEN GOTO skipload
+
+    'restore autosave?
+    'undo/redo
+    OPEN tmpdir$ + "autosave.bin" FOR BINARY AS #150
+    IF LOF(150) = 1 THEN
+        CLOSE #150
+        r$ = iderestore$
+        PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+        IF r$ = "Y" THEN
+            'restore
+            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
+            IF LOF(150) THEN
+                ideunsaved = 1
+                h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
+                'get backup
+                SEEK #150, p2
+                GET #150, , l&
+                GET #150, , idesx: GET #150, , idesy
+                GET #150, , idecx: GET #150, , idecy
+                GET #150, , ideselect: GET #150, , ideselectx1: GET #150, , ideselecty1
+                GET #150, , iden
+                GET #150, , idel
+                GET #150, , ideli
+                'bookmark info [v2]
+                GET #150, , IdeBmkN: REDIM IdeBmk(IdeBmkN + 1) AS IdeBmkType
+                FOR bi = 1 TO IdeBmkN: GET #150, , IdeBmk(bi).y: GET #150, , IdeBmk(bi).x: NEXT
+                GET #150, , x&: idet$ = SPACE$(x&): GET #150, , idet$
+            END IF
+            CLOSE #150
+        END IF
+    ELSE
+        CLOSE #150
+    END IF
+
+    IF ideunsaved <> 1 THEN 'no file restored (takes priority over loading file from command line)
+        IF LEFT$(c$, 1) = CHR$(1) THEN 'load file
+            f$ = RIGHT$(c$, LEN(c$) - 1)
+            IF FileHasExtension(f$) = 0 THEN f$ = f$ + ".bas"
+            path$ = idezgetfilepath$(ideroot$, f$)
+
+            '(copied from ideopen)
+            ideerror = 2
+            OPEN path$ + idepathsep$ + f$ FOR INPUT AS #150: CLOSE #150
+            ideerror = 3
+            idepath$ = path$
+            lineinput3load path$ + idepathsep$ + f$
+            idet$ = SPACE$(LEN(lineinput3buffer) * 8)
+            i2 = 1
+            n = 0
+            chrtab$ = CHR$(9)
+            space1$ = " ": space2$ = "  ": space3$ = "   ": space4$ = "    "
+            chr7$ = CHR$(7): chr11$ = CHR$(11): chr12$ = CHR$(12): chr28$ = CHR$(28): chr29$ = CHR$(29): chr30$ = CHR$(30): chr31$ = CHR$(31)
+            DO
+                a$ = lineinput3$
+                l = LEN(a$)
+                IF l THEN asca = ASC(a$) ELSE asca = -1
+                IF asca <> 13 THEN
+                    IF asca <> -1 THEN
+                        'fix tabs
+                        ideopenfixtabsx:
+                        x = INSTR(a$, chrtab$)
+                        IF x THEN
+                            x2 = (x - 1) MOD 4
+                            IF x2 = 0 THEN a$ = LEFT$(a$, x - 1) + space4$ + RIGHT$(a$, l - x): l = l + 3: GOTO ideopenfixtabsx
+                            IF x2 = 1 THEN a$ = LEFT$(a$, x - 1) + space3$ + RIGHT$(a$, l - x): l = l + 2: GOTO ideopenfixtabsx
+                            IF x2 = 2 THEN a$ = LEFT$(a$, x - 1) + space2$ + RIGHT$(a$, l - x): l = l + 1: GOTO ideopenfixtabsx
+                            IF x2 = 3 THEN a$ = LEFT$(a$, x - 1) + space1$ + RIGHT$(a$, l - x): GOTO ideopenfixtabsx
+                        END IF
+                    END IF 'asca<>-1
+                    MID$(idet$, i2, l + 8) = MKL$(l) + a$ + MKL$(l): i2 = i2 + l + 8: n = n + 1
+                END IF
+            LOOP UNTIL asca = 13
+            lineinput3buffer = ""
+            iden = n: IF n = 0 THEN idet$ = MKL$(0) + MKL$(0): iden = 1 ELSE idet$ = LEFT$(idet$, i2 - 1)
+            IdeBmkN = 0
+            ideerror = 1
+            ideprogname = f$: _TITLE ideprogname + " - QB64"
+            IdeImportBookmarks idepath$ + idepathsep$ + ideprogname$
+            IdeAddRecent idepath$ + idepathsep$ + ideprogname$
+        END IF 'message 1
+
+    END IF 'no restore
+
+    skipload:
+
+
+
+
+
+
+
+
+
+
+
+END IF 'idelaunched
+
+IF c$ = CHR$(3) THEN
+    skipdisplay = 1 'assume .../starting already displayed
+    sendnextline = 1
+
+    'previous line was OK, so use layout if available
+
+    IF ideautolayout = 0 AND ideautoindent = 0 THEN
+
+        layout$ = ""
+        idelayoutallow = 0
+
+    ELSE
+
+        IF LEN(layout$) THEN
+
+            'calculate recommended indent level
+            FOR i = 1 TO LEN(layout$)
+                IF ASC(layout$, i) <> 32 OR i = LEN(layout$) THEN
+                    indent = i - 1
+                    layout$ = RIGHT$(layout$, LEN(layout$) - i + 1)
+                    EXIT FOR
+                END IF
+            NEXT
+
+            IF ideautolayout THEN
+                spacelayout:
+                ignoresp = 0
+                FOR i = 1 TO LEN(layout$)
+                    IF ASC(layout$, i) = 34 THEN
+                        ignoresp = ignoresp + 1: IF ignoresp = 2 THEN ignoresp = 0
+                    END IF
+                    IF ignoresp = 0 THEN
+                        IF MID$(layout$, i, 1) = sp THEN MID$(layout$, i, 1) = " "
+                        IF MID$(layout$, i, 1) = sp2 THEN layout$ = LEFT$(layout$, i - 1) + RIGHT$(layout$, LEN(layout$) - i): GOTO spacelayout
+                    END IF
+                NEXT
+            END IF
+
+            IF ideautoindent = 0 THEN
+                'note: can assume auto-format
+                'calculate old indent (if any)
+                a$ = idecompiledline$
+                indent = 0
+                FOR i = 1 TO LEN(a$)
+                    IF ASC(a$, i) <> 32 OR i = LEN(a$) THEN
+                        indent = i - 1
+                        EXIT FOR
+                    END IF
+                NEXT
+                indent$ = SPACE$(indent)
+            ELSE
+                indent$ = SPACE$(indent * ideautoindentsize)
+            END IF
+
+            IF ideautolayout = 0 THEN
+                'note: can assume auto-indent
+                a$ = idecompiledline$
+                layout$ = ""
+                FOR i = 1 TO LEN(a$)
+                    IF ASC(a$, i) <> 32 OR i = LEN(a$) THEN
+                        layout$ = RIGHT$(a$, LEN(a$) - i + 1)
+                        EXIT FOR
+                    END IF
+                NEXT
+            END IF
+
+            layout$ = indent$ + layout$
+
+            IF idecy <> idecompiledline OR idelayoutallow <> 0 THEN
+                idelayoutallow = 0
+
+                IF idecompiledline$ <> layout$ THEN
+                    idesetline idecompiledline, layout$
+                    IF idecompiledline >= idesy AND idecompiledline <= (idesy + 16) THEN skipdisplay = 0
+                END IF
+
+            ELSE
+
+                IF idecompiledline$ <> layout$ THEN
+                    idecurrentlinelayout = layout$
+                    idecurrentlinelayouti = idecy
+                END IF
+
+            END IF
+
+        END IF 'len(layout$)
+
+    END IF 'using layout/indent
+
+END IF '3
+
+IF c$ = CHR$(6) THEN
+    idecompiling = 0
+    ready = 1
+    IF ideautorun THEN ideautorun = 0: GOTO idemrunspecial
+END IF
+
+IF c$ = CHR$(11) THEN
+    idecompiling = 0
+    ready = 1
+    ideautorun = 0
+    showexecreated = 1
+END IF
+
+IF c$ = CHR$(7) THEN
+    skipdisplay = 1 'assume .../starting already displayed
+    idecompiledline = 0
+    sendnextline = 1
+END IF
+
+IF LEFT$(c$, 1) = CHR$(8) THEN
+    idecompiling = 0
+    failed = 1
+    ideautorun = 0
+END IF
+
+passback = 0
+IF LEFT$(c$, 1) = CHR$(10) THEN 'passback
+    skipdisplay = 1 'assume .../starting already displayed
+    sendnextline = 1
+    idecompiledline = idecompiledline - 1
+    passback = 1
+    passback$ = RIGHT$(c$, LEN(c$) - 1)
+END IF
+
+IF mustdisplay THEN skipdisplay = 0
+
+IF skipdisplay = 0 THEN
+
+    LOCATE , , 0
+
+    'note: menu bar shouldn't need repairing!
+    'COLOR 0, 7: LOCATE 1, 1: PRINT menubar$; 'repair menu bar
+
+    IF c$ <> CHR$(3) THEN
+        COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+        IF ready THEN LOCATE idewy - 3, 2: PRINT "OK"; 'report OK status
+        IF showexecreated THEN
+            showexecreated = 0
+            LOCATE idewy - 3, 2
+
+            IF os$ = "LNX" THEN
+                PRINT "Executable file created";
+            ELSE
+                PRINT ".EXE file created";
+            END IF
+
+        END IF
+    END IF
+
+END IF 'skipdisplay
+
+idefocusline = 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'main loop
+DO
+    ideloop:
+
+    idedeltxt 'removes temporary strings (typically created by guibox commands) by setting an index to 0
+
+    IF skipdisplay = 0 THEN
+
+        LOCATE , , 0
+
+        'update title of main window
+        COLOR 7, 1: LOCATE 2, 2: PRINT STRING$(idewx - 2, "Ä");
+        IF LEN(ideprogname) THEN a$ = ideprogname ELSE a$ = "Untitled" + tempfolderindexstr$
+        a$ = " " + a$ + " "
+        COLOR 1, 7: LOCATE 2, ((idewx / 2) - 1) - (LEN(a$) - 1) \ 2: PRINT a$;
+
+        'update search bar
+        LOCATE 2, idewx - 30
+        COLOR 7, 1: PRINT "´";
+        COLOR 3, 1: PRINT "Find[                     ]";
+        COLOR 7, 1: PRINT "Ã";
+        f$ = idefindtext
+        IF LEN(f$) > 20 THEN
+            f$ = "úúú" + RIGHT$(f$, 17)
+        END IF
+        LOCATE 2, idewx - 28 + 4: COLOR 3, 1: PRINT f$
+        findtext$ = f$
+
+        'alter cursor style to match insert mode
+        IF ideinsert THEN LOCATE , , , 0, 31 ELSE LOCATE , , , 8, 8
+
+        'display error message (if necessary)
+        IF failed THEN
+            COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+
+            'scrolling unavailable, but may span multiple lines
+            a$ = MID$(c$, 2, LEN(c$) - 5)
+
+
+            l = CVL(RIGHT$(c$, 4)): IF l <> 0 THEN idefocusline = l
+
+            x = 1
+            y = idewy - 3
+
+            IF l <> 0 AND idecy = l THEN a$ = a$ + " on current line"
+
+            FOR i = 1 TO LEN(a$)
+                x = x + 1: IF x = idewx THEN x = 2: y = y + 1
+                IF y > idewy - 1 THEN EXIT FOR
+                LOCATE y, x
+                PRINT CHR$(ASC(a$, i));
+            NEXT
+
+            IF l <> 0 AND idecy <> l THEN
+                a$ = " on line" + STR$(l)
+                COLOR 11, 1
+                FOR i = 1 TO LEN(a$)
+                    x = x + 1: IF x = idewx THEN x = 2: y = y + 1
+                    IF y > idewy - 1 THEN EXIT FOR
+                    LOCATE y, x
+                    PRINT CHR$(ASC(a$, i));
+                NEXT
+            END IF
+
+        END IF
+
+        IF idechangemade THEN
+            COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+
+
+            LOCATE idewy - 3, 2: PRINT "..."; 'assume new compilation will begin
+        END IF
+        COLOR 4, 1
+        ideshowtext
+
+        IF idehelp THEN
+
+
+
+
+            Help_ShowText
+
+            q = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
+            q = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
+
+            'COLOR 0, 7: LOCATE idewy, (idewx - 6) / 2: PRINT " Help "
+            'create and draw back string
+            Back_Str$ = STRING$(1000, 0)
+            Back_Str_I$ = STRING$(4000, 0)
+            top = UBOUND(back$)
+            FOR x = 1 TO top
+                n$ = Back_Name$(x)
+                IF x = Help_Back_Pos THEN p = LEN(Back_Str$)
+                Back_Str$ = Back_Str$ + " "
+                Back_Str_I$ = Back_Str_I$ + MKL$(x)
+                FOR x2 = 1 TO LEN(n$)
+                    Back_Str$ = Back_Str$ + CHR$(ASC(n$, x2))
+                    Back_Str_I$ = Back_Str_I$ + MKL$(x)
+                NEXT
+                Back_Str$ = Back_Str$ + " "
+                Back_Str_I$ = Back_Str_I$ + MKL$(x)
+
+                IF x <> top THEN
+                    Back_Str$ = Back_Str$ + CHR$(0)
+                    Back_Str_I$ = Back_Str_I$ + MKL$(0)
+                END IF
+            NEXT
+            Back_Str$ = Back_Str$ + STRING$(1000, 0)
+            Back_Str_I$ = Back_Str_I$ + STRING$(4000, 0)
+            Back_Str_Pos = p - idewx \ 2 + (LEN(Back_Name$(Help_Back_Pos)) + 2) \ 2 + 3
+            'COLOR 1, 2
+            'LOCATE idewy, 2: PRINT MID$(Back_Str$, Back_Str_Pos, idewx - 5)
+            LOCATE idewy, 2
+            FOR x = Back_Str_Pos TO Back_Str_Pos + idewx - 6
+                i = CVL(MID$(Back_Str_I$, (x - 1) * 4 + 1, 4))
+                a = ASC(Back_Str$, x)
+                IF a THEN
+                    COLOR 0, 7
+                    IF i < Help_Back_Pos THEN COLOR 9, 7
+                    IF i > Help_Back_Pos THEN COLOR 9, 7
+                    PRINT CHR$(a);
+                ELSE
+                    COLOR 7, 0
+                    PRINT "Ä";
+                END IF
+            NEXT
+            'Help_Search_Str
+            a$ = ""
+            IF LEN(Help_Search_Str) THEN
+                a$ = Help_Search_Str
+                IF LEN(a$) > 20 THEN a$ = "úúú" + RIGHT$(a$, 17)
+                a$ = "[" + a$ + "](DELETE=next)"
+            END IF
+            IdeInfo$ = a$
+        END IF
+
+        IF IdeSystem = 2 THEN 'override cursor position
+            SCREEN , , 0, 0
+            LOCATE 2, idewx - 28 + 4 + LEN(findtext$)
+            SCREEN , , 3, 0
+        END IF
+
+        IF IdeSystem = 3 THEN 'override cursor position
+            SCREEN , , 0, 0
+            _PALETTECOLOR 2, _RGB32(24, 24, 24)
+            LOCATE Help_cy - Help_sy + Help_wy1, Help_cx - Help_sx + Help_wx1
+            SCREEN , , 3, 0
+        END IF
+
+
+        IF IdeSystem <> 3 THEN IdeInfo$ = ""
+
+        'show info message (if any)
+        a$ = IdeInfo$
+        IF LEN(a$) > 60 THEN a$ = LEFT$(a$, 57) + "úúú"
+        IF LEN(a$) < 60 THEN a$ = a$ + SPACE$(60 - LEN(a$))
+        COLOR 0, 3: LOCATE idewy + idesubwindow, 2
+        PRINT a$;
+
+        LOCATE , , 1
+
+
+        PCOPY 3, 0
+
+    END IF 'skipdisplay
+
+
+
+    IF idechangemade THEN
+
+        IF idelayoutallow THEN idelayoutallow = idelayoutallow - 1
+
+        idecurrentlinelayouti = 0 'invalidate
+
+        idechangemade = 0
+        IF ideunsaved = -1 THEN ideunsaved = 0 ELSE ideunsaved = 1
+
+        IF idenoundo = 0 THEN
+
+            'undo/redo
+            'build data so it can be written in a single write (a backup requirement)
+            a$ = ""
+            a$ = a$ + MKL$(idesx) + MKL$(idesy) 'screen position
+            a$ = a$ + MKL$(idecx) + MKL$(idecy) 'cursor position
+            a$ = a$ + MKL$(ideselect) + MKL$(ideselectx1) + MKL$(ideselecty1) 'selection state & position
+            a$ = a$ + MKL$(iden) 'number of lines
+            a$ = a$ + MKL$(idel) 'selected line in buffer
+            a$ = a$ + MKL$(ideli) 'selected line offset in buffer
+            'bookmark info [v2]
+            a$ = a$ + MKL$(IdeBmkN)
+            FOR bi = 1 TO IdeBmkN: a$ = a$ + MKL$(IdeBmk(bi).y) + MKL$(IdeBmk(bi).x): NEXT
+            l& = LEN(idet$)
+            a$ = a$ + MKL$(l&) 'data size
+            a$ = MKL$(l& + LEN(a$)) + a$ + idet$ + MKL$(l& + LEN(a$)) 'header, data & encapsulation (reverse navigatable list)
+
+            'add undo event
+
+            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
+            '[oldest state entry][newest state entry][top-most entry(ignore if no wrapping required)]
+            h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
+
+            IF idemergeundo THEN
+                idemergeundo = 0
+                IF p2 <> p1 THEN 'can it be moved back?
+                    IF p2 = 13 THEN
+                        p2 = plast
+                    ELSE
+                        'get offset of previous message
+                        GET #150, p2 - 4, pp2l
+                        p2 = p2 - 4 - pp2l - 4
+                    END IF
+                END IF
+            END IF
+
+            IF p1 = 0 THEN 'not init
+                p1 = 13: p2 = 13
+            ELSE
+                IF p2 >= p1 THEN
+                    'no wrap
+                    'should we extend?
+                    IF p2 >= idebackupsize * 1000000 THEN
+                        'can't extend
+                        'set p2 as top-most
+                        plast = p2
+                        p2 = 13
+                        'can new state (a$) fit before p1?
+                        DO WHILE (p2 + LEN(a$) - 1) >= p1
+                            IF p1 = ideundobase THEN ideundobase = -1
+                            'no, so move p1 to next entry
+                            'note: it can be assumed that p1, being near/at beginning, won't have to wrap when being moved forward
+                            GET #150, p1, p1l
+                            p1 = p1 + 4 + p1l + 4
+                        LOOP
+                        'p1 & p2 ready
+                    ELSE
+                        'extend
+                        'find size of p2 event
+                        GET #150, p2, p2l
+                        p2 = p2 + 4 + p2l + 4
+                        'p1 & p2 ready
+                    END IF
+                ELSE
+                    'wrap
+                    'find size of p2 event
+                    GET #150, p2, p2l
+                    op2 = p2
+                    p2 = p2 + 4 + p2l + 4
+                    'can new state (a$) fit before p1?
+                    DO WHILE (p2 + LEN(a$) - 1) >= p1
+                        IF p1 = ideundobase THEN ideundobase = -1
+                        'no, so move p1 to next entry
+                        IF p1 = plast THEN
+                            p1 = 13
+                            EXIT DO
+                        ELSE
+                            GET #150, p1, p1l
+                            p1 = p1 + 4 + p1l + 4
+                        END IF
+                    LOOP
+                    'should we extend?
+                    IF p2 >= idebackupsize * 1000000 THEN
+                        'can't extend
+                        'set op2 as top-most
+                        plast = op2
+                        p2 = 13
+                        'can new state (a$) fit before p1?
+                        DO WHILE (p2 + LEN(a$) - 1) >= p1
+                            IF p1 = ideundobase THEN ideundobase = -1
+                            'no, so move p1 to next entry
+                            'note: it can be assumed that p1, being near/at beginning, won't have to wrap when being moved forward
+                            GET #150, p1, p1l
+                            p1 = p1 + 4 + p1l + 4
+                        LOOP
+                    END IF
+                    'p1 & p2 ready
+                END IF
+            END IF
+
+            'update p1,p2,plast
+            h$ = MKL$(p1) + MKL$(p2) + MKL$(plast)
+            PUT #150, 1, h$
+
+            'add new state
+            PUT #150, p2, a$
+
+            CLOSE #150
+
+            ideundopos = p2
+            IF ideundobase = 0 THEN ideundobase = ideundopos
+
+            'set undo flag once
+            IF ideundoflag = 0 THEN
+                ideundoflag = 1
+                OPEN tmpdir$ + "autosave.bin" FOR BINARY AS #150: a$ = CHR$(1): PUT #150, , a$: CLOSE #150 'set flag
+            END IF
+
+        ELSE
+            idenoundo = 0
+        END IF
+
+        'begin new compilation
+        ideautorun = 0
+        idecompiling = 1
+        ide2 = 2
+        idecompiledline$ = idegetline(1)
+        idereturn$ = idecompiledline$
+        idecompiledline = 1
+        EXIT FUNCTION
+    END IF 'idechangemade
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    change = 0
+    waitforinput:
+
+    IF idecurrentlinelayouti THEN
+        IF idecy <> idecurrentlinelayouti THEN
+            idesetline idecurrentlinelayouti, idecurrentlinelayout$
+            idecurrentlinelayouti = 0
+            change = 1 'simulate a change to force a screen update
+        END IF
+    END IF
+
+    exitvalue = _EXIT
+    IF (exitvalue AND 1) <> 0 OR ideexit <> 0 THEN ideexit = 0: GOTO quickexit
+
+    IF UpdateHandle THEN
+        ContinueDownloads
+        IF DL(UpdateHandle).State = 2 THEN 'download complete
+            update 0
+            UpdateHandle = 0
+            change = 1 'simulate a change to force a screen update
+        ELSE
+            IF ABS(TIMER - ideupdatetimerval) >= 5 THEN 'give up after 5 seconds
+                CLOSE DL(UpdateHandle).Handle: DL(UpdateHandle).State = 0: UpdateHandle = 0
+            END IF
+        END IF
+    END IF
+
+    GetInput
+    IF iCHANGED THEN
+        IF (mX <> mox OR mY <> moy) AND mB <> 0 THEN change = 1 'dragging mouse
+        IF mB <> mOB THEN change = 1 'button changed
+        IF mB2 <> mOB2 THEN change = 1 'button changed
+        IF mCLICK <> 0 OR mCLICK2 <> 0 THEN change = 1
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF KSTATECHANGED THEN change = 1
+    END IF
+    IF mB <> 0 AND idembmonitor = 1 THEN change = 1
+    IF mB = 0 THEN idemouseselect = 0: idembmonitor = 0
+
+
+    IF KALT THEN 'alt held
+
+        IF idealthighlight = 0 AND KALTPRESS = -1 THEN
+            'highlist first letter of each menu item
+            idealthighlight = 1
+            LOCATE , , 0: COLOR 15, 7: x = 4
+            FOR i = 1 TO menus
+                LOCATE 1, x: PRINT LEFT$(menu$(i, 0), 1);
+                x = x + LEN(menu$(i, 0)) + 2
+                IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 1
+            NEXT
+            ideentermenu = 1 'alt has just been pressed, so any next keystroke could enter a menu)
+            'IF change = 0 THEN
+            skipdisplay = 0: GOTO ideloop 'force update so cursor will be restored to correct position
+        END IF
+
+    ELSE 'alt not held
+
+        IF idealthighlight = 1 THEN
+            'remove highlight
+            idealthighlight = 0
+            LOCATE , , 0: COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
+            IF ideentermenu = 1 AND KCONTROL = 0 THEN 'alt was pressed then released
+                LOCATE , , , 8, 8: skipdisplay = 0: ideentermenu = 0: GOTO startmenu
+            END IF
+        END IF
+
+    END IF 'alt not held
+
+    IF change = 0 THEN
+
+        'continue compilation?
+        IF idecompiling THEN
+            IF sendnextline THEN
+                IF idecompiledline < iden THEN
+                    idecompiledline = idecompiledline + 1
+                    ide2 = 4
+                    IF passback THEN
+                        idecompiledline$ = passback$
+                        idereturn$ = idecompiledline$
+                    ELSE
+                        idecompiledline$ = idegetline(idecompiledline)
+                        idereturn$ = idecompiledline$
+                    END IF
+                    EXIT FUNCTION
+                ELSE
+                    'finished compilation
+                    ide2 = 5 'end of program reached, what next?
+                    'could return:
+                    'i) 6 code ready for export/run
+                    'ii) 7 repass required (if so send data from the beginning again)
+                    EXIT FUNCTION
+                END IF
+            END IF
+        END IF
+
+        _LIMIT 16
+
+        GOTO waitforinput
+    END IF 'change=0
+
+    ideentermenu = 0
+
+    ideundocombo = ideundocombo - 1
+    IF ideundocombo < 0 THEN ideundocombo = 0
+
+    skipdisplay = 0
+
+    'IdeSystem independent routines
+
+    IF mCLICK THEN
+        IF mX >= 2 AND mX <= idewx AND mY >= idewy - 3 AND mY <= idewy - 1 THEN
+            IF SCREEN(mY, mX, 1) = 11 + 1 * 16 THEN
+                IF idefocusline THEN idecx = 1: idecy = idefocusline: ideselect = 0: GOTO specialchar
+            END IF
+        END IF
+    END IF
+
+    IF KB = KEY_F5 AND KCTRL THEN 'run detached
+        idemdetached:
+        iderunmode = 1
+        GOTO idemrunspecial
+    END IF
+
+    IF KB = KEY_F11 THEN 'make exe only
+        idemexe:
+        iderunmode = 2
+        GOTO idemrunspecial
+    END IF
+
+    IF KB = KEY_F5 THEN 'Note: F5 or SHIFT+F5 accepted
+        idemrun:
+        iderunmode = 0 'standard run
+        idemrunspecial:
+
+        'run program
+        IF ready THEN
+
+            LOCATE , , 0
+            COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+
+            IF idecompiled THEN
+
+                IF iderunmode = 2 THEN
+                    LOCATE idewy - 3, 2
+
+                    IF os$ = "LNX" THEN
+                        PRINT "Already created executable file!";
+                    ELSE
+                        PRINT "Already created .EXE file!";
+                    END IF
+
+                    GOTO specialchar
+                END IF
+
+                LOCATE idewy - 3, 2: PRINT "Starting program...";
+            ELSE
+
+                IF os$ = "LNX" THEN
+                    LOCATE idewy - 3, 2: PRINT "Creating executable file...";
+                ELSE
+                    LOCATE idewy - 3, 2: PRINT "Creating .EXE file...";
+                END IF
+
+            END IF
+            PCOPY 3, 0
+
+            'send run request
+            'prepare name
+            IF ideprogname$ = "" THEN
+                f$ = "untitled" + tempfolderindexstr$
+            ELSE
+                f$ = ideprogname$
+                f$ = RemoveFileExtension$(f$)
+            END IF
+            ide2 = 9: idereturn$ = f$
+            EXIT FUNCTION
+        END IF
+        'not ready!
+        IF failed = 1 THEN GOTO specialchar
+        'assume still compiling ...
+        ideautorun = 1
+
+        'correct status message
+        LOCATE , , 0
+        COLOR 7, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
+
+
+        LOCATE idewy - 3, 2: PRINT "Checking program... (editing program will cancel request)";
+
+        'must move the cursor back to its correct location
+        ideshowtext
+        LOCATE , , 1
+        PCOPY 3, 0
+
+        GOTO specialchar
+    END IF
+
+    LOCATE , , 0
+    LOCATE , , , 8, 8
+
+    IF mCLICK AND idemouseselect = 0 THEN
+        IF mY = 1 THEN
+            x = 3
+            FOR i = 1 TO menus
+                x2 = LEN(menu$(i, 0)) + 2
+                IF mX >= x AND mX < x + x2 THEN
+                    m = i
+                    GOTO showmenu
+                END IF
+                x = x + x2
+                IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 2
+            NEXT
+        END IF
+    END IF
+
+    FOR i = 1 TO menus
+        a$ = UCASE$(LEFT$(menu$(i, 0), 1))
+        IF KALT AND UCASE$(K$) = a$ THEN
+            m = i
+            LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
+            PCOPY 3, 0
+            GOTO showmenu
+        END IF
+    NEXT
+
+
+    IF KB = KEY_F3 THEN
+        IF IdeSystem = 3 THEN IdeSystem = 1
+        idemf3:
+        IF idefindtext$ <> "" THEN
+            IF KSHIFT THEN idefindinvert = 1
+            IdeAddSearched idefindtext
+            idefindagain
+        ELSE
+            GOTO idefindjmp
+        END IF
+        GOTO specialchar
+    END IF
+
+    IF KSHIFT AND KB = KEY_F1 THEN
+        IF idehelp = 0 THEN
+            idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
+            Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
+            idehelp = 1
+            skipdisplay = 0
+            IdeSystem = 3
+            retval = 1: GOTO redraweverything2
+        END IF
+        IdeSystem = 3
+        GOTO specialchar
+    END IF
+
+
+    'Scroll bar code goes here
+    STATIC Help_Scrollbar, Help_Scrollbar_Method
+    '1=arrow less, 2=arrow more, 3=dragging 'bit', 4=clicking in space
+    IF mB = 0 THEN Help_Scrollbar = 0
+    IF idehelp THEN
+        IF IdeSystem = 3 THEN
+            'q = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
+            'q = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
+            IF mCLICK THEN
+                IF mX >= 2 AND mX <= idewx - 1 AND mY = idewy + idesubwindow - 1 THEN
+                    Help_Scrollbar = 1
+                    v = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
+                    IF v <> mX THEN Help_Scrollbar_Method = 3 ELSE Help_Scrollbar_Method = 4
+                    IF mX = 2 THEN Help_Scrollbar_Method = 1
+                    IF mX = idewx - 1 THEN Help_Scrollbar_Method = 2
+                END IF
+                IF mY >= idewy + 1 AND mY <= idewy + idesubwindow - 2 AND mX = idewx THEN
+                    Help_Scrollbar = 2
+                    v = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
+                    IF v <> mY THEN Help_Scrollbar_Method = 3 ELSE Help_Scrollbar_Method = 4
+                    IF mY = idewy + 1 THEN Help_Scrollbar_Method = 1
+                    IF mY = idewy + idesubwindow - 2 THEN Help_Scrollbar_Method = 2
+                END IF
+            END IF 'mclick
+
+            IF Help_Scrollbar THEN
+                idembmonitor = 1
+                IF Help_Scrollbar_Method = 1 THEN
+                    IF Help_Scrollbar = 1 THEN KB = KEY_LEFT: idewait 'fall through...
+                    IF Help_Scrollbar = 2 THEN KB = KEY_UP: idewait 'fall through...
+                END IF
+                IF Help_Scrollbar_Method = 2 THEN
+                    IF Help_Scrollbar = 1 THEN KB = KEY_RIGHT: idewait 'fall through...
+                    IF Help_Scrollbar = 2 THEN KB = KEY_DOWN: idewait 'fall through...
+                END IF
+                IF Help_Scrollbar_Method = 3 THEN
+                    IF Help_Scrollbar = 1 THEN
+                        v = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
+                        IF mX < v THEN
+                            Help_cx = Help_cx - 8
+                            IF Help_cx < 1 THEN Help_cx = 1
+                            IF Help_sx > Help_cx THEN Help_sx = Help_cx
+                            idewait
+                        END IF
+                        IF mX > v THEN
+                            Help_cx = Help_cx + 8
+                            IF Help_cx > help_w + 1 THEN Help_cx = help_w + 1
+                            idewait
+                        END IF
+                    END IF
+                    IF Help_Scrollbar = 2 THEN
+                        v = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
+                        IF mY < v THEN KB = KEY_PAGEUP: idewait 'fall through...
+                        IF mY > v THEN KB = KEY_PAGEDOWN: idewait 'fall through...
+                    END IF
+
+                END IF
+
+
+
+                IF Help_Scrollbar_Method = 4 THEN
+                    IF Help_Scrollbar = 1 THEN
+                        IF help_w > 1 THEN
+                            IF mX <= 3 THEN
+                                Help_sx = 1: Help_cx = 1
+                            ELSEIF mX >= idewx - 2 THEN
+                                Help_sx = help_w + 1: Help_cx = help_w + 1
+                            ELSE
+                                x = mX
+                                p! = x - 4 + .5 '4 (the min pos) becomes .5
+                                p! = p! / (idewx - 3 - 3)
+                                i = p! * (help_w) + 1
+                                Help_sx = i: Help_cx = i
+                            END IF
+                        END IF
+                    END IF
+                    IF Help_Scrollbar = 2 THEN
+                        IF help_h > 1 THEN
+
+                            IF mY <= idewy + 2 THEN
+                                Help_cy = 1
+                            ELSEIF mY >= idewy + idesubwindow - 3 THEN
+                                Help_cy = help_h + 1
+                            ELSE
+                                y = mY
+                                p! = y - idewy - 3 + .5
+                                p! = p! / (idesubwindow - 3 - 3)
+                                i = p! * (help_h) + 1
+                                Help_cy = i
+                            END IF
+                            'fix cursor
+                            IF Help_cx < 1 THEN Help_cx = 1
+                            IF Help_cx > help_w + 1 THEN Help_cx = help_w + 1
+                            IF Help_cy < 1 THEN Help_cy = 1
+                            IF Help_cy > help_h + 1 THEN Help_cy = help_h + 1
+                            'screen follows cursor
+                            IF Help_cx < Help_sx THEN Help_sx = Help_cx
+                            IF Help_cx >= Help_sx + Help_ww THEN Help_sx = Help_cx - Help_ww + 1
+                            IF Help_cy < Help_sy THEN Help_sy = Help_cy
+                            IF Help_cy >= Help_sy + Help_wh THEN Help_sy = Help_cy - Help_wh + 1
+                            'fix screen
+                            IF Help_sx < 1 THEN Help_sx = 1
+                            IF Help_sy < 1 THEN Help_sy = 1
+                        END IF
+                    END IF
+                END IF
+
+                'IF mB AND idemouseselect = 2 THEN
+                '    'move vbar scroller (idecy) to appropriate position
+                '    IF iden > 1 THEN
+                '        IF mY <= 4 THEN idecy = 1
+                '        IF mY >= idewy - 7 THEN idecy = iden
+                '        IF mY > 4 AND mY < idewy - 7 THEN
+                '            y = mY
+                '            p! = y - 3 - 2 + .5
+                '            p! = p! / ((idewy - 8) - 4)
+                '            i = p! * (iden - 1) + 1
+                '            idecy = i
+                '        END IF
+                '    END IF
+                'END IF
+
+
+                IF mCLICK THEN mCLICK = 0
+            END IF
+
+        END IF 'system=3
+    END IF 'idehelp
+
+
+
+
+    'IdeSystem specific code goes here
+
+    IF mCLICK THEN
+        IF mY = 2 AND mX > idewx - 30 AND mX < idewx - 1 THEN 'inside text box
+            IF mX <= idewx - 28 + 2 THEN
+                IF LEN(idefindtext) = 0 THEN
+                    IdeSystem = 2 'no search string, so begin editing
+                ELSE
+                    IdeAddSearched idefindtext
+                    IdeSystem = 1: GOTO idemf3 'F3 functionality
+                END IF
+            ELSE
+                IF mX = idewx - 3 THEN
+                    PCOPY 0, 3
+                    f$ = idesearchedbox
+                    IF LEN(f$) THEN idefindtext = f$
+                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                    IF LEN(f$) THEN GOTO idemf3 'F3 functionality
+                    GOTO ideloop
+                ELSE
+                    IF IdeSystem = 2 THEN idefindtext = "" 'clicking on the text field again clears text
+                    IdeSystem = 2
+                END IF
+            END IF
+        END IF
+    END IF
+
+    'IdeSystem
+
+    IF KB = KEY_F6 THEN 'switch windows
+        IF idehelp = 1 THEN
+            IF IdeSystem = 3 THEN
+                IdeSystem = 1
+            ELSE
+                IdeSystem = 3
+            END IF
+        END IF
+    END IF
+
+    IF idehelp = 1 THEN 'switch windows?
+        IF mCLICK THEN
+            IF IdeSystem = 3 THEN
+                IF mY >= 2 AND mY < idewy THEN
+                    IdeSystem = 1
+                END IF
+            ELSE
+                IF mY >= idewy AND mY < idewy + idesubwindow THEN
+                    IdeSystem = 3
+                END IF
+            END IF
+        END IF
+    END IF
+
+    IF IdeSystem = 2 THEN 'certain keys transfer control
+        z = 0
+        IF KB = KEY_UP THEN z = 1
+        IF KB = KEY_DOWN THEN z = 1
+        IF KB = KEY_PAGEUP THEN z = 1
+        IF KB = KEY_PAGEDOWN THEN z = 1
+        IF mWHEEL THEN z = 1
+        IF z = 1 THEN IdeSystem = 1
+    END IF
+
+    IF IdeSystem = 2 THEN
+
+        IF (KSHIFT AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "V") THEN 'paste from clipboard
+            clip$ = _CLIPBOARD$ 'read clipboard
+            x = INSTR(clip$, CHR$(13))
+            IF x THEN clip$ = LEFT$(clip$, x - 1)
+            x = INSTR(clip$, CHR$(10))
+            IF x THEN clip$ = LEFT$(clip$, x - 1)
+            IF LEN(clip$) THEN
+                idefindtext = clip$
+                GOTO specialchar
+            END IF
+        END IF
+
+        IF ((KCTRL AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "C")) THEN 'copy to clipboard
+            IF LEN(idefindtext) THEN _CLIPBOARD$ = idefindtext
+            GOTO specialchar
+        END IF
+
+        IF LEN(K$) = 1 THEN
+            IF K$ = CHR$(27) THEN
+                IdeSystem = 1
+                GOTO specialchar
+            END IF
+            IF ASC(K$) = 13 THEN
+                IF LEN(idefindtext) THEN IdeAddSearched idefindtext: GOTO idemf3 'F3 functionality
+                GOTO specialchar
+            END IF
+            IF ASC(K$) = 8 THEN
+                IF LEN(idefindtext) THEN idefindtext = LEFT$(idefindtext, LEN(idefindtext) - 1)
+                GOTO specialchar
+            END IF
+            IF ASC(K$) < 32 THEN GOTO specialchar 'block control characters
+
+            idefindtext = idefindtext + K$
+            GOTO specialchar
+        END IF
+
+        IF mCLICK THEN
+            IF mX > 1 AND mX < idewx AND mY > 2 AND mY < (idewy - 5) THEN 'inside text box
+                IdeSystem = 1
+            END IF
+        END IF
+
+        GOTO specialchar
+    END IF
+
+    IF IdeSystem = 3 THEN
+
+        IF mCLICK OR K$ = CHR$(27) THEN
+            IF (mY = idewy AND mX = idewx - 2) OR K$ = CHR$(27) THEN 'close help
+
+
+                'IF idesubwindow THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
+                'idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
+
+                idewy = idewy + idesubwindow
+                idehelp = 0
+                idesubwindow = 0
+                skipdisplay = 0
+                IdeSystem = 1
+                retval = 1: GOTO redraweverything2
+
+            END IF
+        END IF
+
+
+        IF mCLICK THEN
+            IF mY = idewy THEN
+
+                sx = 2
+                FOR x = Back_Str_Pos TO Back_Str_Pos + idewx - 6
+                    IF mX = sx THEN
+                        i = CVL(MID$(Back_Str_I$, (x - 1) * 4 + 1, 4))
+                        a = ASC(Back_Str$, x)
+                        IF a <> 0 AND i <> Help_Back_Pos THEN
+                            Help_Back(Help_Back_Pos).sx = Help_sx 'update position
+                            Help_Back(Help_Back_Pos).sy = Help_sy
+                            Help_Back(Help_Back_Pos).cx = Help_cx
+                            Help_Back(Help_Back_Pos).cy = Help_cy
+                            Help_Back_Pos = i
+                            Help_Select = 0: Help_MSelect = 0
+                            Help_sx = Help_Back(Help_Back_Pos).sx
+                            Help_sy = Help_Back(Help_Back_Pos).sy
+                            Help_cx = Help_Back(Help_Back_Pos).cx
+                            Help_cy = Help_Back(Help_Back_Pos).cy
+                            a$ = Wiki(Back$(Help_Back_Pos))
+                            WikiParse a$
+                            GOTO newpageparsed
+                        END IF
+                    END IF
+                    sx = sx + 1
+                NEXT
+
+                'LOCATE idewy, 2
+                'FOR x = Back_Str_Pos TO Back_Str_Pos + idewx - 5
+                '    i = CVL(MID$(Back_Str_I$, (x - 1) * 4 + 1, 4))
+                '    a = ASC(Back_Str$, x)
+                '    IF a THEN
+                '        COLOR 0, 7
+                '        IF i < Help_Back_Pos THEN COLOR 9, 7
+                '        IF i > Help_Back_Pos THEN COLOR 9, 7
+                '        PRINT CHR$(a);
+                '    ELSE
+                '        COLOR 7, 0
+                '        PRINT "Ä";
+                '    END IF
+                'NEXT
+
+
+            END IF
+        END IF
+
+        IF KCONTROL AND UCASE$(K$) = "A" THEN 'select all
+            IF help_h THEN
+                Help_Select = 2
+                Help_SelX1 = 1
+                Help_SelY1 = 1
+                Help_SelX2 = 10000000
+                Help_SelY2 = help_h
+                Help_cx = 1: Help_cy = help_h + 1
+                GOTO keep_select
+            END IF
+        END IF
+
+        IF ((KCTRL AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "C")) AND Help_Select = 2 THEN 'copy to clipboard
+            clip$ = ""
+            FOR y = Help_SelY1 TO Help_SelY2
+                IF y <> Help_SelY1 THEN clip$ = clip$ + CHR$(13) + CHR$(10)
+                a$ = ""
+                IF y <= help_h THEN
+                    l = CVL(MID$(Help_Line$, (y - 1) * 4 + 1, 4))
+                    x = l
+                    x3 = 1
+                    c = ASC(Help_Txt$, x)
+                    DO UNTIL c = 13
+                        IF Help_Select = 2 THEN
+                            IF y >= Help_SelY1 AND y <= Help_SelY2 THEN
+                                IF x3 >= Help_SelX1 AND x3 <= Help_SelX2 THEN
+                                    a$ = a$ + CHR$(c)
+                                END IF
+                            END IF
+                        END IF
+                        x3 = x3 + 1: x = x + 4: c = ASC(Help_Txt$, x)
+                    LOOP
+                END IF
+                clip$ = clip$ + a$
+            NEXT
+            IF Help_SelY1 = Help_SelY2 AND Help_cy > Help_cy1 THEN clip$ = clip$ + CHR$(13) + CHR$(10)
+            IF clip$ <> "" THEN _CLIPBOARD$ = clip$
+            GOTO keep_select
+        END IF
+
+
+        IF mX >= Help_wx1 AND mY >= Help_wy1 AND mX <= Help_wx2 AND mY <= Help_wy2 THEN
+            IF mCLICK THEN
+                Help_cx = Help_sx + (mX - Help_wx1)
+                Help_cy = Help_sy + (mY - Help_wy1)
+                Help_Select = 1
+                Help_MSelect = 1
+                Help_cx1 = Help_cx: Help_cy1 = Help_cy
+                GOTO keep_select
+            END IF
+            IF (mB AND Help_Scrollbar = 0) THEN
+                Help_cx = Help_sx + (mX - Help_wx1)
+                Help_cy = Help_sy + (mY - Help_wy1)
+                IF Help_Select THEN GOTO keep_select
+            END IF
+        ELSE
+            'outside field
+            IF (mB AND Help_Scrollbar = 0) AND Help_MSelect = 1 AND Help_Select = 2 THEN
+                IF mX < Help_wx1 THEN Help_cx = Help_cx - 1
+                IF mX > Help_wx2 THEN Help_cx = Help_cx + 1
+                IF mY < Help_wy1 THEN Help_cy = Help_cy - 1
+                IF mY > Help_wy2 THEN Help_cy = Help_cy + 1
+                GOTO keep_select
+            END IF
+        END IF
+
+        IF KSHIFT THEN
+            IF Help_Select = 0 THEN
+                Help_Select = 1
+                Help_MSelect = 0
+                Help_cx1 = Help_cx: Help_cy1 = Help_cy
+            END IF
+        ELSE
+            IF (KB > 0 OR mWHEEL <> 0) AND KSTATECHANGED = 0 THEN Help_Select = 0
+        END IF
+        keep_select:
+
+        IF KB = KEY_DELETE THEN
+            IF LEN(Help_Search_Str) THEN norep = 1: GOTO delsrchagain
+        END IF
+
+        IF LEN(K$) = 1 AND KCONTROL = 0 THEN
+            k = ASC(K$)
+            IF alphanumeric(k) OR k = 36 OR k = 32 THEN
+                norep = 0
+                t# = TIMER(0.001)
+                oldk = 0: IF LEN(Help_Search_Str) THEN oldk = ASC(Help_Search_Str, LEN(Help_Search_Str))
+                IF t# > Help_Search_Time + 1 OR t# < Help_Search_Time OR (k = oldk AND LEN(Help_Search_Str) = 1) THEN
+                    IF k = oldk THEN norep = 1
+                    Help_Search_Str = K$
+                ELSE
+                    Help_Search_Str = Help_Search_Str + K$
+                END IF
+                Help_Search_Time = t#
+                'search for next appropriate link
+                delsrchagain:
+                ox = Help_cx
+                oy = Help_cy
+                IF oy > help_h THEN oy = 1
+                cy = oy
+                cx = ox
+                IF norep = 1 THEN cx = cx + 1
+                looped = 0
+                DO
+                    'build the line
+                    l = CVL(MID$(Help_Line$, (cy - 1) * 4 + 1, 4))
+                    x = l
+                    a$ = ""
+                    c = ASC(Help_Txt$, x)
+                    DO UNTIL c = 13
+                        lnk = CVI(MID$(Help_Txt$, x + 2, 2))
+                        IF lnk THEN a$ = a$ + CHR$(c) ELSE a$ = a$ + CHR$(0) 'only add text with links
+                        x = x + 4: c = ASC(Help_Txt$, x)
+                    LOOP
+
+                    helpscanrow:
+                    px = INSTR(cx, UCASE$(a$), UCASE$(Help_Search_Str))
+                    px2 = INSTR(cx, UCASE$(a$), UCASE$("_" + Help_Search_Str))
+                    IF px2 < px AND px2 <> 0 AND LEFT$(Help_Search_Str, 1) <> "_" THEN px = px2
+
+                    IF looped = 1 AND cy = oy AND px = 0 THEN GOTO strnotfound
+                    IF px THEN
+                        'isolate and REVERSE select link
+                        l = CVL(MID$(Help_Line$, (cy - 1) * 4 + 1, 4))
+                        x = l
+                        x2 = 1
+                        a$ = ""
+                        c = ASC(Help_Txt$, x)
+                        oldlnk = 0
+                        lnkx1 = 0: lnkx2 = 0
+                        DO UNTIL c = 13
+                            lnk = CVI(MID$(Help_Txt$, x + 2, 2))
+                            IF lnkx1 = 0 AND lnk <> 0 AND oldlnk = 0 AND px = x2 THEN lnkx1 = x2
+                            IF lnkx1 <> 0 AND lnk = 0 AND lnkx2 = 0 THEN lnkx2 = x2 - 1
+                            x = x + 4: c = ASC(Help_Txt$, x)
+                            x2 = x2 + 1
+                            oldlnk = lnk
+                        LOOP
+
+                        IF Back_Name$(Help_Back_Pos) = "Alphabetical" OR Back_Name$(Help_Back_Pos) = "By Usage" THEN
+                            IF lnkx1 <> 3 THEN
+                                cx = px + 1
+                                GOTO helpscanrow
+                            END IF
+                        END IF
+
+                        IF lnkx1 THEN
+                            IF lnkx2 = 0 THEN lnkx2 = x2 - 1
+                            Help_Select = 2
+                            Help_cx1 = lnkx2 + 1
+                            Help_cx = lnkx1
+                            Help_cy = cy
+                            Help_cy1 = cy
+                            GOTO foundsstr
+                        END IF
+
+                        cx = px + 1
+                        GOTO helpscanrow
+                    END IF
+                    cx = 1
+                    cy = cy + 1
+                    IF cy > help_h THEN cy = 1: looped = 1
+                LOOP
+            END IF
+        END IF
+        foundsstr:
+        strnotfound:
+
+        IF KB = KEY_HOME AND KCONTROL THEN
+            Help_cx = 1: Help_cy = 1
+        END IF
+        IF KB = KEY_END AND KCONTROL THEN
+            Help_cx = 1: Help_cy = help_h + 1
+        END IF
+
+        IF KB = KEY_HOME AND KCONTROL = 0 THEN Help_cx = 1
+        IF KB = KEY_END AND KCONTROL = 0 THEN
+            Help_cx = Help_LineLen(Help_cy - Help_sy) + 1
+        END IF
+
+        IF KB = KEY_PAGEUP THEN
+            Help_cy = Help_cy - (Help_wh - 1)
+        END IF
+
+        IF KB = KEY_PAGEDOWN THEN
+            Help_cy = Help_cy + (Help_wh - 1)
+        END IF
+
+        IF KB = KEY_DOWN THEN Help_cy = Help_cy + 1
+        IF KB = KEY_UP THEN Help_cy = Help_cy - 1
+        IF KB = KEY_LEFT THEN Help_cx = Help_cx - 1
+        IF KB = KEY_RIGHT THEN Help_cx = Help_cx + 1
+
+        'move relative to top/bottom
+        IF mWHEEL < 0 THEN Help_cy = Help_sy
+        IF mWHEEL > 0 THEN Help_cy = Help_sy + (Help_wh - 1)
+        Help_cy = Help_cy + mWHEEL * 3
+
+        'fix cursor
+        IF Help_cx < 1 THEN Help_cx = 1
+        IF Help_cx > help_w + 1 THEN Help_cx = help_w + 1
+        IF Help_cy < 1 THEN Help_cy = 1
+        IF Help_cy > help_h + 1 THEN Help_cy = help_h + 1
+
+        'screen follows cursor
+        IF Help_cx < Help_sx THEN Help_sx = Help_cx
+        IF Help_cx >= Help_sx + Help_ww THEN Help_sx = Help_cx - Help_ww + 1
+
+        IF Help_cy < Help_sy THEN Help_sy = Help_cy
+        IF Help_cy >= Help_sy + Help_wh THEN Help_sy = Help_cy - Help_wh + 1
+
+        'fix screen
+        IF Help_sx < 1 THEN Help_sx = 1
+        IF Help_sy < 1 THEN Help_sy = 1
+
+        IF K$ = CHR$(8) THEN
+            IF Help_Back_Pos > 1 THEN
+                Help_Back(Help_Back_Pos).sx = Help_sx 'update position
+                Help_Back(Help_Back_Pos).sy = Help_sy
+                Help_Back(Help_Back_Pos).cx = Help_cx
+                Help_Back(Help_Back_Pos).cy = Help_cy
+                Help_Back_Pos = Help_Back_Pos - 1
+                Help_Select = 0: Help_MSelect = 0
+                Help_sx = Help_Back(Help_Back_Pos).sx
+                Help_sy = Help_Back(Help_Back_Pos).sy
+                Help_cx = Help_Back(Help_Back_Pos).cx
+                Help_cy = Help_Back(Help_Back_Pos).cy
+                a$ = Wiki(Back$(Help_Back_Pos))
+                WikiParse a$
+                GOTO newpageparsed
+            END IF
+        END IF
+
+        IF Help_cy >= 1 AND Help_cy <= help_h THEN
+            l = CVL(MID$(Help_Line$, (Help_cy - 1) * 4 + 1, 4))
+            x = l
+            x2 = 1
+            c = ASC(Help_Txt$, x)
+            DO UNTIL c = 13
+
+                IF x2 = Help_cx THEN
+                    lnk = CVI(MID$(Help_Txt$, x + 2, 2))
+                    IF lnk THEN
+                        'retrieve lnk info
+                        l1 = 1
+                        FOR lx = 1 TO lnk - 1
+                            l1 = INSTR(l1, Help_Link$, Help_Link_Sep$) + 1
+                        NEXT
+                        l2 = INSTR(l1, Help_Link$, Help_Link_Sep$) - 1
+                        l$ = MID$(Help_Link$, l1, l2 - l1 + 1)
+                        'assume PAGE
+                        l$ = RIGHT$(l$, LEN(l$) - 5)
+
+                        IF mCLICK OR K$ = CHR$(13) THEN
+                            mCLICK = 0
+
+                            IF Back$(Help_Back_Pos) <> l$ THEN
+                                Help_Select = 0: Help_MSelect = 0
+                                'COLOR 7, 0
+
+                                Help_Back(Help_Back_Pos).sx = Help_sx 'update position
+                                Help_Back(Help_Back_Pos).sy = Help_sy
+                                Help_Back(Help_Back_Pos).cx = Help_cx
+                                Help_Back(Help_Back_Pos).cy = Help_cy
+
+                                top = UBOUND(back$)
+
+                                IF Help_Back_Pos < top THEN
+                                    IF Back$(Help_Back_Pos + 1) = l$ THEN
+                                        GOTO usenextentry
+                                    END IF
+                                END IF
+
+                                top = top + 1
+                                REDIM _PRESERVE Back(top) AS STRING
+                                REDIM _PRESERVE Help_Back(top) AS Help_Back_Type
+                                REDIM _PRESERVE Back_Name(top) AS STRING
+                                'Shuffle array upwards after current pos
+                                FOR x = top - 1 TO Help_Back_Pos + 1 STEP -1
+                                    Back_Name$(x + 1) = Back_Name$(x)
+                                    Back$(x + 1) = Back$(x)
+                                    Help_Back(x + 1).sx = Help_Back(x).sx
+                                    Help_Back(x + 1).sy = Help_Back(x).sy
+                                    Help_Back(x + 1).cx = Help_Back(x).cx
+                                    Help_Back(x + 1).cy = Help_Back(x).cy
+                                NEXT
+                                usenextentry:
+                                Help_Back_Pos = Help_Back_Pos + 1
+                                Back$(Help_Back_Pos) = l$
+                                Back_Name$(Help_Back_Pos) = Back2BackName$(l$)
+                                Help_Back(Help_Back_Pos).sx = 1
+                                Help_Back(Help_Back_Pos).sy = 1
+                                Help_Back(Help_Back_Pos).cx = 1
+                                Help_Back(Help_Back_Pos).cy = 1
+                                Help_sx = 1: Help_sy = 1: Help_cx = 1: Help_cy = 1
+                                a$ = Wiki(l$)
+                                WikiParse a$
+                                GOTO newpageparsed
+                            END IF
+                        END IF
+
+                    END IF
+                END IF
+                x = x + 4: c = ASC(Help_Txt$, x)
+                x2 = x2 + 1
+            LOOP
+        END IF
+
+        IF Help_Select THEN
+            Help_Select = 1 'revert to non-selected if cursor moved to neutral pos
+            IF Help_cx <> Help_cx1 OR Help_cy <> Help_cy1 THEN Help_Select = 2
+        END IF
+
+        'Determine the exact region selected
+        IF Help_Select = 2 THEN
+            IF Help_cy = Help_cy1 THEN
+                Help_SelY1 = Help_cy: Help_SelY2 = Help_cy
+                IF Help_cx > Help_cx1 THEN
+                    Help_SelX1 = Help_cx1: Help_SelX2 = Help_cx - 1
+                ELSE
+                    Help_SelX1 = Help_cx: Help_SelX2 = Help_cx1 - 1
+                END IF
+            ELSE
+                Help_SelX1 = 1: Help_SelX2 = 10000000
+                IF Help_cy > Help_cy1 THEN
+                    Help_SelY1 = Help_cy1: Help_SelY2 = Help_cy
+                    IF Help_cx = 1 THEN Help_SelY2 = Help_cy - 1
+                ELSE
+                    Help_SelY1 = Help_cy: Help_SelY2 = Help_cy1
+                END IF
+            END IF
+        END IF
+
+        newpageparsed:
+        GOTO specialchar
+    END IF
+
+
+
+    IF KB = KEY_F1 THEN
+        'identify word or character at current cursor position
+        a$ = idegetline(idecy)
+        x = idecx
+        IF x <= LEN(a$) THEN
+            IF alphanumeric(ASC(a$, x)) THEN
+                x1 = x
+                DO WHILE x1 > 1
+                    IF alphanumeric(ASC(a$, x1 - 1)) OR ASC(a$, x1 - 1) = 36 THEN x1 = x1 - 1 ELSE EXIT DO
+                LOOP
+                x2 = x
+                DO WHILE x2 < LEN(a$)
+                    IF alphanumeric(ASC(a$, x2 + 1)) OR ASC(a$, x2 + 1) = 36 THEN x2 = x2 + 1 ELSE EXIT DO
+                LOOP
+                a2$ = MID$(a$, x1, x2 - x1 + 1)
+            ELSE
+                a2$ = CHR$(ASC(a$, x))
+            END IF
+            a2$ = UCASE$(a2$)
+            'check if F1 is in help links
+            fh = FREEFILE
+            OPEN "internal\help\links.bin" FOR INPUT AS #fh
+            lnks = 0: lnks$ = CHR$(0)
+            DO UNTIL EOF(fh)
+                LINE INPUT #fh, l$
+                c = INSTR(l$, ","): l1$ = LEFT$(l$, c - 1): l2$ = RIGHT$(l$, LEN(l$) - c)
+                IF a2$ = l1$ THEN
+                    IF INSTR(lnks$, CHR$(0) + l2$ + CHR$(0)) = 0 THEN
+                        lnks = lnks + 1
+                        IF l2$ = l1$ THEN
+                            lnks$ = CHR$(0) + l2$ + lnks$
+                        ELSE
+                            lnks$ = lnks$ + l2$ + CHR$(0)
+                        END IF
+                    END IF
+                END IF
+            LOOP
+            CLOSE #fh
+
+            IF lnks THEN
+                lnks$ = MID$(lnks$, 2, LEN(lnks$) - 2)
+                lnk$ = lnks$
+                IF lnks > 1 THEN
+                    'clarify context
+                    lnk$ = idef1box$(lnks$, lnks)
+                END IF
+
+
+                OpenHelpLnk:
+
+
+                Help_Back(Help_Back_Pos).sx = Help_sx 'update position
+                Help_Back(Help_Back_Pos).sy = Help_sy
+                Help_Back(Help_Back_Pos).cx = Help_cx
+                Help_Back(Help_Back_Pos).cy = Help_cy
+
+                top = UBOUND(back$)
+
+
+                IF Back$(Help_Back_Pos) = lnk$ THEN Help_Back_Pos = Help_Back_Pos - 1: GOTO usenextentry2
+                IF Help_Back_Pos < top THEN
+                    IF Back$(Help_Back_Pos + 1) = lnk$ THEN
+                        GOTO usenextentry2
+                    END IF
+                END IF
+
+
+                top = top + 1
+                REDIM _PRESERVE Back(top) AS STRING
+                REDIM _PRESERVE Help_Back(top) AS Help_Back_Type
+                REDIM _PRESERVE Back_Name(top) AS STRING
+                'Shuffle array upwards after current pos
+                FOR x = top - 1 TO Help_Back_Pos + 1 STEP -1
+                    Back_Name$(x + 1) = Back_Name$(x)
+                    Back$(x + 1) = Back$(x)
+                    Help_Back(x + 1).sx = Help_Back(x).sx
+                    Help_Back(x + 1).sy = Help_Back(x).sy
+                    Help_Back(x + 1).cx = Help_Back(x).cx
+                    Help_Back(x + 1).cy = Help_Back(x).cy
+                NEXT
+                usenextentry2:
+                Help_Back_Pos = Help_Back_Pos + 1
+                Back$(Help_Back_Pos) = lnk$
+                Back_Name$(Help_Back_Pos) = Back2BackName$(lnk$)
+                Help_Back(Help_Back_Pos).sx = 1
+                Help_Back(Help_Back_Pos).sy = 1
+                Help_Back(Help_Back_Pos).cx = 1
+                Help_Back(Help_Back_Pos).cy = 1
+                Help_sx = 1: Help_sy = 1: Help_cx = 1: Help_cy = 1
+
+                a$ = Wiki(lnk$)
+
+                IF idehelp = 0 THEN
+                    IF idesubwindow THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
+                    idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
+                    Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
+                    WikiParse a$
+                    idehelp = 1
+                    skipdisplay = 0
+                    IdeSystem = 1 '***
+                    retval = 1: GOTO redraweverything2
+                END IF
+
+                WikiParse a$
+                IdeSystem = 1 '***
+                GOTO specialchar
+
+            END IF 'lnks
+
+        END IF
+        GOTO specialchar
+    END IF
+
+
+
+    IF KALT AND KB = KEY_LEFT THEN
+        bmkremoved = 0
+        bmkremove:
+        FOR b = 1 TO IdeBmkN
+            IF IdeBmk(b).y = idecy THEN
+                FOR b2 = b TO IdeBmkN - 1
+                    IdeBmk(b2) = IdeBmk(b2 + 1)
+                NEXT
+                IdeBmkN = IdeBmkN - 1
+                bmkremoved = 1
+                ideunsaved = 1
+                GOTO bmkremove
+            END IF
+        NEXT
+        IF bmkremoved = 0 THEN
+            IdeBmkN = IdeBmkN + 1
+            IF IdeBmkN > UBOUND(IdeBmk) THEN x = UBOUND(IdeBmk) * 2: REDIM _PRESERVE IdeBmk(x) AS IdeBmkType
+            IdeBmk(IdeBmkN).y = idecy
+            IdeBmk(IdeBmkN).x = idecx
+            IdeBmk(IdeBmkN).reserved = 0: IdeBmk(IdeBmkN).reserved2 = 0
+            ideunsaved = 1
+        END IF
+        GOTO specialchar
+    END IF
+
+    IF KALT AND (KB = KEY_DOWN OR KB = KEY_UP) THEN
+        IF IdeBmkN = 0 THEN
+            idemessagebox "Bookmarks", "No bookmarks exist (Use ALT+Left to create a bookmark)"
+            SCREEN , , 3, 0: idewait4mous: idewait4alt
+            idealthighlight = 0
+            LOCATE , , 0: COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
+            GOTO specialchar
+        END IF
+        IF IdeBmkN = 1 THEN
+            IF idecy = IdeBmk(1).y THEN
+                idemessagebox "Bookmarks", "No other bookmarks exist"
+                SCREEN , , 3, 0: idewait4mous: idewait4alt
+                idealthighlight = 0
+                LOCATE , , 0: COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
+                GOTO specialchar
+            END IF
+        END IF
+        l = idecy
+        DO
+            IF KB = KEY_DOWN THEN l = l + 1 ELSE l = l - 1
+            IF l < 1 THEN l = iden
+            IF l > iden THEN l = 1
+            FOR b = 1 TO IdeBmkN
+                IF IdeBmk(b).y = l THEN EXIT DO
+            NEXT
+        LOOP
+        idecy = l
+        idecx = IdeBmk(b).x
+        ideselect = 0
+        GOTO specialchar
+    END IF
+
+    IF KALT AND KB = KEY_RIGHT THEN
+        '***RESERVED***
+        GOTO specialchar
+    END IF
+
+
+    IF mCLICK THEN
+        IF mX > 1 AND mX < idewx AND mY > 2 AND mY < (idewy - 5) THEN 'inside text box
+            ideselect = 1
+            idecx = mX - 1 + idesx - 1
+            idecy = mY - 2 + idesy - 1
+            IF idecy > iden THEN idecy = iden
+            ideselect = 1: ideselectx1 = idecx: ideselecty1 = idecy
+            idemouseselect = 1
+        END IF
+    END IF
+
+    IF mCLICK THEN
+        IF mX = idewx THEN
+            IF iden > 1 THEN 'take no action if not slider available
+                y = idevbar(idewx, 3, idewy - 8, idecy, iden)
+                IF y = mY THEN
+                    idemouseselect = 2
+                    ideselect = 0
+                END IF
+            END IF
+        END IF
+    END IF
+
+    IF mCLICK THEN
+        IF mY = idewy - 5 THEN
+            x = idehbar(2, idewy - 5, idewx - 2, idesx, 608)
+            IF x = mX THEN
+                idemouseselect = 3
+                ideselect = 0
+            END IF
+        END IF
+    END IF
+
+    IF mB AND idemouseselect = 0 THEN
+        IF mX = idewx AND mY > 2 AND mY < idewy - 5 THEN 'inside vbar
+            ideselect = 0
+            IF mY = 3 THEN KB = KEY_UP: idewait: idembmonitor = 1
+            IF mY = idewy - 6 THEN KB = KEY_DOWN: idewait: idembmonitor = 1
+            IF mY > 3 AND mY < (idewy - 6) THEN
+                'assume not on slider
+                IF iden > 1 THEN 'take no action if not slider available
+                    y = idevbar(idewx, 3, idewy - 8, idecy, iden)
+                    IF y <> mY THEN
+                        IF mY < y THEN
+                            KB = KEY_PAGEUP: idewait: idembmonitor = 1
+                        ELSE
+                            KB = KEY_PAGEDOWN: idewait: idembmonitor = 1
+                        END IF
+                    END IF
+                END IF
+            END IF
+        END IF
+    END IF
+
+    IF mB AND idemouseselect = 0 THEN
+        IF mY = idewy - 5 AND mX > 1 AND mX < idewx THEN 'inside hbar
+            ideselect = 0
+            IF mX = 2 THEN KB = KEY_LEFT: idewait: idembmonitor = 1
+            IF mX = idewx - 1 THEN KB = KEY_RIGHT: idewait: idembmonitor = 1
+            IF mX > 2 AND mX < idewx - 1 THEN
+                'assume not on slider
+                x = idehbar(2, idewy - 5, idewx - 2, idesx, 608)
+                IF x <> mX THEN
+                    IF mX < x THEN
+                        idecx = idecx - 8
+                        IF idecx < 1 THEN idecx = 1
+                        idewait: idembmonitor = 1
+                    ELSE
+                        idecx = idecx + 8
+                        idewait: idembmonitor = 1
+                    END IF
+                END IF
+
+            END IF
+        END IF
+    END IF
+
+    IF mB AND idemouseselect = 2 THEN
+        'move vbar scroller (idecy) to appropriate position
+        IF iden > 1 THEN
+            IF mY <= 4 THEN idecy = 1
+            IF mY >= idewy - 7 THEN idecy = iden
+            IF mY > 4 AND mY < idewy - 7 THEN
+                y = mY
+                p! = y - 3 - 2 + .5
+                p! = p! / ((idewy - 8) - 4)
+                i = p! * (iden - 1) + 1
+                idecy = i
+            END IF
+        END IF
+    END IF
+
+    IF mB AND idemouseselect = 3 THEN
+        'move hbar scroller (idecx) to appropriate position
+        IF mX <= 3 THEN idesx = 1: idecx = idesx
+        IF mX >= idewx - 2 THEN idesx = 608: idecx = idesx
+        IF mX > 3 AND mX < idewx - 2 THEN
+            x = mX
+            p! = x - 2 - 2 + .5
+            p! = p! / ((idewx - 2) - 4)
+            i = p! * (608 - 1) + 1
+            idesx = i
+            idecx = idesx
+        END IF
+    END IF
+
+    IF mB AND idemouseselect <= 1 THEN
+        IF mX > 1 AND mX < idewx AND mY > 2 AND mY < idewy - 5 THEN 'inside text box
+            IF idemouseselect = 1 THEN
+                idecx = mX - 1 + idesx - 1
+                idecy = mY - 2 + idesy - 1
+                IF idecy > iden THEN idecy = iden
+            END IF
+        END IF
+    END IF
+
+    IF mB THEN
+        IF mX = 1 OR mX = idewx OR mY <= 2 OR mY >= idewy - 5 THEN 'off text window area
+            IF idemouseselect = 1 THEN
+
+                'scroll window
+                IF mY >= idewy - 5 THEN idecy = idecy + 1: IF idecy > iden THEN idecy = iden
+                IF mY <= 2 THEN idecy = idecy - 1: IF idecy < 1 THEN idecy = 1
+                IF mX = 1 THEN idecx = idecx - 1: IF idecx < 1 THEN idecx = 1
+                IF mX = idewx THEN idecx = idecx + 1
+                idewait
+            END IF
+        END IF
+    END IF
+
+
+
+
+
+
+
+    IF KCONTROL AND UCASE$(K$) = "A" THEN 'select all
+        idemselectall:
+        ideselect = 1: ideselectx1 = 1: ideselecty1 = 1
+        idecy = iden
+        a$ = idegetline(idecy)
+        idecx = LEN(a$) + 1
+        GOTO specialchar
+    END IF
+
+    IF K$ = CHR$(0) + CHR$(60) THEN 'F2
+        GOTO idesubsjmp
+    END IF
+
+    IF KCONTROL AND UCASE$(K$) = "Z" THEN 'undo (CTRL+Z)
+        idemundo:
+        IF ideundopos THEN
+            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
+            h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
+
+            'does something exist to undo?
+            u = 0
+            IF p2 >= p1 THEN
+                'linear
+                IF ideundopos > p1 THEN
+                    GET #150, ideundopos - 4, upl
+                    u = ideundopos - 4 - upl - 4
+                END IF
+            ELSE
+                'wrapped
+                IF ideundopos > p1 THEN
+                    GET #150, ideundopos - 4, upl
+                    u = ideundopos - 4 - upl - 4
+                END IF
+                IF ideundopos <= p2 THEN
+                    IF ideundopos = 13 THEN
+                        u = plast
+                    ELSE
+                        GET #150, ideundopos - 4, upl
+                        u = ideundopos - 4 - upl - 4
+                    END IF
+                END IF
+            END IF
+
+            IF u THEN
+
+                IF ideundopos = ideundobase THEN
+                    'if not untitled, then we MUST switch to a special state
+                    'warn
+                    PCOPY 3, 0
+                    what$ = ideyesnobox("Undo", "Undo through previous program content?")
+                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                    IF what$ = "N" THEN
+                        CLOSE #150
+                        GOTO skipundo
+                    END IF
+                    IF ideunsaved = 1 AND ideprogname <> "" THEN
+                        PCOPY 3, 0
+                        r$ = idesavenow
+                        PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                        IF r$ = "C" THEN CLOSE #150: GOTO skipundo
+                        IF r$ = "Y" THEN
+                            idesave idepath$ + idepathsep$ + ideprogname$
+                        END IF
+                    END IF
+                    ideunsaved = 1
+                    ideprogname$ = ""
+                    _TITLE "QB64"
+                    ideundobase = -1 'release base restriction
+                END IF
+
+                ideundopos = u 'set new current state
+
+                'get backup
+                SEEK #150, u
+                GET #150, , l2& 'should be the same as l&
+                GET #150, , idesx: GET #150, , idesy
+                GET #150, , idecx: GET #150, , idecy
+                GET #150, , ideselect: GET #150, , ideselectx1: GET #150, , ideselecty1
+                GET #150, , iden
+                GET #150, , idel
+                GET #150, , ideli
+                'bookmark info [v2]
+                GET #150, , IdeBmkN: REDIM IdeBmk(IdeBmkN + 1) AS IdeBmkType
+                FOR bi = 1 TO IdeBmkN: GET #150, , IdeBmk(bi).y: GET #150, , IdeBmk(bi).x: NEXT
+                GET #150, , x&: idet$ = SPACE$(x&): GET #150, , idet$
+
+                idechangemade = 1: idenoundo = 1
+
+            END IF 'u
+
+            skipundo:
+            CLOSE #150
+        END IF
+        GOTO specialchar
+
+    END IF
+
+
+    IF KCONTROL AND UCASE$(K$) = "Y" THEN 'redo (CTRL+Y)
+        idemredo:
+        IF ideundopos THEN
+            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
+            h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
+
+            'does something exist to redo?
+            u = 0
+            IF p2 >= p1 THEN
+                'linear
+                IF ideundopos < p2 THEN
+                    GET #150, ideundopos, upl
+                    u = ideundopos + 4 + upl + 4
+                END IF
+            ELSE
+                'wrapped
+                IF ideundopos >= p1 THEN
+                    IF ideundopos = plast THEN
+                        u = 13
+                    ELSE
+                        GET #150, ideundopos, upl
+                        u = ideundopos + 4 + upl + 4
+                    END IF
+                ELSE
+                    IF ideundopos < p2 THEN
+                        GET #150, ideundopos, upl
+                        u = ideundopos + 4 + upl + 4
+                    END IF
+                END IF
+            END IF
+
+            IF u THEN
+
+                ideundopos = u 'set new current state
+
+                'get backup
+                SEEK #150, u
+                GET #150, , l2& 'should be the same as l&
+                GET #150, , idesx: GET #150, , idesy
+                GET #150, , idecx: GET #150, , idecy
+                GET #150, , ideselect: GET #150, , ideselectx1: GET #150, , ideselecty1
+                GET #150, , iden
+                GET #150, , idel
+                GET #150, , ideli
+                'bookmark info [v2]
+                GET #150, , IdeBmkN: REDIM IdeBmk(IdeBmkN + 1) AS IdeBmkType
+                FOR bi = 1 TO IdeBmkN: GET #150, , IdeBmk(bi).y: GET #150, , IdeBmk(bi).x: NEXT
+                GET #150, , x&: idet$ = SPACE$(x&): GET #150, , idet$
+
+                idechangemade = 1: idenoundo = 1
+
+            END IF 'u
+
+            CLOSE #150
+        END IF
+        GOTO specialchar
+    END IF
+
+
+    IF ((KSHIFT AND KB = KEY_DELETE) OR (KCONTROL AND UCASE$(K$) = "X")) AND ideselect = 1 THEN 'cut to clipboard
+        idemcut:
+        idechangemade = 1
+        GOTO copy2clip
+    END IF
+
+    IF KB = KEY_DELETE AND ideselect = 1 THEN 'delete selection
+        IF ideselecty1 <> idecy OR ideselectx1 <> idecx THEN
+            idechangemade = 1
+            GOSUB delselect
+            GOTO specialchar
+        ELSE
+            ideselect = 0
+        END IF
+    END IF
+
+
+    IF (KSHIFT AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "V") THEN 'paste from clipboard
+        idempaste:
+
+        clip$ = _CLIPBOARD$ 'read clipboard
+
+        IF LEN(clip$) THEN
+            IF ideselect THEN GOSUB delselect
+            IF INSTR(clip$, CHR$(13)) OR INSTR(clip$, CHR$(10)) THEN
+
+                'full lines paste
+
+                idelayoutallow = 2
+                a$ = clip$
+                x3 = 1 'scan from position
+                i = 0 'lines counter
+
+                fullpastenextline:
+
+                x = INSTR(x3, a$, CHR$(13))
+                x2 = INSTR(x3, a$, CHR$(10))
+                IF x = 0 THEN x = x2
+                IF x2 = 0 THEN x2 = x
+                IF x2 < x THEN SWAP x, x2
+                IF x2 > x + 1 THEN x2 = x 'if seperated by more than one character, they are seperate line terminators
+                'x to x2 is the range of the next line terminator (1 or 2 characters)
+
+                IF x THEN
+                    ideinsline idecy + i, converttabs$(MID$(a$, x3, x - x3))
+                    i = i + 1
+                    x3 = x2 + 1
+                ELSE
+                    ideinsline idecy + i, converttabs$(MID$(a$, x3, LEN(a$) - x3 + 1))
+                    i = i + 1
+                    x3 = LEN(a$) + 1
+                END IF
+
+                IF x3 <= LEN(a$) GOTO fullpastenextline
+
+            ELSE
+
+                'insert single line paste
+                a$ = idegetline(idecy)
+                IF LEN(a$) < idecx - 1 THEN a$ = a$ + SPACE$(idecx - 1 - LEN(a$))
+                a$ = LEFT$(a$, idecx - 1) + clip$ + RIGHT$(a$, LEN(a$) - idecx + 1)
+                idesetline idecy, converttabs$(a$)
+
+            END IF
+
+            idechangemade = 1
+        END IF
+        GOTO specialchar
+    END IF
+
+    IF ((KCTRL AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "C")) AND ideselect = 1 THEN 'copy to clipboard
+        copy2clip:
+        clip$ = ""
+        sy1 = ideselecty1
+        sy2 = idecy
+        IF sy1 > sy2 THEN SWAP sy1, sy2
+        sx1 = ideselectx1
+        sx2 = idecx
+        IF sx1 > sx2 THEN SWAP sx1, sx2
+        FOR y = sy1 TO sy2
+            IF y <= iden THEN
+                a$ = idegetline(y)
+                IF sy1 = sy2 THEN 'single line select
+                    FOR x = sx1 TO sx2 - 1
+                        IF x <= LEN(a$) THEN clip$ = clip$ + MID$(a$, x, 1) ELSE clip$ = clip$ + " "
+                    NEXT
+                ELSE 'multiline select
+                    IF idecx = 1 AND y = sy2 AND idecy > sy1 THEN clip$ = clip$ + CHR$(13) + CHR$(10): GOTO nofinalcopy
+                    IF clip$ = "" THEN clip$ = a$ ELSE clip$ = clip$ + CHR$(13) + CHR$(10) + a$
+                    nofinalcopy:
+                END IF
+            END IF
+        NEXT
+        IF clip$ <> "" THEN _CLIPBOARD$ = clip$
+        IF (K$ = CHR$(0) + "S") OR (KSHIFT AND KB = KEY_DELETE) OR (KCONTROL AND UCASE$(K$) = "X") THEN GOSUB delselect
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_INSERT THEN 'toggle INSERT mode
+        ideinsert = ideinsert + 1
+        IF ideinsert = 2 THEN ideinsert = 0
+    END IF
+
+    IF KB = KEY_UP THEN
+        GOSUB selectcheck
+        idecy = idecy - 1
+        IF idecy < 1 THEN idecy = 1
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_DOWN THEN
+        GOSUB selectcheck
+        idecy = idecy + 1
+        IF idecy > iden THEN idecy = iden
+        GOTO specialchar
+    END IF
+
+    IF mWHEEL THEN
+        GOSUB selectcheck
+        'move relative to top/bottom
+        IF mWHEEL < 0 THEN idecy = idesy
+        IF mWHEEL > 0 THEN idecy = idesy + (idewy - 9)
+        idecy = idecy + mWHEEL * 3
+        IF idecy < 1 THEN idecy = 1
+        IF idecy > iden THEN idecy = iden
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_LEFT THEN
+        GOSUB selectcheck
+
+        IF KCONTROL THEN 'move forward to next beginning alphanumeric
+
+            a$ = idegetline(idecy)
+            IF idecx > LEN(a$) THEN idecx = LEN(a$) + 1
+
+            skipping = 1
+            DO
+                'move
+                idecx = idecx - 1
+                'latch onto prev character
+                IF idecx < 1 THEN
+                    DO
+                        IF idecy = 1 THEN idecx = 1: GOTO specialchar
+                        idecy = idecy - 1
+                        a$ = idegetline(idecy)
+                        idecx = LEN(a$)
+                    LOOP UNTIL LEN(a$)
+                END IF
+                'check character
+                IF alphanumeric(ASC(a$, idecx)) THEN
+                    IF idecx = 1 THEN GOTO specialchar
+                    x = idecx: y = idecy
+                    skipping = 0
+                ELSE
+                    IF skipping = 0 THEN idecx = x: idecy = y: GOTO specialchar
+                END IF
+            LOOP
+
+        ELSE
+
+            idecx = idecx - 1
+            IF idecx < 1 THEN idecx = 1
+
+        END IF
+
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_RIGHT THEN
+        GOSUB selectcheck
+
+        IF KCONTROL THEN 'move forward to next beginning alphanumeric
+
+            a$ = idegetline(idecy)
+            skipping = 0
+            first = 1
+            DO
+                'move
+                IF first = 0 THEN idecx = idecx + 1
+                'latch onto next character
+                IF idecx > LEN(a$) THEN
+                    DO
+                        IF idecy = iden THEN GOTO specialchar
+                        idecy = idecy + 1: idecx = 1
+                        a$ = idegetline(idecy)
+                    LOOP UNTIL LEN(a$)
+                    skipping = 0
+                    first = 0
+                END IF
+                'check character
+                IF alphanumeric(ASC(a$, idecx)) THEN
+                    IF first THEN
+                        skipping = 1
+                    ELSE
+                        IF skipping = 0 THEN GOTO specialchar
+                    END IF
+                ELSE
+                    skipping = 0
+                END IF
+                first = 0
+            LOOP
+
+        ELSE
+
+            idecx = idecx + 1
+
+        END IF
+
+        GOTO specialchar
+    END IF
+
+    IF KCONTROL AND KB = KEY_HOME THEN
+        GOSUB selectcheck
+        idecx = 1
+        idecy = 1
+        GOTO specialchar
+    END IF
+
+    IF KCONTROL AND KB = KEY_END THEN
+        GOSUB selectcheck
+        idecy = iden
+        a$ = idegetline(idecy)
+        idecx = LEN(a$) + 1
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_HOME THEN
+        GOSUB selectcheck
+        IF idecx <> 1 THEN
+            idecx = 1
+        ELSE
+            a$ = idegetline(idecy)
+            idecx = 1
+            FOR x = 1 TO LEN(a$)
+                IF ASC(a$, x) <> 32 THEN idecx = x: EXIT FOR
+            NEXT
+        END IF
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_END THEN
+        GOSUB selectcheck
+        a$ = idegetline(idecy)
+        idecx = LEN(a$) + 1
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_PAGEUP THEN
+        GOSUB selectcheck
+        idecy = idecy - (idewy - 9)
+        IF idecy < 1 THEN idecy = 1
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_PAGEDOWN THEN
+        GOSUB selectcheck
+        idecy = idecy + (idewy - 9)
+        IF idecy > iden THEN idecy = iden
+        GOTO specialchar
+    END IF
+
+    GOTO skipgosubs
+
+    selectcheck:
+    IF KSHIFT AND ideselect = 0 THEN ideselect = 1: ideselectx1 = idecx: ideselecty1 = idecy
+    IF KSHIFT = 0 THEN ideselect = 0
+    RETURN
+
+    delselect:
+    sy1 = ideselecty1
+    sy2 = idecy
+    IF sy1 > sy2 THEN SWAP sy1, sy2
+    sx1 = ideselectx1
+    sx2 = idecx
+    IF sx1 > sx2 THEN SWAP sx1, sx2
+    nolastlinedel = 0
+    IF sy1 <> sy2 AND idecx = 1 AND idecy > sy1 THEN sy2 = sy2 - 1: nolastlinedel = 1 'ignore last line of multi-line select?
+    FOR y = sy2 TO sy1 STEP -1
+        IF sy1 = sy2 AND nolastlinedel = 0 THEN 'single line select
+            a$ = idegetline(y)
+            a2$ = ""
+            IF sx1 <= LEN(a$) THEN a2$ = LEFT$(a$, sx1 - 1) ELSE a2$ = a$
+            IF sx2 <= LEN(a$) THEN a2$ = a2$ + RIGHT$(a$, LEN(a$) - sx2 + 1)
+            idesetline y, a2$
+        ELSE 'multiline select
+            IF iden = 1 AND y = 1 THEN idesetline y, "" ELSE idedelline y
+        END IF
+    NEXT
+    idecx = sx1: IF sy1 <> sy2 OR nolastlinedel = 1 THEN idecx = 1
+    idecy = sy1
+    ideselect = 0
+    RETURN
+
+    skipgosubs:
+
+    IF K$ = CHR$(13) THEN
+        ideselect = 0
+        idechangemade = 1
+
+        a$ = idegetline(idecy)
+        IF idecx > LEN(a$) THEN
+            ideinsline idecy + 1, ""
+        ELSE
+            idesetline idecy, LEFT$(a$, idecx - 1)
+            ideinsline idecy + 1, RIGHT$(a$, LEN(a$) - idecx + 1)
+        END IF
+
+        IF idecx = 1 THEN
+            FOR b = 1 TO IdeBmkN
+                IF IdeBmk(b).y = idecy THEN IdeBmk(b).y = IdeBmk(b).y + 1
+            NEXT
+        END IF
+
+        idecy = idecy + 1
+        idecx = 1
+        GOTO specialchar
+    END IF
+
+    IF KB = KEY_DELETE THEN
+        idechangemade = 1
+        a$ = idegetline(idecy)
+        IF idecx <= LEN(a$) THEN
+            a$ = LEFT$(a$, idecx - 1) + RIGHT$(a$, LEN(a$) - idecx)
+            idesetline idecy, a$
+        ELSE
+            a$ = a$ + SPACE$(idecx - LEN(a$) - 1)
+            a$ = a$ + idegetline(idecy + 1)
+            idesetline idecy, a$
+            idedelline idecy + 1
+        END IF
+        GOTO specialchar
+    END IF
+
+    IF K$ = CHR$(8) THEN
+        ideselect = 0
+        idechangemade = 1
+
+        'undocombos
+        IF ideundocombochr <> 8 THEN
+            ideundocombo = 2
+        ELSE
+            ideundocombo = ideundocombo + 1
+            IF ideundocombo = 2 THEN idemergeundo = 1
+        END IF
+        ideundocombochr = 8
+
+        a$ = idegetline(idecy)
+        IF idecx = 1 THEN
+            IF idecy > 1 THEN
+                a2$ = idegetline(idecy - 1)
+                idesetline idecy - 1, a2$ + a$
+                idedelline idecy
+                idecx = LEN(a2$) + 1
+                idecy = idecy - 1
+            END IF
+            GOTO specialchar
+        END IF
+        IF idecx > LEN(a$) + 1 THEN
+            idecx = LEN(a$) + 1
+        ELSE
+            a$ = LEFT$(a$, idecx - 2) + RIGHT$(a$, LEN(a$) - idecx + 1)
+            idesetline idecy, a$
+            idecx = idecx - 1
+        END IF
+        GOTO specialchar
+    END IF
+
+
+
+
+
+
+
+
+
+    'patch#1
+    IF LEN(K$) <> 1 THEN GOTO specialchar
+    IF K$ = CHR$(9) THEN GOTO ideforceinput
+    IF block_chr(ASC(K$)) THEN GOTO specialchar
+    ideforceinput:
+
+    IF K$ = CHR$(9) THEN
+        x = 4
+        IF ideautoindent <> 0 AND ideautoindentsize <> 0 THEN x = ideautoindentsize
+        K$ = SPACE$(x - ((idecx - 1) MOD x))
+    END IF
+
+    'standard character
+    IF ideselect THEN GOSUB delselect
+    idechangemade = 1
+
+    'undocombos
+    IF LEN(K$) = 1 THEN
+        asck = ASC(K$)
+        IF alphanumeric(asck) OR ideundocombochr = asck THEN
+            IF ideundocombochr = 8 THEN ideundocombo = 0
+            IF ideundocombo = 0 THEN
+                ideundocombo = 2
+            ELSE
+                ideundocombo = ideundocombo + 1
+                IF ideundocombo = 2 THEN idemergeundo = 1
+            END IF
+        END IF
+        ideundocombochr = asck
+    END IF
+
+    a$ = idegetline(idecy)
+    IF LEN(a$) < idecx - 1 THEN a$ = a$ + SPACE$(idecx - 1 - LEN(a$))
+
+    IF ideinsert THEN
+        a2$ = RIGHT$(a$, LEN(a$) - idecx + 1)
+        IF LEN(a2$) THEN a2$ = RIGHT$(a$, LEN(a$) - idecx)
+        a$ = LEFT$(a$, idecx - 1) + K$ + a2$
+    ELSE
+        a$ = LEFT$(a$, idecx - 1) + K$ + RIGHT$(a$, LEN(a$) - idecx + 1)
+    END IF
+
+    idesetline idecy, a$
+    idecx = idecx + LEN(K$)
+    specialchar:
+
+LOOP
+
+'--------------------------------------------------------------------------------
+
+startmenu:
+m = 1
+startmenu2:
+altheld = 1
+
+DO
+
+    LOCATE 1, 3
+    FOR i = 1 TO menus
+        IF m = i THEN COLOR 15, 0 ELSE COLOR 15, 7
+        PRINT " " + LEFT$(menu$(i, 0), 1);
+        IF m = i THEN COLOR 7, 0 ELSE COLOR 0, 7
+        PRINT RIGHT$(menu$(i, 0), LEN(menu$(i, 0)) - 1) + " ";
+        IF i = menus - 1 THEN LOCATE 1, idewx - LEN(menu$(menus, 0)) - 2
+    NEXT
+
+    PCOPY 3, 0
+    DO
+
+        lastaltheld = altheld
+
+        GetInput
+        IF iCHANGED = 0 THEN _LIMIT 100
+
+        IF KALT THEN altheld = 1 ELSE altheld = 0
+
+        IF altheld <> 0 AND lastaltheld = 0 THEN
+            DO: _LIMIT 1000: GetInput: LOOP UNTIL KALT = 0
+            KB = KEY_ESC
+        END IF
+
+        IF mCLICK THEN
+            IF mY = 1 THEN
+                x = 3
+                FOR i = 1 TO menus
+                    x2 = LEN(menu$(i, 0)) + 2
+                    IF mX >= x AND mX < x + x2 THEN
+                        m = i
+                        LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
+                        PCOPY 3, 0
+                        GOTO showmenu
+                    END IF
+                    x = x + x2
+                NEXT
+            END IF 'my=1
+            KB = KEY_ESC 'exit menu selection
+        END IF
+    LOOP UNTIL KB
+
+    K$ = UCASE$(K$)
+    FOR i = 1 TO menus
+        a$ = UCASE$(LEFT$(menu$(i, 0), 1))
+        IF K$ = a$ THEN
+            m = i
+            LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
+            PCOPY 3, 0
+            GOTO showmenu
+        END IF
+    NEXT
+
+    IF KB = KEY_LEFT THEN m = m - 1
+    IF KB = KEY_RIGHT THEN m = m + 1
+    IF KB = KEY_ESC THEN
+        LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
+        GOTO ideloop
+    END IF
+    IF m < 1 THEN m = menus
+    IF m > menus THEN m = 1
+    IF KB = KEY_UP OR KB = KEY_DOWN OR KB = KEY_ENTER THEN
+        LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
+        PCOPY 3, 0
+        GOTO showmenu
+    END IF
+
+    'possible ALT+??? code?
+    IF KB > 0 AND KB <= 255 THEN
+        IF KALT = 0 THEN
+            iCHECKLATER = 1
+            LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
+            GOTO ideloop
+        END IF
+    END IF
+
+LOOP
+
+'--------------------------------------------------------------------------------
+
+showmenu:
+altheld = 1
+PCOPY 0, 2
+SCREEN , , 1, 0
+r = 1
+DO
+    PCOPY 2, 1
+
+    'find pos of menu m
+    x = 4: FOR i = 1 TO m - 1: x = x + LEN(menu$(i, 0)) + 2
+        IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 1
+    NEXT: xx = x
+    LOCATE 1, xx - 1: COLOR 7, 0: PRINT " " + menu$(m, 0) + " "
+    COLOR 0, 7
+    'calculate menu width
+    w = 0
+    FOR i = 1 TO menusize(m)
+        m$ = menu$(m, i)
+        l = LEN(m$)
+        IF INSTR(m$, "#") THEN l = l - 1
+        IF INSTR(m$, "  ") THEN l = l + 2 'min 4 spacing
+        IF l > w THEN w = l
+    NEXT
+    IF xx > idewx - w - 3 THEN xx = idewx - w - 3
+    ideboxshadow xx - 2, 2, w + 4, menusize(m) + 2
+
+
+    'draw menu items
+    FOR i = 1 TO menusize(m)
+        m$ = menu$(m, i)
+        IF m$ = "-" THEN
+            COLOR 0, 7: LOCATE i + 2, xx - 2: PRINT "Ã" + STRING$(w + 2, "Ä") + "´";
+        ELSE
+            IF r = i THEN LOCATE i + 2, xx - 1: COLOR 7, 0: PRINT SPACE$(w + 2);
+            LOCATE i + 2, xx
+            h = -1: x = INSTR(m$, "#"): IF x THEN h = x: m$ = LEFT$(m$, x - 1) + RIGHT$(m$, LEN(m$) - x)
+            x = INSTR(m$, "  "): IF x THEN m1$ = LEFT$(m$, x - 1): m2$ = RIGHT$(m$, LEN(m$) - x - 1): m$ = m1$ + SPACE$(w - LEN(m1$) - LEN(m2$)) + m2$
+            FOR x = 1 TO LEN(m$)
+                IF x = h THEN
+                    IF r = i THEN COLOR 15, 0 ELSE COLOR 15, 7
+                ELSE
+                    IF r = i THEN COLOR 7, 0 ELSE COLOR 0, 7
+                END IF
+                PRINT MID$(m$, x, 1);
+
+            NEXT
+
+
+
+        END IF
+
+    NEXT
+
+    PCOPY 1, 0
+
+    change = 0
+    DO
+        mousedown = 0: mouseup = 0
+        GetInput
+        lastaltheld = altheld: IF KALT THEN altheld = 1 ELSE altheld = 0
+        IF iCHANGED THEN
+            IF KB THEN change = 1
+            IF mCLICK THEN change = 1: mousedown = 1
+            IF mRELEASE THEN change = 1: mouseup = 1
+        END IF
+        IF mB THEN change = 1
+        'revert to previous menuwhen alt pressed again
+        IF altheld <> 0 AND lastaltheld = 0 THEN
+            DO: _LIMIT 1000: GetInput: LOOP UNTIL KALT = 0 'wait till alt is released
+            PCOPY 3, 0: SCREEN , , 3, 0
+            GOTO startmenu2
+        END IF
+        _LIMIT 100
+    LOOP UNTIL change
+
+    s = 0
+
+    'mouse selection
+    IF mouseup THEN
+        'uses pre-calc xx & w
+        IF mX >= xx - 2 AND mX < xx - 2 + w + 4 THEN
+            IF mY > 2 AND mY <= menusize(m) + 2 THEN
+                y = mY - 2
+                IF menu$(m, y) <> "-" THEN
+                    s = r
+                END IF
+            END IF
+        END IF
+
+        IF mX < xx - 2 OR mX >= xx - 2 + w + 4 OR mY > menusize(m) + 3 THEN
+            PCOPY 3, 0: SCREEN , , 3, 0
+            GOTO ideloop
+        END IF
+
+    END IF
+
+    IF mB THEN
+
+        'top row
+        IF mY = 1 THEN
+            lastm = m
+            x = 3
+            FOR i = 1 TO menus
+                x2 = LEN(menu$(i, 0)) + 2
+                IF mX >= x AND mX < x + x2 THEN
+                    m = i
+                    r = 1
+                    IF lastm = m AND mousedown = 1 THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: GOTO ideloop
+                    EXIT FOR
+                END IF
+                x = x + x2
+                IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 2
+            NEXT
+        END IF
+
+        'uses pre-calc xx & w
+        IF mX >= xx - 2 AND mX < xx - 2 + w + 4 THEN
+            IF mY > 2 AND mY <= menusize(m) + 2 THEN
+                y = mY - 2
+                IF menu$(m, y) <> "-" THEN r = y
+            END IF
+        END IF
+
+    END IF 'mb
+
+    IF KB = KEY_LEFT THEN m = m - 1: r = 1
+    IF KB = KEY_RIGHT THEN m = m + 1: r = 1
+    IF m < 1 THEN m = menus
+    IF m > menus THEN m = 1
+    IF KB = KEY_ESC THEN
+        PCOPY 3, 0: SCREEN , , 3, 0
+        GOTO ideloop
+    END IF
+    IF KB = KEY_DOWN THEN
+        r = r + 1
+        IF menu$(m, r) = "-" THEN r = r + 1
+        IF r > menusize(m) THEN r = 1
+    END IF
+
+    IF KB = KEY_UP THEN
+        r = r - 1
+        IF menu$(m, r) = "-" THEN r = r - 1
+        IF r < 1 THEN r = menusize(m)
+    END IF
+
+    'select?
+
+    'with enter
+    IF KB = KEY_ENTER THEN
+        s = r
+    END IF
+
+    'with hotkey
+    K$ = UCASE$(K$)
+    FOR r2 = 1 TO menusize(m)
+        x = INSTR(menu$(m, r2), "#")
+        IF x THEN
+            a$ = UCASE$(MID$(menu$(m, r2), x + 1, 1))
+            IF K$ = a$ THEN s = r2: EXIT FOR
+        END IF
+    NEXT
+
+    IF s THEN
+
+        IF KALT THEN idehl = 1 ELSE idehl = 0 'set idehl, a shared variable used by various dialogue boxes
+
+        IF menu$(m, s) = "Comment (add ')" THEN
+            y1 = idecy: y2 = y1
+            IF ideselect = 1 THEN
+                y1 = ideselecty1
+                IF idecy > ideselecty1 AND idecx = 1 THEN y2 = y2 - 1
+                IF y1 > y2 THEN SWAP y1, y2
+            END IF
+            'calculate lhs
+            lhs = 10000000
+            FOR y = y1 TO y2
+                a$ = idegetline(y)
+                IF LEN(a$) THEN
+                    ta$ = LTRIM$(a$)
+                    t = LEN(a$) - LEN(ta$)
+                    IF t < lhs THEN lhs = t
+                END IF
+            NEXT
+            'edit lines
+            FOR y = y1 TO y2
+                a$ = idegetline(y)
+                IF LEN(a$) THEN
+                    a$ = LEFT$(a$, lhs) + "'" + RIGHT$(a$, LEN(a$) - lhs)
+                    idesetline y, a$
+                    idechangemade = 1
+                END IF
+            NEXT
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "Uncomment (remove ')" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            y1 = idecy: y2 = y1
+            IF ideselect = 1 THEN
+                y1 = ideselecty1
+                IF idecy > ideselecty1 AND idecx = 1 THEN y2 = y2 - 1
+                IF y1 > y2 THEN SWAP y1, y2
+            END IF
+            'edit lines
+            FOR y = y1 TO y2
+                a$ = idegetline(y)
+                IF LEN(a$) THEN
+                    a2$ = LTRIM$(a$)
+                    IF LEN(a2$) THEN
+                        IF ASC(a2$, 1) = 39 THEN
+                            a$ = SPACE$(LEN(a$) - LEN(a2$)) + RIGHT$(a2$, LEN(a2$) - 1)
+                            idesetline y, a$
+                            idechangemade = 1
+                        END IF
+                    END IF
+                END IF
+            NEXT
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Language..." THEN
+            PCOPY 2, 0
+            retval = idelanguagebox
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Display..." THEN
+            PCOPY 2, 0
+            IF idehelp = 0 THEN
+                retval = idedisplaybox
+                IF retval = 1 THEN
+                    'screen dimensions have changed and everything must be redrawn/reapplied
+                    WIDTH idewx, idewy + idesubwindow
+                    IF idecustomfont THEN
+                        _FONT idecustomfonthandle
+                    ELSE
+                        _FONT 16
+                    END IF
+                    skipdisplay = 0
+                    GOTO redraweverything
+                END IF
+            END IF
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Code layout..." THEN
+            PCOPY 2, 0
+            retval = idelayoutbox
+            IF retval THEN idechangemade = 1: idelayoutallow = 2 'recompile if options changed
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "Add/Remove #Bookmark  ALT+Left" THEN
+            PCOPY 2, 0
+            bmkremoved = 0
+            bmkremoveb:
+            FOR b = 1 TO IdeBmkN
+                IF IdeBmk(b).y = idecy THEN
+                    FOR b2 = b TO IdeBmkN - 1
+                        IdeBmk(b2) = IdeBmk(b2 + 1)
+                    NEXT
+                    IdeBmkN = IdeBmkN - 1
+                    bmkremoved = 1
+                    ideunsaved = 1
+                    GOTO bmkremoveb
+                END IF
+            NEXT
+            IF bmkremoved = 0 THEN
+                IdeBmkN = IdeBmkN + 1
+                IF IdeBmkN > UBOUND(IdeBmk) THEN x = UBOUND(IdeBmk) * 2: REDIM _PRESERVE IdeBmk(x) AS IdeBmkType
+                IdeBmk(IdeBmkN).y = idecy
+                IdeBmk(IdeBmkN).x = idecx
+                ideunsaved = 1
+            END IF
+            SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Next Bookmark  ALT+Down" OR menu$(m, s) = "#Previous Bookmark  ALT+Up" THEN
+            PCOPY 2, 0
+            IF IdeBmkN = 0 THEN
+                idemessagebox "Bookmarks", "No bookmarks exist (Use ALT+Left to create a bookmark)"
+                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                GOTO ideloop
+            END IF
+            IF IdeBmkN = 1 THEN
+                IF idecy = IdeBmk(1).y THEN
+                    idemessagebox "Bookmarks", "No other bookmarks exist"
+                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                    GOTO ideloop
+                END IF
+            END IF
+            l = idecy
+            z = 0: IF menu$(m, s) = "#Next Bookmark  ALT+Down" THEN z = 1
+            DO
+                IF z = 1 THEN l = l + 1 ELSE l = l - 1
+                IF l < 1 THEN l = iden
+                IF l > iden THEN l = 1
+                FOR b = 1 TO IdeBmkN
+                    IF IdeBmk(b).y = l THEN EXIT DO
+                NEXT
+            LOOP
+            idecy = l
+            idecx = IdeBmk(b).x
+            ideselect = 0
+            SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+
+
+
+
+
+        IF menu$(m, s) = "#Go to line..." THEN
+            PCOPY 2, 0
+            retval = idegotobox
+            'retval is ignored
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Backup/Undo..." THEN
+            PCOPY 2, 0
+            retval = idebackupbox
+            'retval is ignored
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Update..." THEN
+            PCOPY 2, 0
+            retval = ideupdatebox
+            'retval is ignored
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#About..." THEN
+            PCOPY 2, 0
+            idemessagebox "About", "QB64 Version " + version$
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+
+        IF menu$(m, s) = "ASCII c#hart" THEN
+            PCOPY 2, 0
+            ideASCIIbox
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            retval = 1
+            GOTO redraweverything2
+        END IF
+
+        IF menu$(m, s) = "#Math" THEN
+            Mathbox
+            SCREEN , , 3, 0
+            GOTO ideloop
+        END IF
+
+
+        IF menu$(m, s) = "#Contents page" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            lnk$ = "QB64 Help Menu"
+            GOTO OpenHelpLnk
+        END IF
+        IF menu$(m, s) = "Keyword #index" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            lnk$ = "Keyword Reference - Alphabetical"
+            GOTO OpenHelpLnk
+        END IF
+        IF menu$(m, s) = "#Keywords by usage" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            lnk$ = "Keyword Reference - By usage"
+            GOTO OpenHelpLnk
+        END IF
+
+        IF menu$(m, s) = "#View  Shift+F1" THEN
+
+            IF idehelp = 0 THEN
+                IF idesubwindow THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
+                idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
+                Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
+                idehelp = 1
+                skipdisplay = 0
+                IdeSystem = 3
+                retval = 1: GOTO redraweverything2
+            END IF
+
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Update current page" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            IF idehelp THEN
+                Help_IgnoreCache = 1
+                a$ = Wiki$(Back$(Help_Back_Pos))
+                Help_IgnoreCache = 0
+                WikiParse a$
+            END IF
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "Update all #pages" THEN
+            PCOPY 2, 0
+            q$ = ideyesnobox("Update Help", "Redownload all cached help content? (~10 min)")
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            IF q$ = "Y" THEN
+
+                IF idehelp = 0 THEN
+                    old_idesubwindow = idesubwindow: old_idewy = idewy
+                    idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
+                    Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
+                    idesubwindow = old_idesubwindow: idewy = old_idewy
+                END IF
+
+                SCREEN , , 4, 4
+                COLOR 7, 1
+                CLS
+
+                PRINT "Generating list of cached content..."
+
+                'Create a list of all files to be recached
+                f$ = CHR$(0) + idezfilelist$("internal/help", 1) + CHR$(0)
+                IF LEN(f$) = 2 THEN f$ = CHR$(0)
+
+                'Prepend core pages to list
+                f$ = CHR$(0) + "Keyword_Reference_-_By_usage.txt" + f$
+                f$ = CHR$(0) + "QB64_Help_Menu.txt" + f$
+                f$ = CHR$(0) + "QB64_FAQ.txt" + f$
+                PRINT "Adding core help pages added to list..."
+
+                'Download and PARSE alphabetical index to build required F1 help links
+                PRINT "Regenerating keyword list..."
+                Help_Recaching = 1: Help_IgnoreCache = 1
+                a$ = Wiki$("Keyword Reference - Alphabetical")
+                Help_Recaching = 0: Help_IgnoreCache = 0
+                WikiParse a$
+
+                'Add all linked pages to download list (if not already in list)
+                fh = FREEFILE
+                OPEN "internal\help\links.bin" FOR INPUT AS #fh
+                DO UNTIL EOF(fh)
+                    LINE INPUT #fh, l$
+                    IF LEN(l$) THEN
+                        c = INSTR(l$, ","): PageName2$ = RIGHT$(l$, LEN(l$) - c)
+                        DO WHILE INSTR(PageName2$, " ")
+                            ASC(PageName2$, INSTR(PageName2$, " ")) = 95
+                        LOOP
+                        DO WHILE INSTR(PageName2$, "&")
+                            i = INSTR(PageName2$, "&")
+                            PageName2$ = LEFT$(PageName2$, i - 1) + "%26" + RIGHT$(PageName2$, LEN(PageName2$) - i)
+                        LOOP
+                        DO WHILE INSTR(PageName2$, "/")
+                            i = INSTR(PageName2$, "/")
+                            PageName2$ = LEFT$(PageName2$, i - 1) + "%2F" + RIGHT$(PageName2$, LEN(PageName2$) - i)
+                        LOOP
+                        PageName2$ = PageName2$ + ".txt"
+                        IF INSTR(f$, CHR$(0) + PageName2$ + CHR$(0)) = 0 THEN
+                            f$ = f$ + PageName2$ + CHR$(0)
+                        END IF
+                    END IF
+                LOOP
+                CLOSE #fh
+
+                'Redownload all listed files
+                IF f$ <> CHR$(0) THEN
+                    c = 0 'count files to download
+                    FOR x = 2 TO LEN(f$)
+                        IF ASC(f$, x) = 0 THEN c = c + 1
+                    NEXT
+                    c = c - 1
+                    PRINT "Updating"; c; "help content files: (Press ESC to cancel)"
+
+                    f$ = RIGHT$(f$, LEN(f$) - 1)
+                    z$ = CHR$(0)
+                    n = 0
+                    DO UNTIL LEN(f$) = 0
+                        x2 = INSTR(f$, z$)
+                        f2$ = LEFT$(f$, x2 - 1): f$ = RIGHT$(f$, LEN(f$) - x2)
+
+                        IF RIGHT$(f2$, 4) = ".txt" THEN
+                            f2$ = LEFT$(f2$, LEN(f2$) - 4)
+                            n = n + 1
+                            PRINT "(" + str2$(n) + "/" + str2$(c) + ") " + f2$
+
+                            Help_IgnoreCache = 1: Help_Recaching = 1: ignore$ = Wiki(f2$): Help_Recaching = 0: Help_IgnoreCache = 0
+                        END IF
+
+                        GetInput
+                        DO WHILE iCHANGED
+                            IF K$ = CHR$(27) THEN GOTO stoprecache
+                            GetInput
+                        LOOP
+                    LOOP
+                END IF
+                stoprecache:
+                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            END IF
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Update" THEN
+            PCOPY 2, 0
+            UpdateHandle = BeginDownload("www.qb64.net/update2.txt")
+            IF UpdateHandle THEN
+                ideupdatetimerval = TIMER
+                DO UNTIL ABS(TIMER - ideupdatetimerval) >= 5
+                    ContinueDownloads
+                    IF DL(UpdateHandle).State = 2 THEN 'download complete
+                        update 1
+                        UpdateHandle = 0
+                        GOTO ideloop
+                    END IF
+                    _LIMIT 10
+                LOOP
+                CLOSE DL(UpdateHandle).Handle: DL(UpdateHandle).State = 0: UpdateHandle = 0
+                idemessagebox "Update", "Could not connect to server."
+            ELSE
+                idemessagebox "Update", "Could not connect to server."
+                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            END IF 'updatehandle
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "New #SUB..." THEN
+            PCOPY 2, 0
+            idenewsf "SUB"
+            ideselect = 0
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+        IF menu$(m, s) = "New #FUNCTION..." THEN
+            PCOPY 2, 0
+            idenewsf "FUNCTION"
+            ideselect = 0
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#SUBs...  F2" THEN
+            PCOPY 2, 0
+            idesubsjmp:
+            r$ = idesubs
+            IF r$ <> "C" THEN ideselect = 0
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+
+
+        IF menu$(m, s) = "#Find..." THEN
+            PCOPY 2, 0
+            idefindjmp:
+            r$ = idefind
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            '...
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Change..." THEN
+            PCOPY 2, 0
+            r$ = idechange
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            IF r$ = "C" OR r$ = "" THEN GOTO ideloop
+            'assume "V", verify changes
+            IdeAddSearched idefindtext
+
+            oldcx = idecx: oldcy = idecy
+            found = 0: looped = 0
+
+            s$ = idefindtext$
+            IF idefindcasesens = 0 THEN s$ = UCASE$(s$)
+            start = idecy: y = start
+            startx = idecx: x1 = startx
+            first = 1
+            idefindnext2:
+
+            l$ = idegetline(y)
+            IF idefindcasesens = 0 THEN l$ = UCASE$(l$)
+
+            IF first = 1 THEN
+                first = 0
+            ELSE
+                x1 = 1
+                IF idefindbackwards THEN
+                    x1 = LEN(l$) - LEN(s$) + 1
+                END IF
+            END IF
+            IF x1 < 0 THEN x1 = 0
+
+            idefindagain2:
+
+            IF idefindbackwards THEN
+                x = 0
+                FOR xx = x1 TO 1 STEP -1
+                    IF ASC(l$, xx) = ASC(s$) THEN 'first char
+                        xxo = xx - 1
+                        FOR xx2 = xx TO xx + LEN(s$) - 1
+                            IF ASC(l$, xx2) <> ASC(s$, xx2 - xxo) THEN EXIT FOR
+                        NEXT
+                        IF xx2 = xx + LEN(s$) THEN
+                            'matched!
+                            x = xx
+                            EXIT FOR
+                        END IF
+                    END IF 'first char
+                NEXT
+                IF y = start AND looped = 1 AND x <= startx THEN x = 0
+            ELSE
+                x = INSTR(x1, l$, s$)
+                IF y = start AND looped = 1 AND x >= startx THEN x = 0
+            END IF
+
+            IF x THEN
+                IF idefindwholeword THEN
+                    whole = 1
+                    IF x > 1 THEN
+                        c = ASC(UCASE$(MID$(l$, x - 1, 1)))
+                        IF c >= 65 AND c <= 90 THEN whole = 0
+                        IF c >= 48 AND c <= 57 THEN whole = 0
+                    END IF
+                    IF x + LEN(s$) <= LEN(l$) THEN
+                        c = ASC(UCASE$(MID$(l$, x + LEN(s$), 1)))
+                        IF c >= 65 AND c <= 90 THEN whole = 0
+                        IF c >= 48 AND c <= 57 THEN whole = 0
+                    END IF
+                    IF whole = 0 THEN
+                        x1 = x + 1: IF idefindbackwards THEN x1 = x - 1
+                        x = 0
+                        IF x1 > 0 AND x1 <= LEN(l$) THEN GOTO idefindagain2
+                    END IF
+                END IF
+            END IF
+
+            IF x THEN
+                ideselect = 1
+                idecx = x: idecy = y
+                ideselectx1 = x + LEN(s$): ideselecty1 = y
+
+                found = 1
+                ideshowtext
+                SCREEN , , 0, 0: LOCATE , , 1: SCREEN , , 3, 0
+                PCOPY 3, 0
+                r$ = idechangeit
+                idedeltxt
+                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                ideselect = 0
+                IF r$ = "C" THEN idecx = oldcx: idecy = oldcy: GOTO ideloop
+                IF r$ = "Y" THEN
+                    l$ = idegetline(idecy)
+                    idechangemade = 1
+                    IF LEN(l$) >= ideselectx1 THEN
+                        l$ = LEFT$(l$, idecx - 1) + idechangeto$ + RIGHT$(l$, LEN(l$) - ideselectx1 + 1)
+                    ELSE
+                        l$ = LEFT$(l$, idecx - 1) + idechangeto$
+                    END IF
+                    idesetline idecy, l$
+                    IF idefindcasesens = 0 THEN l$ = UCASE$(l$)
+
+                    IF idefindbackwards THEN
+                        IF x <= startx AND y = start THEN startx = startx - LEN(s$) + LEN(idechangeto$) 'move startx according to the difference
+                    ELSE
+                        IF x <= startx AND y = start AND looped = 1 THEN startx = startx - LEN(s$) + LEN(idechangeto$) 'move startx according to the difference
+                        x = x + LEN(idechangeto$) - 1 'skip changed portion
+                    END IF
+                ELSE
+                    '"N"
+                    '(no action)
+                END IF
+                IF idefindbackwards THEN x1 = x - 1 ELSE x1 = x + 1
+                GOTO idefindagain2
+            END IF
+
+            IF idefindbackwards THEN
+                y = y - 1
+                IF y = start - 1 AND looped = 1 THEN
+                    GOTO finishedchange
+                END IF
+                IF y < 1 THEN y = iden: looped = 1
+                GOTO idefindnext2
+            ELSE
+                y = y + 1
+                IF y = start + 1 AND looped = 1 THEN
+                    GOTO finishedchange
+                END IF
+                IF y > iden THEN y = 1: looped = 1
+                GOTO idefindnext2
+            END IF
+
+            '-------------------------------------------------
+
+            finishedchange:
+            idecx = oldcx: idecy = oldcy
+            IF found THEN
+                ideshowtext
+                SCREEN , , 0, 0: LOCATE , , 1: SCREEN , , 3, 0
+                PCOPY 3, 0
+                idechanged
+            ELSE
+                idenomatch
+            END IF
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF '#Change...
+
+        IF menu$(m, s) = "#Repeat Last Find  (Shift+) F3" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idemf3
+        END IF
+
+        IF menu$(m, s) = "Cl#ear  Del" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            IF ideselect = 1 THEN
+                idechangemade = 1
+                GOSUB delselect
+            END IF
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Paste  Shift+Ins or CTRL+V" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idempaste
+        END IF
+
+        IF menu$(m, s) = "#Copy  Ctrl+Ins or CTRL+C" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            IF ideselect = 1 THEN GOTO copy2clip
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "Cu#t  Shift+Del or CTRL+X" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            IF ideselect = 1 THEN
+                K$ = CHR$(0) + "S" 'tricks handler into del after copy
+                GOTO idemcut
+            END IF
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Undo  CTRL+Z" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idemundo
+        END IF
+
+        IF menu$(m, s) = "#Redo  CTRL+Y" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idemredo
+        END IF
+
+
+        IF menu$(m, s) = "Select #All  CTRL+A" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idemselectall
+        END IF
+
+        menu$(m, i) = "Select #All  CTRL+A": i = i + 1
+
+        IF menu$(m, s) = "#Start  F5" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idemrun
+        END IF
+
+        IF menu$(m, s) = "Start (#Detached)  Ctrl+F5" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idemdetached
+        END IF
+
+        IF menu$(m, s) = "Make E#XE Only  F11" OR menu$(m, s) = "Make E#xecutable Only  F11" THEN
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO idemexe
+        END IF
+
+        IF menu$(m, s) = "E#xit" THEN
+            PCOPY 2, 0
+            quickexit:
+            IF ideunsaved = 1 THEN
+                r$ = idesavenow
+                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                IF r$ = "C" THEN GOTO ideloop
+                IF r$ = "Y" THEN
+                    IF ideprogname = "" THEN
+                        r$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
+                        IF r$ = "C" THEN
+                            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
+                        END IF
+                    ELSE
+                        idesave idepath$ + idepathsep$ + ideprogname$
+                    END IF
+                END IF
+
+            END IF
+            fh = FREEFILE: OPEN tmpdir$ + "autosave.bin" FOR OUTPUT AS #fh: CLOSE #fh
+            SYSTEM
+        END IF
+
+        IF menu$(m, s) = "#New" THEN
+            PCOPY 2, 0
+            IF ideunsaved = 1 THEN
+                r$ = idesavenow
+                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                IF r$ = "C" THEN GOTO ideloop
+                IF r$ = "Y" THEN
+                    IF ideprogname = "" THEN
+                        r$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
+                        PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                        IF r$ = "C" THEN GOTO ideloop
+                    ELSE
+                        idesave idepath$ + idepathsep$ + ideprogname$
+                    END IF
+                END IF
+            END IF
+            ideunsaved = -1
+            'new blank text field
+            idet$ = MKL$(0) + MKL$(0): idel = 1: ideli = 1: iden = 1: IdeBmkN = 0
+            idesx = 1
+            idesy = 1
+            idecx = 1
+            idecy = 1
+            ideselect = 0
+            ideprogname$ = ""
+            _TITLE "QB64"
+            idechangemade = 1
+            ideundobase = 0 'reset
+            GOTO ideloop
+        END IF
+
+        FOR ml = 1 TO 4
+            IF LEN(IdeRecentLink(ml, 1)) THEN
+                IF menu$(m, s) = IdeRecentLink(ml, 1) THEN
+                    IdeOpenFile$ = IdeRecentLink(ml, 2)
+                    GOTO directopen
+                END IF
+            END IF
+        NEXT
+
+
+        IF menu$(m, s) = "#Recent..." THEN
+            PCOPY 2, 0
+            f$ = iderecentbox
+            IF LEN(f$) THEN
+                IdeOpenFile$ = f$
+                GOTO directopen
+            END IF
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+            GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Open..." THEN
+            IdeOpenFile$ = ""
+            directopen:
+            PCOPY 2, 0
+            IF ideunsaved THEN
+                r$ = idesavenow
+                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                IF r$ = "C" THEN GOTO ideloop
+                IF r$ = "Y" THEN
+                    IF ideprogname = "" THEN
+                        r$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
+                        IF r$ = "C" THEN GOTO ideloop
+                    ELSE
+                        idesave idepath$ + idepathsep$ + ideprogname$
+                    END IF
+                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
+                END IF '"Y"
+            END IF 'unsaved
+            r$ = ideopen
+            IF r$ <> "C" THEN ideunsaved = -1: idechangemade = 1: idelayoutallow = 2: ideundobase = 0
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
+        END IF
+
+        IF menu$(m, s) = "#Save" THEN
+            PCOPY 2, 0
+            IF ideprogname = "" THEN
+                a$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
+            ELSE
+                idesave idepath$ + idepathsep$ + ideprogname$
+            END IF
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
+        END IF
+
+
+        IF menu$(m, s) = "Save #As..." THEN
+            PCOPY 2, 0
+            IF ideprogname = "" THEN
+                a$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
+            ELSE
+                a$ = idesaveas$(ideprogname$)
+            END IF
+            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
+        END IF
+
+
+
+
+        SCREEN , , 0, 0
+        CLS: PRINT "MENU ITEM [" + menu$(m, s) + "] NOT IMPLEMENTED!": END
+    END IF
+
+
+    _LIMIT 100
+
+LOOP
+
+'--------------------------------------------------------------------------------
+
+END FUNCTION
+
+
+FUNCTION idechange$
+
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+
+'built initial search strings
+IF ideselect THEN
+    IF ideselecty1 = idecy THEN 'single line selected
+        a$ = idegetline(idecy)
+        a2$ = ""
+        sx1 = ideselectx1: sx2 = idecx
+        IF sx2 < sx1 THEN SWAP sx1, sx2
+        FOR x = sx1 TO sx2 - 1
+            IF x <= LEN(a$) THEN a2$ = a2$ + MID$(a$, x, 1) ELSE a2$ = a2$ + " "
+        NEXT
+    END IF
+END IF
+IF a2$ = "" THEN
+    a2$ = idefindtext
+END IF
+
+i = 0
+idepar p, 60, 12, "Change"
+i = i + 1
+o(i).typ = 1
+o(i).y = 2
+o(i).nam = idenewtxt("#Find What")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+i = i + 1
+o(i).typ = 1
+o(i).y = 5
+o(i).nam = idenewtxt("Change #To")
+o(i).txt = idenewtxt(idechangeto)
+o(i).v1 = LEN(idechangeto)
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 8
+o(i).nam = idenewtxt("#Match Upper/Lowercase")
+o(i).sel = idefindcasesens
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 9
+o(i).nam = idenewtxt("#Whole Word")
+o(i).sel = idefindwholeword
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 10
+o(i).nam = idenewtxt("#Search Backwards")
+o(i).sel = idefindbackwards
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 11
+o(i).txt = idenewtxt("Find and #Verify" + sep + "#Change All" + sep + "Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+
+            o(i).cx = 0: o(i).cy = 0
+
+            idedrawobj o(i), f 'display object
+
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+
+    IF K$ = CHR$(27) OR (focus = 8 AND info <> 0) THEN
+        idechange$ = "C"
+        EXIT FUNCTION
+    END IF
+
+
+
+
+    IF focus = 7 AND info <> 0 THEN 'change all
+        idefindcasesens = o(3).sel
+        idefindwholeword = o(4).sel
+        idefindbackwards = o(5).sel
+
+        s$ = idetxt(o(1).txt)
+        idefindtext$ = s$
+        idechangeto$ = idetxt(o(2).txt)
+        IdeAddSearched idefindtext
+
+        changed = 0
+
+        s$ = idefindtext$
+        IF idefindcasesens = 0 THEN s$ = UCASE$(s$)
+
+        FOR y = 1 TO iden
+            l$ = idegetline(y)
+            l2$ = ""
+
+            x1 = 1
+            idechangeall:
+            IF idefindcasesens = 0 THEN l3$ = UCASE$(l$) ELSE l3$ = l$
+            x = INSTR(x1, l3$, s$)
+
+            IF x THEN
+                IF idefindwholeword THEN
+                    whole = 1
+                    IF x > 1 THEN
+                        c = ASC(UCASE$(MID$(l$, x - 1, 1)))
+                        IF c >= 65 AND c <= 90 THEN whole = 0
+                        IF c >= 48 AND c <= 57 THEN whole = 0
+                    END IF
+                    IF x + LEN(s$) <= LEN(l$) THEN
+                        c = ASC(UCASE$(MID$(l$, x + LEN(s$), 1)))
+                        IF c >= 65 AND c <= 90 THEN whole = 0
+                        IF c >= 48 AND c <= 57 THEN whole = 0
+                    END IF
+                    IF whole = 0 THEN
+                        IF x1 <= LEN(l$) THEN
+                            l2$ = l2$ + MID$(l$, x1, x - x1 + 1)
+                            x1 = x + 1
+                            GOTO idechangeall
+                        END IF
+                        x = 0
+                    END IF
+                END IF
+            END IF
+
+            IF x THEN
+                l2$ = l2$ + MID$(l$, x1, x - x1) + idechangeto$
+                x1 = x + LEN(s$)
+                IF x1 <= LEN(l$) THEN GOTO idechangeall
+            END IF
+
+            l2$ = l2$ + MID$(l$, x1, LEN(l$) - x1 + 1)
+
+            IF l2$ <> l$ THEN idesetline y, l2$: changed = 1
+
+        NEXT
+
+        IF changed = 0 THEN idenomatch ELSE idechanged: idechangemade = 1
+        EXIT FUNCTION
+
+    END IF 'change all
+
+
+    IF (focus = 6 AND info <> 0) OR K$ = CHR$(13) THEN
+        idefindcasesens = o(3).sel
+        idefindwholeword = o(4).sel
+        idefindbackwards = o(5).sel
+        idefindtext$ = idetxt(o(1).txt)
+        idechangeto$ = idetxt(o(2).txt)
+        idechange$ = "V"
+        EXIT FUNCTION
+    END IF
+
+
+    'end of custom controls
+
+
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+FUNCTION idechangeit$
+
+'-------- generic dialog box header --------
+PCOPY 3, 0
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+w = 45
+p.x = 40 - w \ 2
+p.y = 21
+p.w = w
+p.h = 2
+p.nam = idenewtxt("Change")
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 2
+o(i).txt = idenewtxt("#Change" + sep + "#Skip" + sep + "Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    IF UCASE$(K$) = "C" THEN altletter$ = "C"
+    IF UCASE$(K$) = "S" THEN altletter$ = "S"
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    IF K$ = CHR$(27) THEN
+        idechangeit$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    IF info THEN
+        IF info = 1 THEN idechangeit$ = "Y"
+        IF info = 2 THEN idechangeit$ = "N"
+        IF info = 3 THEN idechangeit$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+FUNCTION idefileexists$
+'-------- generic dialog box header --------
+PCOPY 3, 0
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+'idepar p, 30, 6, "File already exists. Overwrite?"
+idepar p, 35, 4, ""
+i = i + 1
+o(i).typ = 3
+o(i).y = 4
+o(i).txt = idenewtxt("#Yes" + sep + "#No")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 2, p.x + 3: PRINT "File already exists. Overwrite?";
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
+    IF UCASE$(K$) = "N" THEN altletter$ = "N"
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    IF K$ = CHR$(27) THEN
+        idefileexists$ = "N"
+        EXIT FUNCTION
+    END IF
+
+    IF info THEN
+        IF info = 1 THEN idefileexists$ = "Y" ELSE idefileexists$ = "N"
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+
+
+END FUNCTION
+
+
+
+
+FUNCTION idefind$
+
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+
+'built initial search string
+IF ideselect THEN
+    IF ideselecty1 = idecy THEN 'single line selected
+        a$ = idegetline(idecy)
+        a2$ = ""
+        sx1 = ideselectx1: sx2 = idecx
+        IF sx2 < sx1 THEN SWAP sx1, sx2
+        FOR x = sx1 TO sx2 - 1
+            IF x <= LEN(a$) THEN a2$ = a2$ + MID$(a$, x, 1) ELSE a2$ = a2$ + " "
+        NEXT
+    END IF
+END IF
+IF a2$ = "" THEN
+    a2$ = idefindtext
+END IF
+
+
+i = 0
+idepar p, 60, 9, "Find"
+i = i + 1
+o(i).typ = 1
+o(i).y = 2
+o(i).nam = idenewtxt("#Find What")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 5
+o(i).nam = idenewtxt("#Match Upper/Lowercase")
+o(i).sel = idefindcasesens
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 6
+o(i).nam = idenewtxt("#Whole Word")
+o(i).sel = idefindwholeword
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 7
+o(i).nam = idenewtxt("#Search Backwards")
+o(i).sel = idefindbackwards
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 9
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+
+    IF K$ = CHR$(27) OR (focus = 6 AND info <> 0) THEN
+        idefind$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    IF K$ = CHR$(13) OR (focus = 5 AND info <> 0) THEN
+        idefindcasesens = o(2).sel
+        idefindwholeword = o(3).sel
+        idefindbackwards = o(4).sel
+        s$ = idetxt(o(1).txt)
+        idefindtext$ = s$
+        IdeAddSearched idefindtext
+        idefindagain
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+
+
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+FUNCTION idegetline$ (i)
+IF i <> -1 THEN idegotoline i
+idegetline$ = MID$(idet$, ideli + 4, CVL(MID$(idet$, ideli, 4)))
+END FUNCTION
+
+FUNCTION idehbar (x, y, h, i2, n2)
+i = i2: n = n2
+
+'COLOR 0, 7
+'LOCATE y, x: PRINT CHR$(27);
+'LOCATE y, x + w - 1: PRINT CHR$(26);
+'FOR x2 = x + 1 TO x + w - 2
+'LOCATE y, x2: PRINT "°";
+'NEXT
+'IF w > 3 THEN
+'p2! = w - 2 - .00001
+'x2 = x + 1 + INT(p2! * p!)
+'LOCATE y, x2: PRINT "Û";
+'END IF
+
+
+'h is size in characters (inc. arrows)
+
+'draw background & arrows
+COLOR 0, 7
+LOCATE y, x: PRINT CHR$(27);
+LOCATE y, x + h - 1: PRINT CHR$(26);
+FOR x2 = x + 1 TO x + h - 2
+    LOCATE y, x2: PRINT "°";
+NEXT
+
+'draw slider
+
+IF n < 1 THEN n = 1
+IF i < 1 THEN i = 1
+IF i > n THEN i = n
+
+IF h = 2 THEN
+    idehbar = x 'not position for slider exists
+    EXIT FUNCTION
+END IF
+
+IF h = 3 THEN
+    idehbar = x + 1 'dummy value
+    'no slider
+    EXIT FUNCTION
+END IF
+
+IF h = 4 THEN
+    IF n = 1 THEN
+        idehbar = x + 1 'dummy value
+        'no slider required for 1 item
+        EXIT FUNCTION
+    ELSE
+        'show whichever is closer of the two positions
+        p! = (i - 1) / (n - 1)
+        IF p! < .5 THEN x2 = x + 1 ELSE x2 = x + 2
+        LOCATE y, x2: PRINT "Û";
+        idehbar = x2
+        EXIT FUNCTION
+    END IF
+END IF
+
+IF h > 4 THEN
+    IF n = 1 THEN
+        idehbar = x + h \ 4 'dummy value
+        'no slider required for 1 item
+        EXIT FUNCTION
+    END IF
+    IF i = 1 THEN
+        x2 = x + 1
+        LOCATE y, x2: PRINT "Û";
+        idehbar = x2
+        EXIT FUNCTION
+    END IF
+    IF i = n THEN
+        x2 = x + h - 2
+        LOCATE y, x2: PRINT "Û";
+        idehbar = x2
+        EXIT FUNCTION
+    END IF
+    'between i=1 and i=n
+    p! = (i - 1) / (n - 1)
+    p! = p! * (h - 4)
+    x2 = x + 2 + INT(p!)
+    LOCATE y, x2: PRINT "Û";
+    idehbar = x2
+    EXIT FUNCTION
+END IF
+
+
+END FUNCTION
+
+FUNCTION idehlen (a$)
+IF INSTR(a$, "#") THEN idehlen = LEN(a$) - 1 ELSE idehlen = LEN(a$)
+END FUNCTION
+
+FUNCTION idenewtxt (a$)
+idetxtlast = idetxtlast + 1
+idetxt$(idetxtlast) = a$
+idenewtxt = idetxtlast
+END FUNCTION
+
+FUNCTION ideopen$
+STATIC AllFiles
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+path$ = idepath$
+filelist$ = idezfilelist$(path$, AllFiles)
+pathlist$ = idezpathlist$(path$)
+
+i = 0
+idepar p, 70, idewy + idesubwindow - 7, "Open"
+i = i + 1
+o(i).typ = 1
+o(i).y = 2
+o(i).nam = idenewtxt("File #Name")
+i = i + 1
+o(i).typ = 2
+o(i).y = 5
+o(i).w = 32: o(i).h = idewy + idesubwindow - 14
+o(i).nam = idenewtxt("#Files")
+o(i).txt = idenewtxt(filelist$): filelist$ = ""
+i = i + 1
+o(i).typ = 2
+o(i).x = 37: o(i).y = 5
+o(i).w = 31: o(i).h = idewy + idesubwindow - 16
+o(i).nam = idenewtxt("#Paths")
+o(i).txt = idenewtxt(pathlist$): pathlist$ = ""
+i = i + 1
+o(i).typ = 4 'check box
+o(i).x = 37
+o(i).y = idewy + idesubwindow - 9
+o(i).nam = idenewtxt(".BAS Only")
+IF AllFiles THEN o(i).sel = 0 ELSE o(i).sel = 1
+i = i + 1
+o(i).typ = 3
+o(i).y = idewy + idesubwindow - 7
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+IF LEN(IdeOpenFile) THEN f$ = IdeOpenFile: GOTO DirectLoad
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 4, p.x + 2: PRINT "Path: ";
+    a$ = path$
+    w = p.w - 8
+    IF LEN(a$) > w - 3 THEN a$ = "úúú" + RIGHT$(a$, w - 3)
+    PRINT a$;
+    '-------- end of custom display changes --------
+
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+
+
+
+
+
+
+
+
+
+    'specific post controls
+
+    IF AllFiles = 1 AND o(4).sel <> 0 THEN
+        AllFiles = 0
+        idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
+        o(2).sel = -1
+        GOTO ideopenloop
+    END IF
+    IF AllFiles = 0 AND o(4).sel = 0 THEN
+        AllFiles = 1
+        idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
+        o(2).sel = -1
+        GOTO ideopenloop
+    END IF
+
+    IF K$ = CHR$(27) OR (focus = 6 AND info <> 0) THEN
+        ideopen$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    IF idetxt(o(2).stx) <> "" THEN
+        idetxt(o(1).txt) = idetxt(o(2).stx)
+        o(1).v1 = LEN(idetxt(o(1).txt))
+    END IF
+
+    IF focus = 3 THEN
+        IF K$ = CHR$(13) OR info = 1 THEN
+
+            path$ = idezchangepath(path$, idetxt(o(3).stx))
+            idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
+            idetxt(o(3).txt) = idezpathlist$(path$)
+
+            o(2).sel = -1
+            o(3).sel = 1
+            IF info = 1 THEN o(3).sel = -1
+            GOTO ideopenloop
+        END IF
+    END IF
+
+    'load file
+    IF K$ = CHR$(13) OR (info = 1 AND focus = 2) OR (focus = 5 AND info <> 0) THEN
+        f$ = idetxt(o(1).txt)
+
+        'change path?
+        IF f$ = ".." OR f$ = "." THEN f$ = f$ + idepathsep$
+        IF RIGHT$(f$, 1) = idepathsep$ THEN
+            path$ = idezgetfilepath$(path$, f$) 'note: path ending with pathsep needn't contain a file
+            idetxt(o(1).txt) = ""
+            idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
+            o(2).sel = -1
+            idetxt(o(3).txt) = idezpathlist$(path$)
+            o(3).sel = -1
+            GOTO ideopenloop
+        END IF
+
+        'add .bas if not given
+        IF (LCASE$(RIGHT$(f$, 4)) <> ".bas") AND AllFiles = 0 THEN f$ = f$ + ".bas"
+
+        DirectLoad:
+
+        'check/acquire file path
+        path$ = idezgetfilepath$(path$, f$)
+        'check file exists
+        ideerror = 2
+        OPEN path$ + idepathsep$ + f$ FOR INPUT AS #150: CLOSE #150
+        'load file
+        ideerror = 3
+        idet$ = MKL$(0) + MKL$(0): idel = 1: ideli = 1: iden = 1: IdeBmkN = 0
+        idesx = 1
+        idesy = 1
+        idecx = 1
+        idecy = 1
+        ideselect = 0
+        lineinput3load path$ + idepathsep$ + f$
+        idet$ = SPACE$(LEN(lineinput3buffer) * 8)
+        i2 = 1
+        n = 0
+        chrtab$ = CHR$(9)
+        space1$ = " ": space2$ = "  ": space3$ = "   ": space4$ = "    "
+        chr7$ = CHR$(7): chr11$ = CHR$(11): chr12$ = CHR$(12): chr28$ = CHR$(28): chr29$ = CHR$(29): chr30$ = CHR$(30): chr31$ = CHR$(31)
+        DO
+            a$ = lineinput3$
+            l = LEN(a$)
+            IF l THEN asca = ASC(a$) ELSE asca = -1
+            IF asca <> 13 THEN
+                IF asca <> -1 THEN
+                    'fix tabs
+                    ideopenfixtabs:
+                    x = INSTR(a$, chrtab$)
+                    IF x THEN
+                        x2 = (x - 1) MOD 4
+                        IF x2 = 0 THEN a$ = LEFT$(a$, x - 1) + space4$ + RIGHT$(a$, l - x): l = l + 3: GOTO ideopenfixtabs
+                        IF x2 = 1 THEN a$ = LEFT$(a$, x - 1) + space3$ + RIGHT$(a$, l - x): l = l + 2: GOTO ideopenfixtabs
+                        IF x2 = 2 THEN a$ = LEFT$(a$, x - 1) + space2$ + RIGHT$(a$, l - x): l = l + 1: GOTO ideopenfixtabs
+                        IF x2 = 3 THEN a$ = LEFT$(a$, x - 1) + space1$ + RIGHT$(a$, l - x): GOTO ideopenfixtabs
+                    END IF
+                END IF 'asca<>-1
+                MID$(idet$, i2, l + 8) = MKL$(l) + a$ + MKL$(l): i2 = i2 + l + 8: n = n + 1
+            END IF
+        LOOP UNTIL asca = 13
+        lineinput3buffer = ""
+        iden = n: IF n = 0 THEN idet$ = MKL$(0) + MKL$(0): iden = 1 ELSE idet$ = LEFT$(idet$, i2 - 1)
+        ideerror = 1
+        ideprogname = f$: _TITLE ideprogname + " - QB64"
+        idepath$ = path$
+        IdeAddRecent idepath$ + idepathsep$ + ideprogname$
+        IdeImportBookmarks idepath$ + idepathsep$ + ideprogname$
+        EXIT FUNCTION
+    END IF
+
+    ideopenloop:
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+
+FUNCTION iderestore$
+
+'-------- generic dialog box header --------
+PCOPY 3, 0
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+'idepar p, 30, 6, "File already exists. Overwrite?"
+idepar p, 43, 4, ""
+i = i + 1
+o(i).typ = 3
+o(i).y = 4
+o(i).txt = idenewtxt("#Yes" + sep + "#No")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 2, p.x + 3: PRINT "Recover program from auto-saved backup?";
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
+    IF UCASE$(K$) = "N" THEN altletter$ = "N"
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    IF info THEN
+        IF info = 1 THEN iderestore$ = "Y" ELSE iderestore$ = "N"
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+
+END FUNCTION
+
+
+FUNCTION idesaveas$ (programname$)
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+path$ = idepath$
+pathlist$ = idezpathlist$(path$)
+
+i = 0
+idepar p, 48, idewy + idesubwindow - 7, "Save As"
+
+i = i + 1
+o(i).typ = 1
+o(i).y = 2
+o(i).nam = idenewtxt("File #Name")
+o(i).txt = idenewtxt(programname$)
+o(i).v1 = LEN(programname$)
+
+'i = i + 1
+'o(i).typ = 2
+'o(i).y = 5
+'o(i).w = 32: o(i).h = 11
+'o(i).nam = idenewtxt("#Files")
+'o(i).txt = idenewtxt(filelist$): filelist$ = ""
+
+i = i + 1
+o(i).typ = 2
+'o(i).x = 10:
+o(i).y = 5
+o(i).w = 44: o(i).h = idewy + idesubwindow - 14
+o(i).nam = idenewtxt("#Paths")
+o(i).txt = idenewtxt(pathlist$): pathlist$ = ""
+
+i = i + 1
+o(i).typ = 3
+o(i).y = idewy + idesubwindow - 7
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 4, p.x + 2: PRINT "Path: ";
+    a$ = path$
+    w = p.w - 8
+    IF LEN(a$) > w - 3 THEN a$ = "úúú" + RIGHT$(a$, w - 3)
+    PRINT a$;
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+
+    IF K$ = CHR$(27) OR (focus = 4 AND info <> 0) THEN
+        idesaveas$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    IF focus = 2 THEN
+        IF K$ = CHR$(13) OR info = 1 THEN
+            path$ = idezchangepath(path$, idetxt(o(2).stx))
+            idetxt(o(2).txt) = idezpathlist$(path$)
+            o(2).sel = 1
+            IF info = 1 THEN o(2).sel = -1
+        END IF
+    END IF
+
+    IF (K$ = CHR$(13) AND focus <> 2) OR (focus = 3 AND info <> 0) THEN
+        f$ = idetxt(o(1).txt)
+
+        'change path?
+        IF f$ = ".." OR f$ = "." THEN f$ = f$ + idepathsep$
+        IF RIGHT$(f$, 1) = idepathsep$ THEN
+            path$ = idezgetfilepath$(path$, f$) 'note: path ending with pathsep needn't contain a file
+            idetxt(o(1).txt) = ""
+            idetxt(o(2).txt) = idezpathlist$(path$)
+            o(2).sel = -1
+            GOTO idesaveasloop
+        END IF
+
+        IF FileHasExtension(f$) = 0 THEN f$ = f$ + ".bas"
+
+        path$ = idezgetfilepath$(path$, f$)
+        ideerror = 3
+        OPEN path$ + idepathsep$ + f$ FOR BINARY AS #150
+        ideerror = 1
+        IF LOF(150) THEN
+            CLOSE #150
+            a$ = idefileexists
+            IF a$ = "N" THEN
+                idesaveas$ = "C"
+                EXIT FUNCTION 'user didn't agree to overwrite
+            END IF
+        ELSE
+            CLOSE #150
+        END IF
+        ideprogname$ = f$: _TITLE ideprogname + " - QB64"
+        idesave path$ + idepathsep$ + f$
+        idepath$ = path$
+        IdeAddRecent idepath$ + idepathsep$ + ideprogname$
+        IdeSaveBookmarks idepath$ + idepathsep$ + ideprogname$
+        EXIT FUNCTION
+    END IF
+
+    idesaveasloop:
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+
+END FUNCTION
+
+FUNCTION idesavenow$
+
+'-------- generic dialog box header --------
+PCOPY 3, 0
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+idepar p, 40, 4, ""
+i = i + 1
+o(i).typ = 3
+o(i).y = 4
+o(i).txt = idenewtxt("#Yes" + sep + "#No" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 2, p.x + 4: PRINT "Program is not saved. Save it now?";
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
+    IF UCASE$(K$) = "N" THEN altletter$ = "N"
+    IF UCASE$(K$) = "C" THEN altletter$ = "C"
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    IF K$ = CHR$(27) THEN
+        idesavenow$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    IF info THEN
+        IF info = 1 THEN idesavenow$ = "Y"
+        IF info = 2 THEN idesavenow$ = "N"
+        IF info = 3 THEN idesavenow$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+FUNCTION idesubs$
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+
+ly$ = MKL$(1)
+l$ = ideprogname$
+IF l$ = "" THEN l$ = "Untitled" + tempfolderindexstr$
+FOR y = 1 TO iden
+    a$ = idegetline(y)
+    a$ = LTRIM$(RTRIM$(a$))
+    sf = 0
+    nca$ = UCASE$(a$)
+    IF LEFT$(nca$, 4) = "SUB " THEN sf = 1: sf$ = "SUB  "
+    IF LEFT$(nca$, 9) = "FUNCTION " THEN sf = 2: sf$ = "FUNC "
+    IF sf THEN
+        IF RIGHT$(nca$, 7) = " STATIC" THEN
+            a$ = RTRIM$(LEFT$(a$, LEN(a$) - 7))
+        END IF
+        ly$ = ly$ + MKL$(y)
+        IF sf = 1 THEN
+            a$ = RIGHT$(a$, LEN(a$) - 4)
+        ELSE
+            a$ = RIGHT$(a$, LEN(a$) - 9)
+        END IF
+        a$ = LTRIM$(RTRIM$(a$))
+        x = INSTR(a$, "(")
+        IF x THEN
+            n$ = RTRIM$(LEFT$(a$, x - 1))
+            args$ = RIGHT$(a$, LEN(a$) - x + 1)
+        ELSE
+            n$ = a$
+            args$ = ""
+        END IF
+        IF LEN(n$) <= 20 THEN
+            n$ = n$ + SPACE$(20 - LEN(n$))
+        ELSE
+            n$ = LEFT$(n$, 17) + "úúú"
+        END IF
+        IF LEN(args$) <= (idewx - 41) THEN
+            args$ = args$ + SPACE$((idewx - 41) - LEN(args$))
+        ELSE
+            args$ = LEFT$(args$, (idewx - 44)) + "úúú"
+        END IF
+        l$ = l$ + sep + "ÃÄ" + n$ + " " + sf$ + args$
+
+    END IF
+NEXT
+
+FOR x = LEN(l$) TO 1 STEP -1
+    a$ = MID$(l$, x, 1)
+    IF a$ = "Ã" THEN MID$(l$, x, 1) = "À": EXIT FOR
+NEXT
+
+
+
+'72,19
+i = 0
+idepar p, idewx - 8, idewy + idesubwindow - 6, "SUBs"
+
+i = i + 1
+o(i).typ = 2
+o(i).y = 1
+'68
+o(i).w = idewx - 12: o(i).h = idewy + idesubwindow - 9
+o(i).txt = idenewtxt(l$)
+o(i).sel = 1
+o(i).nam = idenewtxt("Program Items")
+
+
+i = i + 1
+o(i).typ = 3
+o(i).y = idewy + idesubwindow - 6
+o(i).txt = idenewtxt("#Edit" + sep + "#Cancel")
+o(i).dft = 1
+
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN
+        idesubs$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) OR (info = 1 AND focus = 1) THEN
+        y = o(1).sel
+        IF y < 1 THEN y = -y
+        idecy = CVL(MID$(ly$, y * 4 - 3, 4))
+        idesy = idecy
+        idecx = 1
+        idesx = 1
+        EXIT FUNCTION
+    END IF
+
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
 
 
 
 END FUNCTION
+
+
+FUNCTION idelanguagebox
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+
+'generate list of available code pages
+l$ = idecpname(1)
+FOR x = 2 TO idecpnum
+    l$ = l$ + sep + idecpname(x)
+NEXT
+l$ = UCASE$(l$)
+
+i = 0
+idepar p, idewx - 8, idewy + idesubwindow - 6, "Language"
+
+i = i + 1
+o(i).typ = 2
+o(i).y = 2
+o(i).w = idewx - 12: o(i).h = idewy + idesubwindow - 10
+o(i).txt = idenewtxt(l$)
+o(i).sel = 1: IF idecpindex THEN o(i).sel = idecpindex
+o(i).nam = idenewtxt("Code Pages")
+
+i = i + 1
+o(i).typ = 3
+o(i).y = idewy + idesubwindow - 6
+o(i).txt = idenewtxt("#OK" + sep + "#Cancel")
+o(i).dft = 1
+
+
+
+
+
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 1, p.x + 2: PRINT "Code-page for ASCII-UNICODE mapping: (Default: CP437)"
+
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN
+        '        idesubs$ = "C"
+        EXIT FUNCTION
+    END IF
+
+    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) OR (info = 1 AND focus = 1) THEN
+        y = o(1).sel
+        IF y < 1 THEN y = -y
+
+        FOR x = 128 TO 255
+            u = VAL("&H" + MID$(idecp(y), x * 8 + 1, 8) + "&")
+            IF u = 0 THEN u = 9744
+            _MAPUNICODE u TO x
+        NEXT
+
+        'SEEK 1049
+        '[2]   codepage(=0)
+        'total bytes: 1050
+
+        'save changes
+        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
+        SEEK #150, 1049
+        v% = y: PUT #150, , v%: idecpindex = v%
+        CLOSE #150
+
+        EXIT FUNCTION
+    END IF
+
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+FUNCTION idevbar (x, y, h, i2, n2)
+i = i2: n = n2
+
+'h is height in charatcers (inc. arrows)
+
+'draw background & arrows
+COLOR 0, 7
+LOCATE y, x: PRINT CHR$(24);
+LOCATE y + h - 1, x: PRINT CHR$(25);
+FOR y2 = y + 1 TO y + h - 2
+    LOCATE y2, x: PRINT "°";
+NEXT
+
+'draw slider
+
+IF n < 1 THEN n = 1
+IF i < 1 THEN i = 1
+IF i > n THEN i = n
+
+IF h = 2 THEN
+    idevbar = y 'not position for slider exists
+    EXIT FUNCTION
+END IF
+
+IF h = 3 THEN
+    idevbar = y + 1 'dummy value
+    'no slider
+    EXIT FUNCTION
+END IF
+
+IF h = 4 THEN
+    IF n = 1 THEN
+        idevbar = y + 1 'dummy value
+        'no slider required for 1 item
+        EXIT FUNCTION
+    ELSE
+        'show whichever is closer of the two positions
+        p! = (i - 1) / (n - 1)
+        IF p! < .5 THEN y2 = y + 1 ELSE y2 = y + 2
+        LOCATE y2, x: PRINT "Û";
+        idevbar = y2
+        EXIT FUNCTION
+    END IF
+END IF
+
+IF h > 4 THEN
+    IF n = 1 THEN
+        idevbar = y + h \ 4 'dummy value
+        'no slider required for 1 item
+        EXIT FUNCTION
+    END IF
+    IF i = 1 THEN
+        y2 = y + 1
+        LOCATE y2, x: PRINT "Û";
+        idevbar = y2
+        EXIT FUNCTION
+    END IF
+    IF i = n THEN
+        y2 = y + h - 2
+        LOCATE y2, x: PRINT "Û";
+        idevbar = y2
+        EXIT FUNCTION
+    END IF
+    'between i=1 and i=n
+    p! = (i - 1) / (n - 1)
+    p! = p! * (h - 4)
+    y2 = y + 2 + INT(p!)
+    LOCATE y2, x: PRINT "Û";
+    idevbar = y2
+    EXIT FUNCTION
+END IF
+END FUNCTION
+
+FUNCTION idezfilename$ (f$)
+
+IF os$ = "WIN" THEN
+    idezfilename$ = CHR$(34) + f$ + CHR$(34)
+    EXIT FUNCTION
+END IF
+
+IF os$ = "LNX" THEN
+    idezfilename$ = "'" + f$ + "'"
+    EXIT FUNCTION
+END IF
+
+END FUNCTION
+
+FUNCTION idezchangepath$ (path$, newpath$)
+
+idezchangepath$ = path$ 'default (for unsuccessful cases)
+
+IF os$ = "WIN" THEN
+    'go back a path
+    IF newpath$ = ".." THEN
+        FOR x = LEN(path$) TO 1 STEP -1
+            a$ = MID$(path$, x, 1)
+            IF a$ = "\" THEN
+                idezchangepath$ = LEFT$(path$, x - 1)
+                EXIT FOR
+            END IF
+        NEXT
+        EXIT FUNCTION
+    END IF
+    'change drive
+    IF LEN(newpath$) = 2 AND RIGHT$(newpath$, 1) = ":" THEN
+        idezchangepath$ = newpath$
+        EXIT FUNCTION
+    END IF
+    idezchangepath$ = path$ + "\" + newpath$
+    EXIT FUNCTION
+END IF
+
+IF os$ = "LNX" THEN
+
+    'go back a path
+    IF newpath$ = ".." THEN
+        FOR x = LEN(path$) TO 1 STEP -1
+            a$ = MID$(path$, x, 1)
+            IF a$ = "/" THEN
+                idezchangepath$ = LEFT$(path$, x - 1)
+                IF x = 1 THEN idezchangepath$ = "/" 'root path cannot be ""
+                EXIT FOR
+            END IF
+        NEXT
+        EXIT FUNCTION
+    END IF
+    IF path$ = "/" THEN idezchangepath$ = "/" + newpath$ ELSE idezchangepath$ = path$ + "/" + newpath$
+    EXIT FUNCTION
+END IF
+
+END FUNCTION
+
+FUNCTION idezfilelist$ (path$, method) 'method0=*.bas, method1=*.*
+DIM sep AS STRING * 1
+sep = CHR$(0)
+
+IF os$ = "WIN" THEN
+    OPEN ".\internal\temp\files.txt" FOR OUTPUT AS #150: CLOSE #150
+    IF method = 0 THEN SHELL _HIDE "dir /b /ON /A-D " + idezfilename$(path$) + "\*.bas >.\internal\temp\files.txt"
+    IF method = 1 THEN SHELL _HIDE "dir /b /ON /A-D " + idezfilename$(path$) + "\*.* >.\internal\temp\files.txt"
+    filelist$ = ""
+    OPEN ".\internal\temp\files.txt" FOR INPUT AS #150
+    DO UNTIL EOF(150)
+        LINE INPUT #150, a$
+        IF LEN(a$) THEN 'skip blank entries
+            IF filelist$ = "" THEN filelist$ = a$ ELSE filelist$ = filelist$ + sep + a$
+        END IF
+    LOOP
+    CLOSE #150
+    idezfilelist$ = filelist$
+    EXIT FUNCTION
+END IF
+
+IF os$ = "LNX" THEN
+    filelist$ = ""
+    FOR i = 1 TO 2 - method
+        OPEN "./internal/temp/files.txt" FOR OUTPUT AS #150: CLOSE #150
+        IF method = 0 THEN
+            IF i = 1 THEN SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -type f -name " + CHR$(34) + "*.bas" + CHR$(34) + " >./internal/temp/files.txt"
+            IF i = 2 THEN SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -type f -name " + CHR$(34) + "*.BAS" + CHR$(34) + " >./internal/temp/files.txt"
+        END IF
+        IF method = 1 THEN
+            IF i = 1 THEN SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -type f -name " + CHR$(34) + "*" + CHR$(34) + " >./internal/temp/files.txt"
+        END IF
+        OPEN "./internal/temp/files.txt" FOR INPUT AS #150
+        DO UNTIL EOF(150)
+            LINE INPUT #150, a$
+            IF LEN(a$) = 0 THEN EXIT DO
+            FOR x = LEN(a$) TO 1 STEP -1
+                a2$ = MID$(a$, x, 1)
+                IF a2$ = "/" THEN
+                    a$ = RIGHT$(a$, LEN(a$) - x)
+                    EXIT FOR
+                END IF
+            NEXT
+            IF filelist$ = "" THEN filelist$ = a$ ELSE filelist$ = filelist$ + sep + a$
+        LOOP
+        CLOSE #150
+    NEXT
+    idezfilelist$ = filelist$
+    EXIT FUNCTION
+END IF
+
+END FUNCTION
+
+FUNCTION idezgetroot$
+'note: does NOT including a trailing / or \ on the right
+
+IF os$ = "WIN" THEN
+    SHELL _HIDE "cd >.\internal\temp\root.txt"
+    OPEN ".\internal\temp\root.txt" FOR INPUT AS #150
+    LINE INPUT #150, a$
+    idezgetroot$ = a$
+    CLOSE #150
+    EXIT FUNCTION
+END IF
+
+IF os$ = "LNX" THEN
+    SHELL _HIDE "pwd >./internal/temp/root.txt"
+    OPEN "./internal/temp/root.txt" FOR INPUT AS #150
+    LINE INPUT #150, a$
+    idezgetroot$ = a$
+    CLOSE #150
+    EXIT FUNCTION
+END IF
+
+END FUNCTION
+
+FUNCTION idezpathlist$ (path$)
+DIM sep AS STRING * 1
+sep = CHR$(0)
+
+IF os$ = "WIN" THEN
+    OPEN ".\internal\temp\paths.txt" FOR OUTPUT AS #150: CLOSE #150
+    a$ = "": IF RIGHT$(path$, 1) = ":" THEN a$ = "\" 'use a \ after a drive letter
+    SHELL _HIDE "dir /b /ON /AD " + idezfilename$(path$ + a$) + " >.\internal\temp\paths.txt"
+    pathlist$ = ""
+    OPEN ".\internal\temp\paths.txt" FOR INPUT AS #150
+    DO UNTIL EOF(150)
+        LINE INPUT #150, a$
+        IF pathlist$ = "" THEN pathlist$ = a$ ELSE pathlist$ = pathlist$ + sep + a$
+    LOOP
+    CLOSE #150
+    'count instances of / or \
+    c = 0
+    FOR x = 1 TO LEN(path$)
+        b$ = MID$(path$, x, 1)
+        IF b$ = idepathsep$ THEN c = c + 1
+    NEXT
+    IF c >= 1 THEN
+        IF LEN(pathlist$) THEN pathlist$ = ".." + sep + pathlist$ ELSE pathlist$ = ".."
+    END IF
+    'add drive paths
+    FOR i = 0 TO 25
+        IF LEN(pathlist$) THEN pathlist$ = pathlist$ + sep
+        pathlist$ = pathlist$ + CHR$(65 + i) + ":"
+    NEXT
+    idezpathlist$ = pathlist$
+    EXIT FUNCTION
+END IF
+
+IF os$ = "LNX" THEN
+    pathlist$ = ""
+    OPEN "./internal/temp/paths.txt" FOR OUTPUT AS #150: CLOSE #150
+    SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -mindepth 1 -type d >./internal/temp/paths.txt"
+    OPEN "./internal/temp/paths.txt" FOR INPUT AS #150
+    DO UNTIL EOF(150)
+        LINE INPUT #150, a$
+        IF LEN(a$) = 0 THEN EXIT DO
+        FOR x = LEN(a$) TO 1 STEP -1
+            a2$ = MID$(a$, x, 1)
+            IF a2$ = "/" THEN
+                a$ = RIGHT$(a$, LEN(a$) - x)
+                EXIT FOR
+            END IF
+        NEXT
+        IF pathlist$ = "" THEN pathlist$ = a$ ELSE pathlist$ = pathlist$ + sep + a$
+    LOOP
+    CLOSE #150
+
+    IF path$ <> "/" THEN
+        a$ = ".."
+
+        IF pathlist$ = "" THEN pathlist$ = a$ ELSE pathlist$ = a$ + sep + pathlist$
+    END IF
+
+    idezpathlist$ = pathlist$
+    EXIT FUNCTION
+END IF
+
+END FUNCTION
+
+FUNCTION ideztakepath$ (f$) 'assume f$ contains a filename with an optional path
+p$ = ""
+
+IF os$ = "WIN" THEN
+    FOR i = LEN(f$) TO 1 STEP -1
+        a$ = MID$(f$, i, 1)
+        IF a$ = "\" THEN
+            p$ = LEFT$(f$, i - 1)
+            f$ = RIGHT$(f$, LEN(f$) - i)
+            EXIT FOR
+        END IF
+    NEXT
+    ideztakepath$ = p$
+    EXIT FUNCTION
+END IF
+
+IF os$ = "LNX" THEN
+    FOR i = LEN(f$) TO 1 STEP -1
+        a$ = MID$(f$, i, 1)
+        IF a$ = "/" THEN
+            p$ = LEFT$(f$, i - 1)
+            f$ = RIGHT$(f$, LEN(f$) - i)
+            EXIT FOR
+        END IF
+    NEXT
+    ideztakepath$ = p$
+    EXIT FUNCTION
+END IF
+
+END FUNCTION
+
+'file f$ exists, and may contain a path
+'return the FULL path (even if it was passed as a relative path)
+'f$ is altered to only contain the name of the actual file
+'root$ is the path to apply relative paths to
+FUNCTION idezgetfilepath$ (root$, f$)
+'step #1: seperate file's name from its path (if any)
+p$ = ideztakepath$(f$) 'note: this is a simple seperation of the string
+'step #2: if path was undefined, set it to root
+IF LEN(p$) = 0 THEN p$ = root$
+'step #3: if path is relative, make it relative to root$
+IF LEFT$(p$, 1) = "." THEN p$ = root$ + idepathsep$ + p$
+'step #4: attempt a CHDIR to the path to (i)  validate its existance
+'                                      & (ii) allow listing the paths full name
+ideerror = 4 'path not found
+p2$ = p$
+IF os$ = "WIN" THEN
+    IF RIGHT$(p2$, 1) = ":" THEN p2$ = p2$ + "\" 'force change to root of drive
+END IF
+CHDIR p2$
+ideerror = 1
+'step #5: get the path's full name (assume success)
+IF os$ = "WIN" THEN
+    SHELL _HIDE "cd >" + idezfilename$(ideroot$) + "\internal\temp\root.txt"
+    OPEN ideroot$ + "\internal\temp\root.txt" FOR INPUT AS #150
+    LINE INPUT #150, p$
+    IF RIGHT$(p$, 1) = "\" THEN p$ = LEFT$(p$, LEN(p$) - 1) 'strip trailing \ after root drive path
+    CLOSE #150
+END IF
+IF os$ = "LNX" THEN
+    SHELL _HIDE "pwd >" + idezfilename$(ideroot$) + "/internal/temp/root.txt"
+    OPEN ideroot$ + "/internal/temp/root.txt" FOR INPUT AS #150
+    LINE INPUT #150, p$
+    CLOSE #150
+END IF
+'step #6: restore root path (assume success)
+CHDIR ideroot$
+'important: no validation of f$ necessary
+idezgetfilepath$ = p$
+END FUNCTION
+
+FUNCTION idelayoutbox
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+idepar p, 60, 7, "Code Layout"
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 2
+o(i).nam = idenewtxt("#Auto Spacing & Upper/Lowercase Formatting")
+o(i).sel = ideautolayout
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 4
+o(i).nam = idenewtxt("Auto #Indent -")
+o(i).sel = ideautoindent
+
+a2$ = str2$(ideautoindentsize)
+i = i + 1
+o(i).typ = 1
+o(i).x = 20
+o(i).y = 4
+o(i).nam = idenewtxt("#Spacing")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 7
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+
+    a$ = idetxt(o(3).txt)
+    IF LEN(a$) > 2 THEN a$ = LEFT$(a$, 2) '2 character limit
+    FOR i = 1 TO LEN(a$)
+        a = ASC(a$, i)
+        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
+        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
+    NEXT
+    IF LEN(a$) THEN
+        a = VAL(a$)
+        IF a > 64 THEN a$ = "64"
+    END IF
+    idetxt(o(3).txt) = a$
+
+    IF K$ = CHR$(27) OR (focus = 5 AND info <> 0) THEN EXIT FUNCTION
+    IF K$ = CHR$(13) OR (focus = 4 AND info <> 0) THEN
+        'save changes
+        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
+        v% = o(1).sel: IF v% <> 0 THEN v% = 1 'ideautolayout
+        PUT #150, , v%
+        IF ideautolayout <> v% THEN ideautolayout = v%: idelayoutbox = 1
+        v% = o(2).sel: IF v% <> 0 THEN v% = 1 'ideautoindent
+        PUT #150, , v%
+        IF ideautoindent <> v% THEN ideautoindent = v%: idelayoutbox = 1
+        v$ = idetxt(o(3).txt) 'ideautoindentsize
+        IF v$ = "" THEN v$ = "4"
+        v% = VAL(v$)
+        IF v% < 0 OR v% > 64 THEN v% = 4
+        PUT #150, , v%
+        IF ideautoindentsize <> v% THEN
+            ideautoindentsize = v%
+            IF ideautoindent <> 0 THEN idelayoutbox = 1
+        END IF
+        CLOSE #150
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+
+
+
+
+
+FUNCTION idebackupbox
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+idepar p, 50, 5, "Backup/Undo"
+
+a2$ = str2$(idebackupsize)
+i = i + 1
+o(i).typ = 1
+o(i).y = 2
+o(i).nam = idenewtxt("#Undo buffer limit (10-2000MB)")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 5
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+
+    a$ = idetxt(o(1).txt)
+    IF LEN(a$) > 4 THEN a$ = LEFT$(a$, 4) '4 character limit
+    FOR i = 1 TO LEN(a$)
+        a = ASC(a$, i)
+        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
+        IF a < 48 OR a > 57 THEN a$ = LEFT$(a$, i - 1): EXIT FOR
+    NEXT
+    IF focus <> 1 THEN
+        a = VAL(a$)
+        IF a < 10 THEN a$ = "10"
+        IF a > 2000 THEN a$ = "2000"
+    END IF
+    idetxt(o(1).txt) = a$
+
+
+
+    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN EXIT FUNCTION
+
+    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) THEN
+        'save changes
+        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
+        SEEK #150, 1051
+        v$ = idetxt(o(1).txt) 'idebackupsize
+        v& = VAL(v$)
+        IF v& < 10 THEN v& = 10
+        IF v& > 2000 THEN v& = 2000
+
+        IF v& < idebackupsize THEN
+            OPEN tmpdir$ + "undo2.bin" FOR OUTPUT AS #151: CLOSE #151
+            ideundobase = 0
+            ideundopos = 0
+        END IF
+
+        idebackupsize = v&
+        PUT #150, , v&
+        CLOSE #150
+        idebackupbox = 1
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+
+
+
+
+
+
+FUNCTION idegotobox
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+idepar p, 30, 5, "Go To Line"
+
+a2$ = ""
+i = i + 1
+o(i).typ = 1
+o(i).y = 2
+o(i).nam = idenewtxt("#Line")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 5
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+
+    a$ = idetxt(o(1).txt)
+    IF LEN(a$) > 8 THEN a$ = LEFT$(a$, 8) '8 character limit
+    FOR i = 1 TO LEN(a$)
+        a = ASC(a$, i)
+        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
+        IF a < 48 OR a > 57 THEN a$ = LEFT$(a$, i - 1): EXIT FOR
+    NEXT
+    IF focus <> 1 THEN
+        a = VAL(a$)
+        IF a < 1 THEN a$ = "1"
+    END IF
+    idetxt(o(1).txt) = a$
+
+    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN EXIT FUNCTION
+
+    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) THEN
+        v$ = idetxt(o(1).txt)
+        v& = VAL(v$)
+        IF v& < 1 THEN v& = 1
+        IF v& > iden THEN v& = iden
+        idecy = v&
+        ideselect = 0
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+
+
+
+
+
+
+
+FUNCTION ideupdatebox
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+idepar p, 40, 8, "Update"
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 2
+o(i).nam = idenewtxt("#Check for updates:")
+o(i).sel = ideupdatecheck
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 4
+o(i).x = 8
+o(i).nam = idenewtxt("#Only check once per day")
+o(i).sel = ideupdatedaily
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 6
+o(i).x = 8
+o(i).nam = idenewtxt("#Automatically apply updates")
+o(i).sel = ideupdateauto
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 8
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+    IF K$ = CHR$(27) OR (focus = 5 AND info <> 0) THEN EXIT FUNCTION
+    IF K$ = CHR$(13) OR (focus = 4 AND info <> 0) THEN
+        'save changes
+        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
+        SEEK #150, 1039
+        v% = o(1).sel: IF v% <> 0 THEN v% = 1
+        PUT #150, , v%
+        ideupdatecheck = v%
+        v% = o(2).sel: IF v% <> 0 THEN v% = 1
+        PUT #150, , v%
+        ideupdatedaily = v%
+        v% = o(3).sel: IF v% <> 0 THEN v% = 1
+        PUT #150, , v%
+        ideupdateauto = v%
+        CLOSE #150
+        EXIT FUNCTION
+    END IF
+    'end of custom controls
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+FUNCTION ideyesnobox$ (titlestr$, messagestr$) 'returns "Y" or "N"
+'-------- generic dialog box header --------
+PCOPY 3, 0
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+w = LEN(messagestr$) + 2
+w2 = LEN(titlestr$) + 4
+IF w < w2 THEN w = w2
+idepar p, w, 4, titlestr$
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 4
+o(i).txt = idenewtxt("#Yes" + sep + "#No")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 2, p.x + 2: PRINT messagestr$;
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
+    IF UCASE$(K$) = "N" THEN altletter$ = "N"
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    IF K$ = CHR$(27) THEN
+        ideyesnobox$ = "N"
+        EXIT FUNCTION
+    END IF
+
+    IF info THEN
+        IF info = 1 THEN ideyesnobox$ = "Y" ELSE ideyesnobox$ = "N"
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+    mousedown = 0
+    mouseup = 0
+LOOP
+
+END FUNCTION 'yes/no box
+
+
+FUNCTION idedisplaybox
+
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+'-------- init --------
+i = 0
+
+'idepar p, 60, 16, "Display"
+'note: manually set window position in case display to set too large by accident
+p.x = (80 \ 2) - 60 \ 2
+p.y = (25 \ 2) - 16 \ 2
+p.w = 60
+p.h = 16
+p.nam = idenewtxt("Display")
+
+a2$ = str2$(idewx)
+i = i + 1
+o(i).typ = 1
+o(i).x = 16
+o(i).y = 2
+o(i).nam = idenewtxt("#Width")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+a2$ = str2$(idewy + idesubwindow)
+i = i + 1
+o(i).typ = 1
+o(i).x = 15
+o(i).y = 5
+o(i).nam = idenewtxt("#Height")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 8
+o(i).nam = idenewtxt("Custom #Font:")
+o(i).sel = idecustomfont
+
+a2$ = idecustomfontfile$
+i = i + 1
+o(i).typ = 1
+o(i).x = 10
+o(i).y = 10
+o(i).nam = idenewtxt("File #Name")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+a2$ = str2$(idecustomfontheight)
+i = i + 1
+o(i).typ = 1
+o(i).x = 10
+o(i).y = 13
+o(i).nam = idenewtxt("#Row Height (Pixels)")
+o(i).txt = idenewtxt(a2$)
+o(i).v1 = LEN(a2$)
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 16
+o(i).txt = idenewtxt("OK" + sep + "#Cancel")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 2, p.x + 2: PRINT "Window Size -";
+    COLOR 0, 7: LOCATE p.y + 9, p.x + 29: PRINT " Monospace TTF Font ";
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+
+    a$ = idetxt(o(1).txt)
+    IF LEN(a$) > 3 THEN a$ = LEFT$(a$, 3) '3 character limit
+    FOR i = 1 TO LEN(a$)
+        a = ASC(a$, i)
+        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
+        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
+    NEXT
+    IF focus <> 1 THEN
+        IF LEN(a$) THEN a = VAL(a$) ELSE a = 0
+        IF a < 80 THEN a$ = "80"
+    END IF
+    idetxt(o(1).txt) = a$
+
+    a$ = idetxt(o(2).txt)
+    IF LEN(a$) > 3 THEN a$ = LEFT$(a$, 3) '3 character limit
+    FOR i = 1 TO LEN(a$)
+        a = ASC(a$, i)
+        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
+        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
+    NEXT
+    IF focus <> 2 THEN
+        IF LEN(a$) THEN a = VAL(a$) ELSE a = 0
+        IF a < 25 THEN a$ = "25"
+    END IF
+    idetxt(o(2).txt) = a$
+
+    a$ = idetxt(o(4).txt)
+    IF LEN(a$) > 1024 THEN a$ = LEFT$(a$, 1024)
+    idetxt(o(4).txt) = a$
+
+    a$ = idetxt(o(5).txt)
+    IF LEN(a$) > 2 THEN a$ = LEFT$(a$, 2) '2 character limit
+    FOR i = 1 TO LEN(a$)
+        a = ASC(a$, i)
+        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
+        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
+    NEXT
+    IF focus <> 5 THEN
+        IF LEN(a$) THEN a = VAL(a$) ELSE a = 0
+        IF a < 8 THEN a$ = "8"
+    END IF
+    idetxt(o(5).txt) = a$
+
+
+
+    IF K$ = CHR$(27) OR (focus = 7 AND info <> 0) THEN EXIT FUNCTION
+    IF K$ = CHR$(13) OR (focus = 6 AND info <> 0) THEN
+
+        x = 0 'change to custom font
+
+        'get size in v%
+        v$ = idetxt(o(5).txt): IF v$ = "" THEN v$ = "0"
+        v% = VAL(v$)
+        IF v% < 8 THEN v% = 8
+        IF v% > 99 THEN v% = 99
+        IF v% <> idecustomfontheight THEN x = 1
+
+        IF o(3).sel <> idecustomfont THEN
+            IF o(3).sel = 0 THEN
+                _FONT 16
+                _FREEFONT idecustomfonthandle
+            ELSE
+                x = 1
+            END IF
+        END IF
+
+
+        v$ = idetxt(o(4).txt): IF v$ <> idecustomfontfile$ THEN x = 1
+
+        IF o(3).sel = 1 AND x = 1 THEN
+            oldhandle = idecustomfonthandle
+            idecustomfonthandle = _LOADFONT(v$, v%, "MONOSPACE")
+            IF idecustomfonthandle = -1 THEN
+                'failed! - revert to default settings
+                o(3).sel = 0: idetxt(o(4).txt) = "c:\windows\fonts\lucon.ttf": idetxt(o(5).txt) = "21": _FONT 16
+            ELSE
+                _FONT idecustomfonthandle
+            END IF
+            IF idecustomfont = 1 THEN _FREEFONT oldhandle
+        END IF
+
+        'save changes
+        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
+
+        SEEK #150, 7
+
+        v$ = idetxt(o(1).txt): IF v$ = "" THEN v$ = "0"
+        v% = VAL(v$)
+        IF v% < 80 THEN v% = 80
+        IF v% > 999 THEN v% = 999
+        PUT #150, , v%
+        IF v% <> idewx THEN idedisplaybox = 1
+        idewx = v%
+
+        v$ = idetxt(o(2).txt): IF v$ = "" THEN v$ = "0"
+        v% = VAL(v$)
+        IF v% < 25 THEN v% = 25
+        IF v% > 999 THEN v% = 999
+        PUT #150, , v%
+        IF v% <> idewy THEN idedisplaybox = 1
+        idewy = v% - idesubwindow
+        v% = o(3).sel
+        IF v% <> 0 THEN v% = 1
+        PUT #150, , v%
+        idecustomfont = v%
+
+        v$ = idetxt(o(4).txt)
+        IF LEN(v$) > 1024 THEN v$ = LEFT$(v$, 1024)
+        idecustomfontfile$ = v$
+        v$ = v$ + SPACE$(1024 - LEN(v$))
+        PUT #150, , v$
+
+        v$ = idetxt(o(5).txt): IF v$ = "" THEN v$ = "0"
+        v% = VAL(v$)
+        IF v% < 8 THEN v% = 8
+        IF v% > 99 THEN v% = 99
+        PUT #150, , v%
+        idecustomfontheight = v%
+
+        CLOSE #150
+        EXIT FUNCTION
+    END IF
+
+    'end of custom controls
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+END FUNCTION
+
+
+FUNCTION HashValue& (a$) 'returns the hash table value of a string
+'[5(first)][5(second)][5(last)][5(2nd-last)][3(length AND 7)][1(first char is underscore)]
+l = LEN(a$)
+IF l = 0 THEN EXIT FUNCTION 'an (invalid) NULL string equates to 0
+a = ASC(a$)
+IF a <> 95 THEN 'does not begin with underscore
+    SELECT CASE l
+        CASE 1
+            HashValue& = hash1char(a) + 1048576
+            EXIT FUNCTION
+        CASE 2
+            HashValue& = hash2char(CVI(a$)) + 2097152
+            EXIT FUNCTION
+        CASE 3
+            HashValue& = hash2char(CVI(a$)) + hash1char(ASC(a$, 3)) * 1024 + 3145728
+            EXIT FUNCTION
+        CASE ELSE
+            HashValue& = hash2char(CVI(a$)) + hash2char(ASC(a$, l) + ASC(a$, l - 1) * 256) * 1024 + (l AND 7) * 1048576
+            EXIT FUNCTION
+    END SELECT
+ELSE 'does begin with underscore
+    SELECT CASE l
+        CASE 1
+            HashValue& = (1048576 + 8388608): EXIT FUNCTION 'note: underscore only is illegal in QB64 but supported by hash
+        CASE 2
+            HashValue& = hash1char(ASC(a$, 2)) + (2097152 + 8388608)
+            EXIT FUNCTION
+        CASE 3
+            HashValue& = hash2char(ASC(a$, 2) + ASC(a$, 3) * 256) + (3145728 + 8388608)
+            EXIT FUNCTION
+        CASE 4
+            HashValue& = hash2char((CVL(a$) AND &HFFFF00) \ 256) + hash1char(ASC(a$, 4)) * 1024 + (4194304 + 8388608)
+            EXIT FUNCTION
+        CASE ELSE
+            HashValue& = hash2char((CVL(a$) AND &HFFFF00) \ 256) + hash2char(ASC(a$, l) + ASC(a$, l - 1) * 256) * 1024 + (l AND 7) * 1048576 + 8388608
+            EXIT FUNCTION
+    END SELECT
+END IF
+END FUNCTION
+
+FUNCTION HashFind (a$, searchflags, resultflags, resultreference)
+'(0,1,2)z=hashfind[rev]("RUMI",Hashflag_label,resflag,resref)
+'0=doesn't exist
+'1=found, no more items to scan
+'2=found, more items still to scan
+i = HashTable(HashValue(a$))
+IF i THEN
+    ua$ = UCASE$(a$) + SPACE$(256 - LEN(a$))
+    hashfind_next:
+    f = HashList(i).Flags
+    IF searchflags AND f THEN 'flags in common
+        IF HashListName(i) = ua$ THEN
+            resultflags = f
+            resultreference = HashList(i).Reference
+            i2 = HashList(i).NextItem
+            IF i2 THEN
+                HashFind = 2
+                HashFind_NextListItem = i2
+                HashFind_Reverse = 0
+                HashFind_SearchFlags = searchflags
+                HashFind_Name = ua$
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            ELSE
+                HashFind = 1
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            END IF
+        END IF
+    END IF
+    i = HashList(i).NextItem
+    IF i THEN GOTO hashfind_next
+END IF
+END FUNCTION
+
+FUNCTION HashFindRev (a$, searchflags, resultflags, resultreference)
+'(0,1,2)z=hashfind[rev]("RUMI",Hashflag_label,resflag,resref)
+'0=doesn't exist
+'1=found, no more items to scan
+'2=found, more items still to scan
+i = HashTable(HashValue(a$))
+IF i THEN
+    i = HashList(i).LastItem
+    ua$ = UCASE$(a$) + SPACE$(256 - LEN(a$))
+    hashfindrev_next:
+    f = HashList(i).Flags
+    IF searchflags AND f THEN 'flags in common
+        IF HashListName(i) = ua$ THEN
+            resultflags = f
+            resultreference = HashList(i).Reference
+            i2 = HashList(i).PrevItem
+            IF i2 THEN
+                HashFindRev = 2
+                HashFind_NextListItem = i2
+                HashFind_Reverse = 1
+                HashFind_SearchFlags = searchflags
+                HashFind_Name = ua$
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            ELSE
+                HashFindRev = 1
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            END IF
+        END IF
+    END IF
+    i = HashList(i).PrevItem
+    IF i THEN GOTO hashfindrev_next
+END IF
+END FUNCTION
+
+FUNCTION HashFindCont (resultflags, resultreference)
+'(0,1,2)z=hashfind[rev](resflag,resref)
+'0=no more items exist
+'1=found, no more items to scan
+'2=found, more items still to scan
+IF HashFind_Reverse THEN
+
+    i = HashFind_NextListItem
+    hashfindrevc_next:
+    f = HashList(i).Flags
+    IF HashFind_SearchFlags AND f THEN 'flags in common
+        IF HashListName(i) = HashFind_Name THEN
+            resultflags = f
+            resultreference = HashList(i).Reference
+            i2 = HashList(i).PrevItem
+            IF i2 THEN
+                HashFindCont = 2
+                HashFind_NextListItem = i2
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            ELSE
+                HashFindCont = 1
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            END IF
+        END IF
+    END IF
+    i = HashList(i).PrevItem
+    IF i THEN GOTO hashfindrevc_next
+    EXIT FUNCTION
+
+ELSE
+
+    i = HashFind_NextListItem
+    hashfindc_next:
+    f = HashList(i).Flags
+    IF HashFind_SearchFlags AND f THEN 'flags in common
+        IF HashListName(i) = HashFind_Name THEN
+            resultflags = f
+            resultreference = HashList(i).Reference
+            i2 = HashList(i).NextItem
+            IF i2 THEN
+                HashFindCont = 2
+                HashFind_NextListItem = i2
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            ELSE
+                HashFindCont = 1
+                HashRemove_LastFound = i
+                EXIT FUNCTION
+            END IF
+        END IF
+    END IF
+    i = HashList(i).NextItem
+    IF i THEN GOTO hashfindc_next
+    EXIT FUNCTION
+
+END IF
+END FUNCTION
+
+FUNCTION decompress_2_huff$ (a$)
+IF ASC(a$) <> 2 THEN SCREEN 0, , 0, 0: PRINT "decompress_2_huff: invalid type": END
+
+'get no. of branches and encoded bits
+totalbits = ASC(a$, 5)
+totalbits = totalbits * 256 + ASC(a$, 4)
+totalbits = totalbits * 256 + ASC(a$, 3)
+totalbits = totalbits * 256 + ASC(a$, 2)
+totalbytes = (totalbits + 7) \ 8
+nb = (LEN(a$) - totalbytes - 5) \ 3 'number of branches
+
+'read branches
+FOR i = 0 TO nb - 1
+    v = ASC(a$, 6 + i * 3) + ASC(a$, 6 + i * 3 + 1) * 256 + ASC(a$, 6 + i * 3 + 2) * 65536
+    huff_branch0(i) = v AND 4095
+    huff_branch1(i) = v \ 4096
+NEXT
+
+'buffer for decompression
+bufsiz = totalbits * 8
+IF bufsiz > 1000000 THEN bufsiz = 1000000
+b$ = SPACE$(bufsiz)
+
+'decompress
+byteoff = LEN(a$) - totalbytes + 1
+bitmask = 1
+x = 0
+b = 0 'branch
+byteval = ASC(a$, byteoff)
+huffreadbits:
+bit = byteval AND bitmask
+totalbits = totalbits - 1
+
+IF bit THEN
+    b = huff_branch1(b)
+ELSE
+    b = huff_branch0(b)
+END IF
+
+IF huff_branch0(b) = 0 THEN
+    x = x + 1: IF x > bufsiz THEN b$ = b$ + SPACE$(bufsiz): bufsiz = bufsiz * 2
+    ASC(b$, x) = huff_branch1(b)
+    IF totalbits = 0 THEN GOTO hufffinished
+    b = 0
+END IF
+
+bitmask = bitmask * 2: IF bitmask = 256 THEN bitmask = 1: byteoff = byteoff + 1: byteval = ASC(a$, byteoff)
+GOTO huffreadbits
+
+hufffinished:
+decompress_2_huff$ = LEFT$(b$, x)
+
+END FUNCTION
+
+FUNCTION compress_2_huff$ (a$)
+
+'count weights
+FOR i = 0 TO 255
+    huff_count(i) = 0
+NEXT
+FOR i = 1 TO LEN(a$)
+    v = ASC(a$, i)
+    huff_count(v) = huff_count(v) + 1
+NEXT
+
+'setup initial branches
+b = 0 'note: pos 0 reserved for initial branch
+FOR i = 0 TO 255
+    IF huff_count(i) THEN
+        b = b + 1
+        huff_branch(i) = b
+        huff_weight(b) = huff_count(i)
+        huff_bit0link(b) = 0 'it's a value
+        huff_bit1link(b) = i 'the value
+        huff_parent(b) = -1
+    END IF
+NEXT
+
+IF b = 1 THEN 'create a fake branch to allow for 1 bit encoding of uniform data
+    b = b + 1
+    huff_weight(b) = 1
+    huff_bit0link(b) = 0 'it's a value
+    huff_bit1link(b) = 0 'the value
+    huff_parent(b) = -1
+END IF
+
+'find 2 lowest weights
+huff_buildbranches:
+w1 = 2147483647
+w2 = 2147483647
+FOR i = 1 TO b
+    w = huff_weight(i)
+    IF w <> 2147483647 THEN
+        'pump up (w1=lowest, w2=second lowest)
+        IF w < w1 THEN
+            w2 = w1: i2 = i1
+            w1 = w: i1 = i
+        ELSE
+            IF w < w2 THEN w2 = w: i2 = i
+        END IF
+    END IF
+NEXT
+
+'form new branch
+IF w1 <> 2147483647 AND w2 <> 2147483647 THEN 'combine branches
+    b = b + 1
+    huff_weight(b) = huff_weight(i1) + huff_weight(i2)
+    huff_parent(b) = -1
+    huff_bit0link(b) = i1: huff_bit1link(b) = i2
+    huff_weight(i1) = 2147483647: huff_weight(i2) = 2147483647
+    huff_parent(i1) = b: huff_parent(i2) = b
+    huff_bit(i1) = 0: huff_bit(i2) = 1
+    GOTO huff_buildbranches
+END IF
+
+'note: i1 contains root branch
+'copy final branch links to position 0
+huff_bit0link(0) = huff_bit0link(i1): huff_bit1link(0) = huff_bit1link(i1)
+lastbranch = b - 1 '*for storage of key*
+
+'build bit masks (clearing remainder of final byte of each to 0)
+totalbits = 0
+FOR i = 0 TO 255
+    IF huff_count(i) THEN
+
+        'calc number of bits
+        nbits = 0
+        b = huff_branch(i)
+        huff_calcnbits:
+        p = huff_parent(b)
+        IF p <> -1 THEN nbits = nbits + 1: b = p: GOTO huff_calcnbits
+        huff_mask_bits(i) = nbits
+        totalbits = totalbits + nbits * huff_count(i)
+
+        baseoffset = i * 256 'base offset
+
+        'clear bytes
+        bytes = ((nbits + 7) + 7) \ 8
+        FOR x = 0 TO 7
+            byteo = baseoffset + (x * 32)
+            FOR x2 = 0 TO bytes - 1
+                huff_mask(byteo + x2) = 0
+            NEXT
+        NEXT
+
+        'create mask
+        o1 = nbits
+        b = huff_branch(i)
+
+        huff_nextbranch:
+        o1 = o1 - 1
+        IF huff_parent(b) <> -1 THEN
+
+            IF huff_bit(b) THEN
+                bitval = huff_bitval(o1 AND 7)
+                FOR o2 = 0 TO 7
+                    o = o1 + o2
+                    byteo = baseoffset + (o2 * 32) + (o \ 8)
+                    huff_mask(byteo) = huff_mask(byteo) OR bitval
+                    bitval = bitval + bitval: IF bitval = 256 THEN bitval = 1
+                NEXT
+            END IF 'bit set
+            b = huff_parent(b)
+            GOTO huff_nextbranch
+        END IF
+
+    END IF
+NEXT
+
+totalbytes = (totalbits + 7) \ 8
+totalbytes = totalbytes + (lastbranch + 1) * 3 + 4 + 1
+b$ = STRING$(totalbytes, 0)
+ASC(b$, 1) = 2 'type
+
+'create key
+'[4]store number of bits
+ASC(b$, 2) = totalbits AND 255: totalbits = totalbits \ 256
+ASC(b$, 3) = totalbits AND 255: totalbits = totalbits \ 256
+ASC(b$, 4) = totalbits AND 255: totalbits = totalbits \ 256
+ASC(b$, 5) = totalbits
+
+'[3*(lastbranch+1)]store branches
+x = 5
+FOR i = 0 TO lastbranch
+    v = huff_bit0link(i) + huff_bit1link(i) * 4096
+    x = x + 1: ASC(b$, x) = v AND 255
+    x = x + 1: ASC(b$, x) = (v \ 256) AND 255
+    x = x + 1: ASC(b$, x) = v \ 65536
+NEXT
+
+'store huffman encoded data (using masks to speed up process)
+x = x + 1
+bitpos = 0
+FOR z = 1 TO LEN(a$)
+    v = ASC(a$, z)
+    nbits = huff_mask_bits(v)
+    nbytes = (bitpos + nbits + 7) \ 8
+    o = v * 256 + bitpos * 32
+    FOR i = 0 TO nbytes - 1
+        ASC(b$, x) = ASC(b$, x) OR huff_mask(o + i)
+        x = x + 1
+    NEXT
+    bitpos = (bitpos + nbits) AND 7
+    IF bitpos <> 0 THEN x = x - 1
+NEXT
+
+compress_2_huff$ = b$
+END FUNCTION
+
+FUNCTION decompress_1_rle$ (a$)
+IF ASC(a$) <> 1 THEN SCREEN 0, , 0, 0: PRINT "decompress_1_rle: invalid type": END
+
+'calculate size of final string required
+i = 2
+siz = 0
+x = ASC(a$, i)
+DO WHILE x
+    IF x AND 128 THEN
+        i = i + 1: x = ASC(a$, i)
+        IF x AND 128 THEN
+            i = i + 1: x = ASC(a$, i)
+            IF x2 AND 128 THEN
+                i = i + 1: x = ASC(a$, i)
+            END IF
+        END IF
+    END IF
+    i = i + 2 'skip value
+    s = ASC(a$, i)
+    IF s = 255 THEN
+        i = i + 1: s = ASC(a$, i)
+        i = i + 1: s2 = ASC(a$, i)
+        IF s = 255 AND s2 = 255 THEN
+            i = i + 1
+            s = ASC(a$, i + 3)
+            s = s * 256 + ASC(a$, i + 2)
+            s = s * 256 + ASC(a$, i + 1)
+            s = s * 256 + ASC(a$, i)
+            i = i + 3
+        ELSE
+            s = s + s2 * 256
+        END IF
+    END IF
+    siz = siz + s + 4
+    i = i + 1: x = ASC(a$, i)
+LOOP
+i = i + 1 'i=beginning of uncompressed data
+siz = siz + (LEN(a$) - i + 1)
+b$ = SPACE$(siz)
+
+'begin decompression
+h = 1
+p = 1
+ins = i
+n = LEN(a$)
+
+unrle_getnext:
+h = h + 1: x = ASC(a$, h)
+IF x AND 128 THEN
+    h = h + 1: x2 = ASC(a$, h): x = (x AND 127) + (x2 AND 127) * 128
+    IF x2 AND 128 THEN
+        h = h + 1: x2 = ASC(a$, h): x = x + (x2 AND 127) * 16384
+        IF x2 AND 128 THEN
+            h = h + 1: x2 = ASC(a$, h): x = x + (x2 AND 127) * 2097152
+        END IF
+    END IF
+END IF
+IF x = 0 THEN
+    ins = 2147483647
+ELSE
+    ins = ins + x - 1
+    h = h + 1: v = ASC(a$, h)
+    h = h + 1
+    s = ASC(a$, h)
+    IF s = 255 THEN
+        h = h + 1: s = ASC(a$, h)
+        h = h + 1: s2 = ASC(a$, h)
+        IF s = 255 AND s2 = 255 THEN
+            h = h + 1
+            s = ASC(a$, h + 3)
+            s = s * 256 + ASC(a$, h + 2)
+            s = s * 256 + ASC(a$, h + 1)
+            s = s * 256 + ASC(a$, h)
+            h = h + 3
+        ELSE
+            s = s + s2 * 256
+        END IF
+    END IF
+    c = s + 4
+END IF
+
+n2 = ins - 1
+IF n2 > n THEN n2 = n
+FOR i = i TO n2
+    ASC(b$, p) = ASC(a$, i): p = p + 1
+NEXT
+IF ins <> 2147483647 THEN
+    FOR x = 1 TO c
+        ASC(b$, p) = v: p = p + 1
+    NEXT
+    GOTO unrle_getnext
+END IF
+
+decompress_1_rle$ = b$
+
+END FUNCTION
+
+FUNCTION compress_1_rle$ (a$) 'IMPORTANT: the contents of a$ are corrupted in producing rle$
+'[1-4:offset from previous position][1:val][[1]/{255}[2]/{65535}[4]]:repeats-4]
+' ^top bit indicates also use bits of following byte (max offset=268435456)
+'                                                 ^255 indicates larger format used
+n = LEN(a$)
+h$ = SPACE$(LEN(a$) + 2)
+ASC(h$, 1) = 1 'method 1
+hp = 2 'header position
+i = 1 'source position
+p = 1 'dest position
+o = 1 'offset to reference position from
+DO
+    v = ASC(a$, i)
+    FOR i2 = i + 1 TO n
+        IF v <> ASC(a$, i2) THEN EXIT FOR
+    NEXT
+    reps = i2 - i
+
+    x = p - o + 1 'x=relative offset to insert data+1
+
+    IF x <= 127 THEN
+        IF reps < 4 GOTO no_rle
+        ASC(h$, hp) = x: hp = hp + 1
+    ELSEIF x <= 16383 THEN
+        IF reps < 5 GOTO no_rle
+        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
+        ASC(h$, hp) = x: hp = hp + 1
+    ELSEIF x <= 2097151 THEN
+        IF reps < 6 GOTO no_rle
+        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
+        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
+        ASC(h$, hp) = x: hp = hp + 1
+    ELSE
+        IF reps < 7 GOTO no_rle
+        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
+        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
+        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
+        ASC(h$, hp) = x: hp = hp + 1
+    END IF
+    o = p
+
+    'encode value
+    ASC(h$, hp) = v: hp = hp + 1
+    'encode reps-4
+    reps = reps - 4
+    IF reps >= 255 THEN
+        ASC(h$, hp) = 255: hp = hp + 1
+        IF reps >= 65535 THEN
+            ASC(h$, hp) = 255: hp = hp + 1
+            ASC(h$, hp) = 255: hp = hp + 1
+            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
+            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
+            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
+            ASC(h$, hp) = reps: hp = hp + 1
+        ELSE
+            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
+            ASC(h$, hp) = reps: hp = hp + 1
+        END IF
+    ELSE
+        ASC(h$, hp) = reps: hp = hp + 1
+    END IF
+
+
+    GOTO rle_applied
+
+    no_rle: 'not enough repeats to encode
+    IF i <> p THEN
+        FOR i3 = i TO i2 - 1
+            ASC(a$, p) = ASC(a$, i3)
+            p = p + 1
+        NEXT
+    ELSE
+        p = p + (i2 - i)
+    END IF
+
+    rle_applied:
+    i = i2
+
+LOOP UNTIL i > n
+
+'finialize header
+ASC(h$, hp) = 0: hp = hp + 1
+
+compress_1_rle$ = LEFT$(h$, hp - 1) + LEFT$(a$, p - 1)
+
+END FUNCTION
+
+FUNCTION compress$ (a$)
+a$ = CHR$(0) + a$
+a$ = compress_1_rle$(a$)
+a$ = compress_2_huff$(a$)
+compress$ = a$
+END FUNCTION
+
+FUNCTION decompress$ (a$)
+x = ASC(a$)
+DO WHILE x
+    IF x = 1 THEN a$ = decompress_1_rle$(a$)
+    IF x = 2 THEN a$ = decompress_2_huff$(a$)
+    x = ASC(a$)
+LOOP
+a$ = RIGHT$(a$, LEN(a$) - 1) 'remove NULL byte indicating compression complete
+decompress$ = a$
+END FUNCTION
+
+FUNCTION download (url$, file$) 'note: set file$ to "" to use string data only
+
+PRINT "Downloading " + CHR$(34) + url$ + CHR$(34)
+
+retry = 0
+
+retry:
+PRINT "[                                                  ]";
+LOCATE CSRLIN, 2
+
+_DELAY 0.25 'allow time for closure of any previous connections, to avoid possible denial of multiple connections from host
+
+url2$ = url$
+x = INSTR(url2$, "/")
+IF x THEN url2$ = LEFT$(url$, x - 1)
+c = _OPENCLIENT("TCP/IP:80:" + url2$)
+IF c = 0 THEN
+    EXIT FUNCTION
+END IF
+
+e$ = CHR$(13) + CHR$(10)
+
+url3$ = RIGHT$(url$, LEN(url$) - x + 1)
+x$ = "GET " + url3$ + " HTTP/1.1" + e$
+x$ = x$ + "Host: " + url2$ + e$ + e$
+PUT #c, , x$
+
+lasttime# = TIMER(0.001)
+cancelmess = 0
+dp = 0
+dp2 = 0
+a$ = ""
+l = 0
+
+DO
+
+    _DELAY 0.1
+
+    GET #c, , a2$
+    a$ = a$ + a2$
+
+    IF LEN(a2$) THEN lasttime# = TIMER(0.001)
+
+    IF TIMER(0.001) > lasttime# + 5 THEN
+        IF retry < 10 THEN 'automatically retry up to 10 times
+            retry = retry + 1
+            CLOSE #c
+            PRINT
+            PRINT "Retry attempt" + STR$(retry) + "/10"
+            GOTO retry
+        END IF
+    END IF
+
+    IF TIMER(0.001) > lasttime# + 20 THEN
+        IF cancelmess = 0 THEN
+            cancelmess = 1
+            cl = CSRLIN
+            cp = POS(0)
+            LOCATE 25, 1
+            PRINT "Download may still be active! To abort this download press the ESC key.";
+            LOCATE cl, cp
+            DO UNTIL INKEY$ = "": LOOP 'flush kb buffer
+        END IF
+    END IF
+
+    IF cancelmess = 1 THEN
+        IF INKEY$ = CHR$(27) THEN
+            PRINT
+            CLOSE #c
+            EXIT FUNCTION
+        END IF
+    END IF
+
+    IF l THEN 'length is known
+        IF i3 <> 0 THEN
+            dp = (LEN(a$) - i3) / l * 50
+            IF dp > 50 THEN dp = 50
+            IF dp < 0 THEN dp = 0
+            DO WHILE dp2 < dp
+                PRINT "þ";
+                dp2 = dp2 + 1
+            LOOP
+        END IF
+    END IF
+
+    i = INSTR(a$, "Content-Length:")
+    IF i THEN
+        i2 = INSTR(i, a$, e$)
+        IF i2 THEN
+            l = VAL(MID$(a$, i + 15, i2 - i - 14))
+            i3 = INSTR(i2, a$, e$ + e$)
+            IF i3 THEN
+                i3 = i3 + 4 'move i3 to start of data
+                IF (LEN(a$) - i3 + 1) = l THEN
+                    CLOSE c
+                    Download_String$ = MID$(a$, i3, l)
+                    IF file$ <> "" THEN
+                        fh = FREEFILE
+                        OPEN file$ FOR OUTPUT AS #fh: CLOSE #fh
+                        OPEN file$ FOR BINARY AS #fh
+                        PUT #fh, , Download_String$
+                        CLOSE #fh
+                    END IF
+                    download = -1
+                    DO WHILE dp2 < 50
+                        PRINT "þ";
+                        dp2 = dp2 + 1
+                    LOOP
+                    PRINT
+                    EXIT FUNCTION
+                END IF 'availabledata=l
+            END IF 'i3
+        END IF 'i2
+    END IF 'i
+LOOP
+END FUNCTION
+
+FUNCTION chksum&& (f$)
+DIM c AS _INTEGER64, x AS _INTEGER64, b AS _INTEGER64
+OPEN f$ FOR BINARY ACCESS READ SHARED AS #123
+a$ = SPACE$(LOF(123))
+GET #123, , a$
+CLOSE #123
+c = LEN(a$)
+b = 1
+$CHECKING:OFF
+FOR i = 1 TO LEN(a$)
+    c = c + (b * (ASC(a$, i) + 1))
+    b = b + b
+    IF b = 281474976710656 THEN b = 1
+NEXT
+$CHECKING:ON
+chksum&& = c
+END FUNCTION
+
+FUNCTION BeginDownload (url$)
+FOR i = 1 TO DLs
+    IF DL(i).State = 0 THEN EXIT FOR
+NEXT
+IF i > DLs THEN DLs = DLs + 1
+IF i > Maxdls THEN SCREEN 0, , 0, 0: PRINT "Too many active downloads!": END
+url2$ = url$
+x = INSTR(url2$, "/")
+IF x THEN url2$ = LEFT$(url$, x - 1)
+h = _OPENCLIENT("TCP/IP:80:" + url2$)
+IF h = 0 THEN EXIT FUNCTION '0=failed
+e$ = CHR$(13) + CHR$(10)
+url3$ = RIGHT$(url$, LEN(url$) - x + 1)
+x$ = "GET " + url3$ + " HTTP/1.1" + e$
+x$ = x$ + "Host: " + url2$ + e$ + e$
+PUT #h, , x$
+DL(i).State = 1
+DL(i).Handle = h
+DL_Data(i) = ""
+BeginDownload = i
+END FUNCTION
+
+
+FUNCTION rippath$ (a$) 'doesn't include final \
+FOR i = LEN(a$) TO 1 STEP -1
+    IF ASC(a$, i) = 92 THEN rippath$ = LEFT$(a$, i - 1): EXIT FUNCTION
+NEXT
+END FUNCTION
+
+
+FUNCTION removecast$ (a$)
+removecast$ = a$
+IF INSTR(a$, "  )") THEN
+    removecast$ = RIGHT$(a$, LEN(a$) - INSTR(a$, "  )") - 2)
+END IF
+END FUNCTION
+
+FUNCTION converttabs$ (a2$)
+IF ideautoindent THEN s = ideautoindentsize ELSE s = 4
+a$ = a2$
+DO WHILE INSTR(a$, chr_tab)
+    x = INSTR(a$, chr_tab)
+    a$ = LEFT$(a$, x - 1) + SPACE$(s - ((x - 1) MOD s)) + RIGHT$(a$, LEN(a$) - x)
+LOOP
+converttabs$ = a$
+END FUNCTION
+
+FUNCTION CTRL2
+IF MacOSX THEN
+    IF _KEYDOWN(100309) THEN CTRL2 = 1
+    IF _KEYDOWN(100310) THEN CTRL2 = 1
+END IF
+END FUNCTION
+
+FUNCTION NewByteElement$
+a$ = "byte_element_" + str2$(uniquenumber)
+NewByteElement$ = a$
+IF use_global_byte_elements THEN
+    PRINT #18, "byte_element_struct *" + a$ + "=(byte_element_struct*)malloc(12);"
+ELSE
+    PRINT #13, "byte_element_struct *" + a$ + "=NULL;"
+    PRINT #13, "if (!" + a$ + "){"
+    PRINT #13, "if ((mem_static_pointer+=12)<mem_static_limit) " + a$ + "=(byte_element_struct*)(mem_static_pointer-12); else " + a$ + "=(byte_element_struct*)mem_static_malloc(12);"
+    PRINT #13, "}"
+END IF
+END FUNCTION
+
+FUNCTION validname (a$)
+'notes:
+'1) '_1' is invalid because it has no alphabet letters
+'2) 'A_' is invalid because it has a trailing _
+'3) '_1A' is invalid because it contains a number before the first alphabet letter
+'4) names cannot be longer than 40 characters
+l = LEN(a$)
+
+IF l = 0 OR l > 40 THEN
+    IF l = 0 THEN EXIT FUNCTION
+    'Note: variable names with periods need to be obfuscated, and this affects their length
+    i = INSTR(a$, fix046$)
+    DO WHILE i
+        l = l - LEN(fix046$) + 1
+        i = INSTR(i + 1, a$, fix046$)
+    LOOP
+    IF l > 40 THEN EXIT FUNCTION
+    l = LEN(a$)
+END IF
+
+'check for single, leading underscore
+IF l >= 2 THEN
+    IF ASC(a$, 1) = 95 AND ASC(a$, 2) <> 95 THEN EXIT FUNCTION
+END IF
+
+FOR i = 1 TO l
+    a = ASC(a$, i)
+    IF alphanumeric(a) = 0 THEN EXIT FUNCTION
+    IF isnumeric(a) THEN
+        trailingunderscore = 0
+        IF alphabetletter = 0 THEN EXIT FUNCTION
+    ELSE
+        IF a = 95 THEN
+            trailingunderscore = 1
+        ELSE
+            alphabetletter = 1
+            trailingunderscore = 0
+        END IF
+    END IF
+NEXT
+IF trailingunderscore THEN EXIT FUNCTION
+validname = 1
+END FUNCTION
+
+FUNCTION str_nth$ (x)
+IF x = 1 THEN str_nth$ = "1st": EXIT FUNCTION
+IF x = 2 THEN str_nth$ = "2nd": EXIT FUNCTION
+IF x = 3 THEN str_nth$ = "3rd": EXIT FUNCTION
+str_nth$ = str2(x) + "th"
+END FUNCTION
+
+
+SUB ideASCIIbox
+'IF INSTR(_OS$, "WIN") THEN ret% = SHELL("internal\ASCII-Picker.exe") ELSE ret% = SHELL("internal/ASCII-Picker")
+
+w = _WIDTH: h = _HEIGHT
+temp = _NEWIMAGE(640, 480, 32)
+temp1 = _NEWIMAGE(640, 480, 32)
+ws = _NEWIMAGE(640, 480, 32)
+SCREEN temp
+DIM CurrentASC(1 TO 16, 1 TO 16)
+DIM CurrentOne AS INTEGER
+CLS , _RGB(100, 0, 200)
+COLOR , _RGB(100, 0, 200)
+FOR x = 1 TO 16
+    FOR y = 1 TO 16
+        LINE (x * 40, 0)-(x * 40, 480), _RGB32(255, 255, 0)
+        LINE (0, y * 30)-(640, y * 30), _RGB32(255, 255, 0)
+        IF counter THEN _PRINTSTRING (x * 40 - 28, y * 30 - 23), CHR$(counter)
+        counter = counter + 1
+    NEXT
+NEXT
+
+_DEST temp1
+CLS , _RGB(100, 0, 200)
+COLOR , _RGB(100, 0, 200)
+counter = 0
+FOR x = 1 TO 16
+    FOR y = 1 TO 16
+        LINE (x * 40, 0)-(x * 40, 480), _RGB32(255, 255, 0)
+        LINE (0, y * 30)-(640, y * 30), _RGB32(255, 255, 0)
+        text$ = LTRIM$(STR$(counter))
+        IF counter THEN _PRINTSTRING (x * 40 - 24 - (LEN(text$)) * 4, y * 30 - 23), text$
+        counter = counter + 1
+    NEXT
+NEXT
+_DEST temp
+
+x = 1: y = 1
+_PUTIMAGE , temp, ws
+DO: LOOP WHILE _MOUSEINPUT 'clear the mouse input buffer
+oldmousex = _MOUSEX: oldmousey = _MOUSEY
+
+DO
+    _LIMIT 60
+    DO: LOOP WHILE _MOUSEINPUT
+
+    x = _MOUSEX \ 40 + 1 'If mouse moved, where are we now?
+    y = _MOUSEY \ 30 + 1
+    num = (x - 1) * 16 + y - 1
+    IF num = 0 THEN
+        text$ = ""
+    ELSE
+        flashcounter = flashcounter + 1
+        IF flashcounter > 30 THEN
+            COLOR _RGB32(255, 255, 255), _RGB(100, 0, 200)
+            text$ = CHR$(num)
+            IF LEN(text$) = 1 THEN text$ = " " + text$ + " "
+        ELSE
+            COLOR _RGB32(255, 0, 0), _RGB(100, 0, 200)
+            text$ = RTRIM$(LTRIM$(STR$(num)))
+        END IF
+    END IF
+    IF flashcounter = 60 THEN flashcounter = 1
+    CLS
+    IF toggle THEN _PUTIMAGE , temp1, temp ELSE _PUTIMAGE , ws, temp
+    _PRINTSTRING (x * 40 - 24 - (LEN(text$)) * 4, y * 30 - 23), text$
+    LINE (x * 40 - 40, y * 30 - 30)-(x * 40, y * 30), _RGBA32(255, 255, 255, 150), BF
+
+    k1 = _KEYHIT
+    SELECT CASE k1
+        CASE 13: EXIT DO
+        CASE 27
+            _AUTODISPLAY
+            SCREEN 0: WIDTH w, h: _DEST 0: _DELAY .2
+            EXIT SUB
+        CASE 32: toggle = NOT toggle
+        CASE 18432: y = y - 1
+        CASE 19200: x = x - 1
+        CASE 20480: y = y + 1
+        CASE 19712: x = x + 1
+    END SELECT
+
+    IF x < 1 THEN x = 1
+    IF x > 16 THEN x = 16
+    IF y < 1 THEN y = 1
+    IF y > 16 THEN y = 16
+    _DISPLAY
+    Ex = _EXIT
+    IF Ex THEN
+        _AUTODISPLAY
+        SCREEN 0: WIDTH w, h: _DEST 0: _DELAY .2
+        EXIT FUNCTION
+    END IF
+LOOP UNTIL _MOUSEBUTTON(1)
+
+ret% = (x - 1) * 16 + y - 1
+IF ret% > 0 AND ret% < 255 THEN
+    l = idecy
+    a$ = idegetline(l)
+    l$ = LEFT$(a$, idecx - 1): r$ = RIGHT$(a$, LEN(a$) - idecx + 1)
+    text$ = l$ + CHR$(ret%) + r$
+    textlen = LEN(text$)
+    l$ = LEFT$(idet$, ideli - 1)
+    m$ = MKL$(textlen) + text$ + MKL$(textlen)
+    r$ = RIGHT$(idet$, LEN(idet$) - ideli - LEN(a$) - 7)
+    idet$ = l$ + m$ + r$
+    idecx = idecx + 1
+END IF
+
+_AUTODISPLAY
+
+SCREEN 0: WIDTH w, h: _DEST 0: _DELAY .2
+
+END FUNCTION
+
+
+
+
+
+
+SUB Help_AddTxt (t$, col, link)
+
+IF t$ = CHR$(13) THEN Help_NewLine: EXIT SUB
+
+FOR i = 1 TO LEN(t$)
+
+    c = ASC(t$, i)
+
+
+    IF Help_BG_Col = 0 AND Help_LockWrap = 0 THEN
+
+        'addtxt handles all wrapping issues
+        IF c = 32 THEN
+
+            IF Help_Pos = Help_ww THEN Help_NewLine: GOTO special
+
+            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 32
+            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = col + Help_BG_Col * 16
+            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link AND 255
+            Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link \ 256
+
+            Help_Wrap_Pos = Help_Txt_Len 'pos to backtrack to when wrapping content
+            Help_Pos = Help_Pos + 1
+            GOTO special
+        END IF
+
+        IF Help_Pos > Help_ww THEN
+            IF Help_Wrap_Pos THEN 'attempt to wrap
+                'backtrack, insert new line, continue
+
+                b$ = MID$(Help_Txt$, Help_Wrap_Pos + 1, Help_Txt_Len - Help_Wrap_Pos)
+
+                Help_Txt_Len = Help_Wrap_Pos
+
+                Help_NewLine
+
+                MID$(Help_Txt$, Help_Txt_Len + 1, LEN(b$)) = b$: Help_Txt_Len = Help_Txt_Len + LEN(b$)
+
+                Help_Pos = Help_Pos + LEN(b$) \ 4
+            END IF
+        END IF
+
+    END IF 'bg_col=0
+
+    c = ASC(t$, i)
+    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = c
+    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = col + Help_BG_Col * 16
+    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link AND 255
+    Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = link \ 256
+
+    Help_Pos = Help_Pos + 1
+    special:
+NEXT
+
+END SUB
+
+SUB Help_NewLine
+IF Help_Pos > help_w THEN help_w = Help_Pos
+
+Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 13
+Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = col + Help_BG_Col * 16
+Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 0
+Help_Txt_Len = Help_Txt_Len + 1: ASC(Help_Txt$, Help_Txt_Len) = 0
+
+help_h = help_h + 1
+Help_Line$ = Help_Line$ + MKL$(Help_Txt_Len + 1)
+Help_Wrap_Pos = 0
+
+IF Help_Underline THEN
+    Help_Underline = 0
+    w = Help_Pos
+    Help_Pos = 1
+    Help_AddTxt STRING$(w - 1, 196), Help_Col, 0
+    Help_NewLine
+END IF
+Help_Pos = 1
+
+IF Help_NewLineIndent THEN
+    Help_AddTxt SPACE$(Help_NewLineIndent), Help_Col, 0
+END IF
+
+
+END SUB
+
+SUB Help_PreView
+
+OPEN "help_preview.txt" FOR OUTPUT AS #1
+FOR i = 1 TO LEN(Help_Txt$) STEP 4
+    c = ASC(Help_Txt$, i)
+    c$ = CHR$(c)
+    IF c = 13 THEN c$ = CHR$(13) + CHR$(10)
+    PRINT #1, c$;
+NEXT
+CLOSE #1
+
+CLS
+FOR i = 1 TO LEN(Help_Txt$) STEP 4
+    c = ASC(Help_Txt$, i)
+    col = ASC(Help_Txt$, i + 1)
+    IF c = 13 THEN
+        COLOR col AND 15, col \ 16
+        PRINT SPACE$(help_w - POS(0));
+        COLOR 7, 0
+        PRINT SPACE$(_WIDTH - POS(0) + 1);
+        COLOR col AND 15, col \ 16
+        SLEEP
+    ELSE
+        COLOR col AND 15, col \ 16
+        PRINT CHR$(c);
+    END IF
+NEXT
+END SUB
+
+
+
+SUB WikiParse (a$)
+'PRINT "Parsing...": _DISPLAY
+
+'wiki page interpret
+
+'clear info
+help_h = 0: help_w = 0: Help_Line$ = "": Help_Link$ = "": Help_LinkN = 0
+Help_Txt$ = SPACE$(1000000)
+Help_Txt_Len = 0
+
+Help_Pos = 1: Help_Wrap_Pos = 0
+Help_Line$ = MKL$(1)
+Help_LockWrap = 0
+Help_Bold = 0: Help_Italic = 0
+Help_Underline = 0
+Help_BG_Col = 0
+
+link = 0: elink = 0: cb = 0
+
+col = Help_Col
+
+'Syntax Notes:
+' '''=bold
+' ''=italic
+' {{macroname|macroparam}} or simply {{macroname}}
+'  eg. {{KW|PRINT}}=a key word, a link to a page
+'      {{Cl|PRINT}}=a key word in a code example, will be printed in bold and aqua
+'      {{Parameter|expression}}=a parameter, in italics
+'      {{PageSyntax}} {{PageDescription}} {{PageExamples}}
+'      {{CodeStart}} {{CodeEnd}} {{OutputStart}} {{OutputEnd}}
+'      {{PageSeeAlso}} {{PageNavigation}}
+' [[SPACE$]]=a link to wikipage called "SPACE$"
+' [[INTEGER|integer]]=a link, link's name is on left and text to appear is on right
+' *=a dot point
+' **=a sub(ie. further indented) dot point
+' &quot;=a quotation mark
+' :=indent (if beginning a new line)
+' CHR$(10)=new line character
+
+DIM c$(16)
+FOR ii = 1 TO 16
+    c$(ii) = SPACE$(ii)
+NEXT
+
+n = LEN(a$)
+i = 1
+DO WHILE i <= n
+
+    c = ASC(a$, i): c$ = CHR$(c)
+    FOR i1 = 1 TO 16
+        ii = i
+        FOR i2 = 1 TO i1
+            IF ii < n THEN
+                ASC(c$(i1), i2) = ASC(a$, ii)
+            ELSE
+                ASC(c$(i1), i2) = 32
+            END IF
+            ii = ii + 1
+        NEXT
+    NEXT
+
+    IF c = 38 THEN '"&"
+
+        s$ = "&lt;code&gt;": IF c$(LEN(s$)) = s$ THEN i = i + LEN(s$) - 1: GOTO Special
+        s$ = "&lt;/code&gt;": IF c$(LEN(s$)) = s$ THEN i = i + LEN(s$) - 1: GOTO Special
+
+        s$ = "&quot;"
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            c$ = CHR$(34): c = ASC(c$)
+            GOTO SpecialChr
+        END IF
+
+        s$ = "&amp;"
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            c$ = "&": c = ASC(c$)
+            GOTO SpecialChr
+        END IF
+
+        s$ = "&lt;center&gt;"
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            GOTO Special
+        END IF
+
+        s$ = "&lt;/center&gt;"
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            GOTO Special
+        END IF
+
+        s$ = "&lt;p style="
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            FOR ii = i TO LEN(a$) - 3
+                IF MID$(a$, ii, 4) = "&gt;" THEN i = ii + 3: EXIT FOR
+            NEXT
+            GOTO Special
+        END IF
+        s$ = "&lt;/p"
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            FOR ii = i TO LEN(a$) - 3
+                IF MID$(a$, ii, 4) = "&gt;" THEN i = ii + 3: EXIT FOR
+            NEXT
+            GOTO Special
+        END IF
+
+        s$ = "&gt;"
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            c$ = ">": c = ASC(c$)
+            GOTO SpecialChr
+        END IF
+        s$ = "&lt;"
+        IF c$(LEN(s$)) = s$ THEN
+            i = i + LEN(s$) - 1
+            c$ = "<": c = ASC(c$)
+            GOTO SpecialChr
+        END IF
+
+        IF c$(2) = CHR$(194) + CHR$(160) THEN 'some kind of white-space formatting unicode combo
+            i = i + 1
+            GOTO Special
+        END IF
+
+        SpecialChr:
+
+    END IF 'c=38 '"&"
+
+    'Links
+    IF c = 91 THEN '"["
+        IF c$(2) = "[[" AND link = 0 THEN
+            i = i + 1
+            link = 1
+            link$ = ""
+            GOTO Special
+        END IF
+    END IF
+    IF link = 1 THEN
+        IF c$(2) = "]]" OR c$(2) = "}}" THEN
+            i = i + 1
+            link = 0
+            text$ = link$
+            i2 = INSTR(link$, "|")
+            IF i2 THEN
+                text$ = RIGHT$(link$, LEN(link$) - i2)
+                link$ = LEFT$(link$, i2 - 1)
+            END IF
+
+            IF INSTR(link$, "#") THEN 'local page links not supported yet
+                Help_AddTxt text$, 8, 0
+                GOTO Special
+            END IF
+
+            Help_LinkN = Help_LinkN + 1
+            Help_Link$ = Help_Link$ + "PAGE:" + link$ + Help_Link_Sep$
+
+            IF Help_BG_Col = 0 THEN
+                Help_AddTxt text$, Help_Col_Link, Help_LinkN
+            ELSE
+                Help_AddTxt text$, Help_Col_Bold, Help_LinkN
+            END IF
+            GOTO Special
+        END IF
+        link$ = link$ + c$
+        GOTO Special
+    END IF
+
+
+    'External links
+    IF c = 91 THEN '"["
+        IF c$(6) = "[http:" AND elink = 0 THEN
+            elink = 2
+            elink$ = ""
+            GOTO Special
+        END IF
+    END IF
+    IF elink = 2 THEN
+        IF c$ = " " THEN
+            elink = 1
+            GOTO Special
+        END IF
+        elink$ = elink$ + c$
+        GOTO Special
+    END IF
+    IF elink >= 1 THEN
+        IF c$ = "]" THEN
+            elink = 0
+            elink$ = " " + elink$
+            Help_LockWrap = 1: Help_Wrap_Pos = 0
+            Help_AddTxt elink$, 8, 0
+            Help_LockWrap = 0
+            elink$ = ""
+            GOTO Special
+        END IF
+    END IF
+
+    IF c = 123 THEN '"{"
+        IF c$(5) = "{{KW|" THEN 'this is really a link!
+            i = i + 4
+            link = 1
+            link$ = ""
+            GOTO Special
+        END IF
+        IF c$(5) = "{{Cl|" THEN 'this is really a link too (in code example)
+            i = i + 4
+            link = 1
+            link$ = ""
+            GOTO Special
+        END IF
+        IF c$(2) = "{{" THEN
+            i = i + 1
+            cb = 1
+            cb$ = ""
+            GOTO Special
+        END IF
+    END IF
+
+    IF cb = 1 THEN
+        IF c$ = "|" OR c$(2) = "}}" THEN
+            IF c$(2) = "}}" THEN i = i + 1
+            cb = 0
+
+            IF cb$ = "PageSyntax" THEN Help_AddTxt "Syntax:" + CHR$(13), Help_Col_Section, 0
+            IF cb$ = "PageDescription" THEN Help_AddTxt "Descripton:" + CHR$(13), Help_Col_Section, 0
+            IF cb$ = "PageExamples" THEN Help_AddTxt "Code Examples:" + CHR$(13), Help_Col_Section, 0
+            IF cb$ = "PageSeeAlso" THEN Help_AddTxt "See also:" + CHR$(13), Help_Col_Section, 0
+
+            IF cb$ = "CodeStart" THEN
+                Help_NewLine
+                Help_BG_Col = 1
+                'Skip non-meaningful content before section begins
+                ws = 1
+                FOR ii = i + 1 TO LEN(a$)
+                    IF ASC(a$, ii) = 10 THEN EXIT FOR
+                    IF ASC(a$, ii) <> 32 AND ASC(a$, ii) <> 39 THEN ws = 0
+                NEXT
+                IF ws THEN i = ii
+            END IF
+            IF cb$ = "CodeEnd" THEN Help_BG_Col = 0
+            IF cb$ = "OutputStart" THEN
+                Help_NewLine
+                Help_BG_Col = 2
+                'Skip non-meaningful content before section begins
+                ws = 1
+                FOR ii = i + 1 TO LEN(a$)
+                    IF ASC(a$, ii) = 10 THEN EXIT FOR
+                    IF ASC(a$, ii) <> 32 AND ASC(a$, ii) <> 39 THEN ws = 0
+                NEXT
+                IF ws THEN i = ii
+            END IF
+            IF cb$ = "OutputEnd" THEN Help_BG_Col = 0
+
+            GOTO Special
+
+        END IF
+
+        cb$ = cb$ + c$ 'reading maro name
+        GOTO Special
+    END IF 'cb=1
+
+    IF c$(2) = "}}" THEN 'probably the end of a text section of macro'd text
+        i = i + 1
+        GOTO Special
+    END IF
+
+
+
+    IF c$(4) = " == " THEN
+        i = i + 3
+        Help_Underline = 1
+        GOTO Special
+    END IF
+    IF c$(3) = "== " THEN
+        i = i + 2
+        Help_Underline = 1
+        GOTO Special
+    END IF
+    IF c$(3) = " ==" THEN
+        i = i + 2
+        GOTO Special
+    END IF
+    IF c$(2) = "==" THEN
+        i = i + 1
+        Help_Underline = 1
+        GOTO Special
+    END IF
+
+
+    IF c$(3) = "'''" THEN
+        i = i + 2
+        IF Help_Bold = 0 THEN Help_Bold = 1 ELSE Help_Bold = 0
+        col = Help_Col
+        GOTO Special
+    END IF
+
+    IF c$(2) = "''" THEN
+        i = i + 1
+        IF Help_Italic = 0 THEN Help_Italic = 1 ELSE Help_Italic = 0
+        col = Help_Col
+        GOTO Special
+    END IF
+
+    IF nl = 1 THEN
+
+        IF c$(3) = "** " THEN
+            i = i + 2
+            Help_AddTxt "    þ ", col, 0
+            Help_NewLineIndent = Help_NewLineIndent + 6
+            GOTO Special
+        END IF
+        IF c$(2) = "* " THEN
+            i = i + 1
+            Help_AddTxt "þ ", col, 0
+            Help_NewLineIndent = Help_NewLineIndent + 2
+            GOTO Special
+        END IF
+        IF c$(2) = "**" THEN
+            i = i + 1
+            Help_AddTxt "    þ ", col, 0
+            Help_NewLineIndent = Help_NewLineIndent + 6
+            GOTO Special
+        END IF
+        IF c$ = "*" THEN
+            Help_AddTxt "þ ", col, 0
+            Help_NewLineIndent = Help_NewLineIndent + 2
+            GOTO Special
+        END IF
+
+    END IF
+
+    s$ = "{|"
+    IF c$(LEN(s$)) = s$ THEN
+        i = i + 1
+        FOR ii = i TO LEN(a$) - 1
+            IF MID$(a$, ii, 2) = "|}" THEN i = ii + 1: EXIT FOR
+        NEXT
+        GOTO Special
+    END IF
+
+    IF c$(3) = CHR$(226) + CHR$(128) + CHR$(166) THEN '...
+        i = i + 2
+        Help_AddTxt "...", col, 0
+        GOTO Special
+    END IF
+
+    IF c$ = CHR$(226) THEN 'UNICODE UTF8 extender "â", it's a very good bet the following 2 characters will be 2 bytes of UNICODE
+        i = i + 2
+        GOTO Special
+    END IF
+
+    IF c$ = ":" AND nl = 1 THEN
+        Help_AddTxt "    ", col, 0
+        Help_NewLineIndent = Help_NewLineIndent + 4
+        i = i + 1: GOTO special2
+    END IF
+
+    s$ = "__NOTOC__" + CHR$(10)
+    IF c$(LEN(s$)) = s$ THEN
+        i = i + LEN(s$) - 1
+        GOTO Special
+    END IF
+    s$ = "__NOTOC__"
+    IF c$(LEN(s$)) = s$ THEN
+        i = i + LEN(s$) - 1
+        GOTO Special
+    END IF
+
+    s$ = "&lt;div"
+    IF c$(LEN(s$)) = s$ THEN
+        i = i + LEN(s$) - 1
+        FOR ii = i TO LEN(a$) - 1
+            IF MID$(a$, ii, 12) = "&lt;/div&gt;" THEN i = ii + 11: EXIT FOR
+        NEXT
+        GOTO Special
+    END IF
+
+
+    IF c$(4) = "----" THEN
+        i = i + 3
+        Help_AddTxt "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", 8, 0
+        GOTO Special
+    END IF
+
+
+
+    IF c$ = CHR$(10) THEN
+        Help_NewLineIndent = 0
+
+        IF Help_Txt_Len >= 8 THEN
+            IF ASC(Help_Txt$, Help_Txt_Len - 3) = 13 AND ASC(Help_Txt$, Help_Txt_Len - 7) = 13 THEN GOTO skipdoubleblanks
+        END IF
+
+        Help_AddTxt CHR$(13), col, 0
+
+        skipdoubleblanks:
+        nl = 1
+        i = i + 1: GOTO special2
+    END IF
+
+    Help_AddTxt CHR$(c), col, 0
+
+    Special:
+    i = i + 1
+    nl = 0
+    special2:
+LOOP
+
+'Trim Help_Txt$
+Help_Txt$ = LEFT$(Help_Txt$, Help_Txt_Len) + CHR$(13) 'chr13 stops reads past end of content
+
+'generate preview file
+'OPEN "help_preview.txt" FOR OUTPUT AS #1
+'FOR i = 1 TO LEN(Help_Txt$) STEP 4
+'    c = ASC(Help_Txt$, i)
+'    c$ = CHR$(c)
+'    IF c = 13 THEN c$ = CHR$(13) + CHR$(10)
+'    PRINT #1, c$;
+'NEXT
+'CLOSE #1
+
+'PRINT "Finished parsing!": _DISPLAY
+
+
+IF Help_PageLoaded$ = "Keyword Reference - Alphabetical" THEN
+
+    fh = FREEFILE
+    OPEN "internal\help\links.bin" FOR OUTPUT AS #fh
+    a$ = SPACE$(1000)
+    FOR cy = 1 TO help_h
+        'isolate and REVERSE select link
+        l = CVL(MID$(Help_Line$, (cy - 1) * 4 + 1, 4))
+        x = l
+        x2 = 1
+        c = ASC(Help_Txt$, x)
+        oldlnk = 0
+        lnkx1 = 0: lnkx2 = 0
+        DO UNTIL c = 13
+            ASC(a$, x2) = c
+            lnk = CVI(MID$(Help_Txt$, x + 2, 2))
+            IF oldlnk = 0 AND lnk <> 0 THEN lnkx1 = x2
+            IF (lnk = 0 OR ASC(Help_Txt$, x + 4) = 13) AND lnkx1 <> 0 THEN
+                lnkx2 = x2: IF lnk = 0 THEN lnkx2 = lnkx2 - 1
+
+                IF lnkx1 <> 3 THEN GOTO ignorelink
+                IF ASC(a$, 1) <> 254 THEN GOTO ignorelink
+
+                'retrieve lnk info
+                lnk2 = lnk: IF lnk2 = 0 THEN lnk2 = oldlnk
+                l1 = 1
+                FOR lx = 1 TO lnk2 - 1
+                    l1 = INSTR(l1, Help_Link$, Help_Link_Sep$) + 1
+                NEXT
+                l2 = INSTR(l1, Help_Link$, Help_Link_Sep$) - 1
+                l$ = MID$(Help_Link$, l1, l2 - l1 + 1)
+                'assume PAGE
+                l$ = RIGHT$(l$, LEN(l$) - 5)
+
+                a2$ = MID$(a$, lnkx1, lnkx2 - lnkx1 + 1)
+
+                IF INSTR(a2$, "(") THEN a2$ = LEFT$(a2$, INSTR(a2$, "(") - 1)
+                IF INSTR(a2$, " ") THEN a2$ = LEFT$(a2$, INSTR(a2$, " ") - 1)
+                IF INSTR(a2$, "...") THEN
+                    a3$ = RIGHT$(a2$, LEN(a2$) - INSTR(a2$, "...") - 2)
+
+                    skip = 0
+                    FOR ci = 1 TO LEN(a3$)
+                        ca = ASC(a3$, ci)
+                        IF ca >= 97 AND ca <= 122 THEN skip = 1
+                        IF ca = 44 THEN skip = 1
+                    NEXT
+                    IF skip = 0 THEN PRINT #fh, a3$ + "," + l$
+
+                    a2$ = LEFT$(a2$, INSTR(a2$, "...") - 1)
+                END IF
+
+                skip = 0
+                FOR ci = 1 TO LEN(a2$)
+                    ca = ASC(a2$, ci)
+                    IF ca >= 97 AND ca <= 122 THEN skip = 1
+                    IF ca = 44 THEN skip = 1
+                NEXT
+                IF skip = 0 THEN PRINT #fh, a2$ + "," + l$
+                oa2$ = a2$
+
+                a2$ = l$
+                IF INSTR(a2$, "(") THEN a2$ = LEFT$(a2$, INSTR(a2$, "(") - 1)
+                IF INSTR(a2$, " ") THEN a2$ = LEFT$(a2$, INSTR(a2$, " ") - 1)
+                IF INSTR(a2$, "...") THEN
+                    a3$ = RIGHT$(a2$, LEN(a2$) - INSTR(a2$, "...") - 2)
+
+                    skip = 0
+                    FOR ci = 1 TO LEN(a3$)
+                        ca = ASC(a3$, ci)
+                        IF ca >= 97 AND ca <= 122 THEN skip = 1
+                        IF ca = 44 THEN skip = 1
+                    NEXT
+                    IF skip = 0 THEN PRINT #fh, a3$ + "," + l$
+
+                    a2$ = LEFT$(a2$, INSTR(a2$, "...") - 1)
+                END IF
+
+                skip = 0
+                FOR ci = 1 TO LEN(a2$)
+                    ca = ASC(a2$, ci)
+                    IF ca >= 97 AND ca <= 122 THEN skip = 1
+                    IF ca = 44 THEN skip = 1
+                NEXT
+                IF skip = 0 AND a2$ <> oa2$ THEN PRINT #fh, a2$ + "," + l$
+
+                ignorelink:
+
+                lnkx1 = 0: lnkx2 = 0
+            END IF
+            x = x + 4: c = ASC(Help_Txt$, x)
+            x2 = x2 + 1
+            oldlnk = lnk
+        LOOP
+    NEXT
+    CLOSE #fh
+
+END IF
+
+
+
+
+
+END SUB
+
+
+
+
+SUB IdeImportBookmarks (f2$)
+IdeBmkN = 0
+f$ = crlf + f2$ + crlf
+fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$: CLOSE #fh
+x = INSTR(UCASE$(a$), UCASE$(f$))
+IF x THEN 'retrieve bookmark data
+    l = CVL(MID$(a$, x + LEN(f$), 4))
+    x1 = x + LEN(f$) + 4
+    d$ = MID$(a$, x1, l)
+    n = l \ 16
+    FOR i = 1 TO n
+        by = CVL(MID$(d$, (i - 1) * 16 + 1, 4))
+        bx = CVL(MID$(d$, (i - 1) * 16 + 1 + 4, 4))
+        IF by <= iden THEN
+            IdeBmkN = IdeBmkN + 1
+            IF IdeBmkN > UBOUND(IdeBmk) THEN x = UBOUND(IdeBmk) * 2: REDIM _PRESERVE IdeBmk(x) AS IdeBmkType
+            IdeBmk(IdeBmkN).y = by
+            IdeBmk(IdeBmkN).x = bx
+            IdeBmk(IdeBmkN).reserved = 0: IdeBmk(IdeBmkN).reserved2 = 0
+        END IF
+    NEXT
+END IF
+END SUB
+
+SUB IdeSaveBookmarks (f2$)
+f$ = crlf + f2$ + crlf
+fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$: CLOSE #fh
+x = INSTR(UCASE$(a$), UCASE$(f$))
+IF x THEN 'remove any old bookmark data
+    l = CVL(MID$(a$, x + LEN(f$), 4))
+    x2 = x + LEN(f$) + 4 + l - 1
+    a$ = LEFT$(a$, x - 1) + RIGHT$(a$, LEN(a$) - x2)
+END IF
+'add new bookmark data
+'build bookmark data
+d$ = ""
+FOR i = 1 TO IdeBmkN
+    d$ = d$ + MKL$(IdeBmk(i).y) + MKL$(IdeBmk(i).x) + MKL$(IdeBmk(i).reserved) + MKL$(IdeBmk(i).reserved2)
+NEXT
+a$ = f$ + MKL$(LEN(d$)) + d$ + a$
+fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR OUTPUT AS #fh: CLOSE #fh
+fh = FREEFILE: OPEN ".\internal\temp\bookmarks.bin" FOR BINARY AS #fh: PUT #fh, , a$: CLOSE #fh
+END SUB
+
+
+
+SUB IdeMakeFileMenu
+m = 1: i = 0
+menu$(m, i) = "File": i = i + 1
+menu$(m, i) = "#New": i = i + 1
+menu$(m, i) = "#Open...": i = i + 1
+menu$(m, i) = "#Save": i = i + 1
+menu$(m, i) = "Save #As...": i = i + 1
+fh = FREEFILE
+OPEN ".\internal\temp\recent.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$
+a$ = RIGHT$(a$, LEN(a$) - 2)
+FOR r = 1 TO 5
+    IF r <= 4 THEN IdeRecentLink(r, 1) = ""
+    ai = INSTR(a$, crlf)
+    IF ai THEN
+        IF r = 1 THEN menu$(m, i) = "-": i = i + 1
+        f$ = LEFT$(a$, ai - 1): IF ai = LEN(a$) - 1 THEN a$ = "" ELSE a$ = RIGHT$(a$, LEN(a$) - ai - 3)
+        IF r <= 4 THEN IdeRecentLink(r, 2) = f$
+        IF r = 5 THEN f$ = "#Recent..."
+        IF LEN(f$) > 25 THEN f$ = "úúú" + RIGHT$(f$, 22)
+        IF r <= 4 THEN IdeRecentLink(r, 1) = f$
+        menu$(m, i) = f$: i = i + 1
+    END IF
+NEXT
+CLOSE #fh
+IF os$ = "WIN" THEN
+    menu$(m, i) = "-": i = i + 1
+    menu$(m, i) = "#Update": i = i + 1
+END IF
+menu$(m, i) = "-": i = i + 1
+menu$(m, i) = "E#xit": i = i + 1
+menusize(m) = i - 1
+END SUB
+
+SUB IdeAddRecent (f2$)
+f$ = crlf + f2$ + crlf
+fh = FREEFILE
+OPEN ".\internal\temp\recent.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$
+x = INSTR(UCASE$(a$), UCASE$(f$))
+IF x THEN
+    a$ = f$ + LEFT$(a$, x - 1) + RIGHT$(a$, LEN(a$) - (x + LEN(f$) - 1))
+ELSE
+    a$ = f$ + a$
+END IF
+PUT #fh, 1, a$
+CLOSE #fh
+IdeMakeFileMenu
+END SUB
+
+SUB IdeAddSearched (s2$)
+s$ = crlf + s2$ + crlf
+fh = FREEFILE
+OPEN ".\internal\temp\searched.bin" FOR BINARY AS #fh: a$ = SPACE$(LOF(fh)): GET #fh, , a$
+x = INSTR(UCASE$(a$), UCASE$(s$))
+IF x THEN
+    a$ = s$ + LEFT$(a$, x - 1) + RIGHT$(a$, LEN(a$) - (x + LEN(s$) - 1))
+ELSE
+    a$ = s$ + a$
+END IF
+PUT #fh, 1, a$
+CLOSE #fh
+END SUB
+
+SUB assign (a$, n)
+FOR i = 1 TO n
+    c = ASC(getelement$(a$, i))
+    IF c = 40 THEN b = b + 1 '(
+    IF c = 41 THEN b = b - 1 ')
+    IF c = 61 AND b = 0 THEN '=
+        IF i = 1 THEN Give_Error "Expected ... =": EXIT SUB
+        IF i = n THEN Give_Error "Expected = ...": EXIT SUB
+
+        a2$ = fixoperationorder(getelements$(a$, 1, i - 1))
+        IF Error_Happened THEN EXIT SUB
+        l$ = tlayout$ + sp + "=" + sp
+
+        'note: evaluating a2$ will fail if it is setting a function's return value without this check (as the function, not the return-variable) will be found by evaluate)
+        IF i = 2 THEN 'lhs has only 1 element
+            try = findid(a2$)
+            IF Error_Happened THEN EXIT SUB
+            DO WHILE try
+                IF id.t THEN
+                    IF subfuncn = id.insubfuncn THEN 'avoid global before local
+                        IF (id.t AND ISUDT) = 0 THEN
+                            makeidrefer a2$, typ
+                            GOTO assignsimplevariable
+                        END IF
+                    END IF
+                END IF
+                IF try = 2 THEN findanotherid = 1: try = findid(a2$) ELSE try = 0
+                IF Error_Happened THEN EXIT SUB
+            LOOP
+        END IF
+
+        a2$ = evaluate$(a2$, typ): IF Error_Happened THEN EXIT SUB
+        assignsimplevariable:
+        IF (typ AND ISREFERENCE) = 0 THEN Give_Error "Expected variable =": EXIT SUB
+        setrefer a2$, typ, getelements$(a$, i + 1, n), 0
+        IF Error_Happened THEN EXIT SUB
+        tlayout$ = l$ + tlayout$
+
+        EXIT SUB
+
+    END IF '=,b=0
+NEXT
+Give_Error "Expected =": EXIT SUB
+END SUB
+
+SUB clearid
+id = cleariddata
+END SUB
+
+SUB closemain
+xend
+PRINT #12, "return NULL;"
+
+
+PRINT #12, "}"
+PRINT #15, "}" 'end case
+PRINT #15, "}"
+PRINT #15, "error(3);" 'no valid return possible
+
+closedmain = 1
+
+END SUB
+
+SUB getid (i AS LONG)
+IF i = -1 THEN Give_Error "-1 passed to getid!": EXIT SUB
+id = ids(i)
+currentid = i
+END SUB
+
+SUB insertelements (a$, i, elements$)
+IF i = 0 THEN
+    IF a$ = "" THEN
+        a$ = elements$
+        EXIT SUB
+    END IF
+    a$ = elements$ + sp + a$
+    EXIT SUB
+END IF
+
+a2$ = ""
+n = numelements(a$)
+
+
+
+
+FOR i2 = 1 TO n
+    IF i2 > 1 THEN a2$ = a2$ + sp
+    a2$ = a2$ + getelement$(a$, i2)
+    IF i = i2 THEN a2$ = a2$ + sp + elements$
+NEXT
+
+a$ = a2$
+
+END SUB
+
+
+
+SUB makeidrefer (ref$, typ AS LONG)
+ref$ = str2$(currentid)
+typ = id.t + ISREFERENCE
+END SUB
+
 
 SUB regid
 idn = idn + 1
@@ -22800,6 +32193,8 @@ id.arg = MKL$(LONGTYPE - ISPOINTER)
 id.ret = LONGTYPE - ISPOINTER
 regid
 
+'STEVE New Commands 07-08-2014
+
 clearid
 id.n = "_D2R"
 id.subfunc = 1
@@ -22858,6 +32253,15 @@ clearid 'Clear the old id info so we set the slate for a new one
 id.n = "_ATAN2" 'The name of our new one
 id.subfunc = 1 'And this is a function
 id.callname = "atan2" 'The C name of the function
+id.args = 2 'It takes 2 parameters to work
+id.arg = MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATTYPE - ISPOINTER) 'These simply add up to represent the 2 patameters from what I can tell
+id.ret = FLOATTYPE - ISPOINTER 'we want it to return to us a nice _FLOAT value
+regid 'and we're finished with ID registration
+
+clearid 'Clear the old id info so we set the slate for a new one
+id.n = "_HYPOT" 'The name of our new one
+id.subfunc = 1 'And this is a function
+id.callname = "hypot" 'The C name of the function
 id.args = 2 'It takes 2 parameters to work
 id.arg = MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATTYPE - ISPOINTER) 'These simply add up to represent the 2 patameters from what I can tell
 id.ret = FLOATTYPE - ISPOINTER 'we want it to return to us a nice _FLOAT value
@@ -22936,16 +32340,6 @@ id.ret = FLOATTYPE - ISPOINTER
 regid
 
 clearid
-id.n = "_PI"
-id.subfunc = 1
-id.callname = "func_pi"
-id.args = 1
-id.arg = MKL$(DOUBLETYPE - ISPOINTER)
-id.ret = DOUBLETYPE - ISPOINTER
-id.specialformat = "[?]"
-regid
-
-clearid
 id.n = "_CEIL"
 id.subfunc = 1
 id.callname = "ceil"
@@ -22954,14 +32348,39 @@ id.arg = MKL$(FLOATTYPE - ISPOINTER)
 id.ret = FLOATTYPE - ISPOINTER
 regid
 
-clearid 'Clear the old id info so we set the slate for a new one
-id.n = "_HYPOT" 'The name of our new one
-id.subfunc = 1 'And this is a function
-id.callname = "hypot" 'The C name of the function
-id.args = 2 'It takes 2 parameters to work
-id.arg = MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATTYPE - ISPOINTER) 'These simply add up to represent the 2 patameters from what I can tell
-id.ret = FLOATTYPE - ISPOINTER 'we want it to return to us a nice _FLOAT value
-regid 'and we're finished with ID registration
+clearid
+id.n = "_PI"
+id.subfunc = 1
+id.callname = "func_pi"
+id.args = 0
+id.ret = DOUBLETYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_CONTROLCHR"
+id.subfunc = 1
+id.callname = "func__controlchr"
+id.args = 0
+id.ret = LONGTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_STRICMP"
+id.subfunc = 1
+id.callname = "func__str_nc_compare"
+id.args = 2
+id.arg = MKL$(STRINGTYPE - ISPOINTER) + MKL$(STRINGTYPE - ISPOINTER)
+id.ret = LONGTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_STRCMP"
+id.subfunc = 1
+id.callname = "func__str_compare"
+id.args = 2
+id.arg = MKL$(STRINGTYPE - ISPOINTER) + MKL$(STRINGTYPE - ISPOINTER)
+id.ret = LONGTYPE - ISPOINTER
+regid
 
 clearid
 id.n = "_ARCSEC"
@@ -23099,713 +32518,8 @@ NEXT
 IF LEFT$(a2$, 1) = sp THEN a2$ = RIGHT$(a2$, LEN(a2$) - 1)
 
 a$ = a2$
-
 END SUB
 
-
-
-FUNCTION symboltype (s$) 'returns type or 0(not a valid symbol)
-'note: sets symboltype_size for fixed length strings
-'created: 2011 (fast & comprehensive)
-IF LEN(s$) = 0 THEN EXIT FUNCTION
-'treat common cases first
-a = ASC(s$)
-l = LEN(s$)
-IF a = 37 THEN '%
-    IF l = 1 THEN symboltype = 16: EXIT FUNCTION
-    IF l > 2 THEN EXIT FUNCTION
-    IF ASC(s$, 2) = 37 THEN symboltype = 8: EXIT FUNCTION
-    IF ASC(s$, 2) = 38 THEN symboltype = OFFSETTYPE - ISPOINTER: EXIT FUNCTION '%&
-    EXIT FUNCTION
-END IF
-IF a = 38 THEN '&
-    IF l = 1 THEN symboltype = 32: EXIT FUNCTION
-    IF l > 2 THEN EXIT FUNCTION
-    IF ASC(s$, 2) = 38 THEN symboltype = 64: EXIT FUNCTION
-    EXIT FUNCTION
-END IF
-IF a = 33 THEN '!
-    IF l = 1 THEN symboltype = 32 + ISFLOAT: EXIT FUNCTION
-    EXIT FUNCTION
-END IF
-IF a = 35 THEN '#
-    IF l = 1 THEN symboltype = 64 + ISFLOAT: EXIT FUNCTION
-    IF l > 2 THEN EXIT FUNCTION
-    IF ASC(s$, 2) = 35 THEN symboltype = 64 + ISFLOAT: EXIT FUNCTION
-    EXIT FUNCTION
-END IF
-IF a = 36 THEN '$
-    IF l = 1 THEN symboltype = ISSTRING: EXIT FUNCTION
-    IF isuinteger(RIGHT$(s$, l - 1)) THEN
-        IF l >= (1 + 10) THEN
-            IF l > (1 + 10) THEN EXIT FUNCTION
-            IF s$ > "$2147483647" THEN EXIT FUNCTION
-        END IF
-        symboltype_size = VAL(RIGHT$(s$, l - 1))
-        symboltype = ISSTRING + ISFIXEDLENGTH
-        EXIT FUNCTION
-    END IF
-    EXIT FUNCTION
-END IF
-IF a = 96 THEN '`
-    IF l = 1 THEN symboltype = 1 + ISOFFSETINBITS: EXIT FUNCTION
-    IF isuinteger(RIGHT$(s$, l - 1)) THEN
-        IF l > 3 THEN EXIT FUNCTION
-        n = VAL(RIGHT$(s$, l - 1))
-        IF n > 56 THEN EXIT FUNCTION
-        symboltype = n + ISOFFSETINBITS: EXIT FUNCTION
-    END IF
-    EXIT FUNCTION
-END IF
-IF a = 126 THEN '~
-    IF l = 1 THEN EXIT FUNCTION
-    a = ASC(s$, 2)
-    IF a = 37 THEN '%
-        IF l = 2 THEN symboltype = 16 + ISUNSIGNED: EXIT FUNCTION
-        IF l > 3 THEN EXIT FUNCTION
-        IF ASC(s$, 3) = 37 THEN symboltype = 8 + ISUNSIGNED: EXIT FUNCTION
-        IF ASC(s$, 3) = 38 THEN symboltype = UOFFSETTYPE - ISPOINTER: EXIT FUNCTION '~%&
-        EXIT FUNCTION
-    END IF
-    IF a = 38 THEN '&
-        IF l = 2 THEN symboltype = 32 + ISUNSIGNED: EXIT FUNCTION
-        IF l > 3 THEN EXIT FUNCTION
-        IF ASC(s$, 3) = 38 THEN symboltype = 64 + ISUNSIGNED: EXIT FUNCTION
-        EXIT FUNCTION
-    END IF
-    IF a = 96 THEN '`
-        IF l = 2 THEN symboltype = 1 + ISOFFSETINBITS + ISUNSIGNED: EXIT FUNCTION
-        IF isuinteger(RIGHT$(s$, l - 2)) THEN
-            IF l > 4 THEN EXIT FUNCTION
-            n = VAL(RIGHT$(s$, l - 2))
-            IF n > 56 THEN EXIT FUNCTION
-            symboltype = n + ISOFFSETINBITS + ISUNSIGNED: EXIT FUNCTION
-        END IF
-        EXIT FUNCTION
-    END IF
-END IF '~
-END FUNCTION
-
-FUNCTION removesymbol$ (varname$)
-i = INSTR(varname$, "~"): IF i THEN GOTO foundsymbol
-i = INSTR(varname$, "`"): IF i THEN GOTO foundsymbol
-i = INSTR(varname$, "%"): IF i THEN GOTO foundsymbol
-i = INSTR(varname$, "&"): IF i THEN GOTO foundsymbol
-i = INSTR(varname$, "!"): IF i THEN GOTO foundsymbol
-i = INSTR(varname$, "#"): IF i THEN GOTO foundsymbol
-i = INSTR(varname$, "$"): IF i THEN GOTO foundsymbol
-EXIT FUNCTION
-foundsymbol:
-IF i = 1 THEN Give_Error "Expected variable name before symbol": EXIT FUNCTION
-symbol$ = RIGHT$(varname$, LEN(varname$) - i + 1)
-IF symboltype(symbol$) = 0 THEN Give_Error "Invalid symbol": EXIT FUNCTION
-removesymbol$ = symbol$
-varname$ = LEFT$(varname$, i - 1)
-END FUNCTION
-
-FUNCTION scope$
-IF id.share THEN scope$ = module$ + "__": EXIT FUNCTION
-scope$ = module$ + "_" + subfunc$ + "_"
-END FUNCTION
-
-FUNCTION seperateargs (a$, ca$, pass&)
-pass& = 0
-
-FOR i = 1 TO OptMax: separgs(i) = "": NEXT
-FOR i = 1 TO OptMax + 1: separgslayout(i) = "": NEXT
-FOR i = 1 TO OptMax
-    Lev(i) = 0
-    EntryLev(i) = 0
-    DitchLev(i) = 0
-    DontPass(i) = 0
-    TempList(i) = 0
-    PassRule(i) = 0
-    LevelEntered(i) = 0
-NEXT
-
-DIM id2 AS idstruct
-
-id2 = id
-
-IF id2.args = 0 THEN EXIT FUNCTION 'no arguments!
-
-
-s$ = id2.specialformat
-s$ = RTRIM$(s$)
-
-'build a special format if none exists
-IF s$ = "" THEN
-    FOR i = 1 TO id2.args
-        IF i <> 1 THEN s$ = s$ + ",?" ELSE s$ = "?"
-    NEXT
-END IF
-
-'note: dim'd arrays moved to global to prevent high recreation cost
-
-PassFlag = 1
-nextentrylevel = 0
-nextentrylevelset = 1
-level = 0
-lastt = 0
-ditchlevel = 0
-FOR i = 1 TO LEN(s$)
-    s2$ = MID$(s$, i, 1)
-
-    IF s2$ = "[" THEN
-        level = level + 1
-        LevelEntered(level) = 0
-        GOTO nextsymbol
-    END IF
-
-    IF s2$ = "]" THEN
-        level = level - 1
-        IF level < ditchlevel THEN ditchlevel = level
-        GOTO nextsymbol
-    END IF
-
-    IF s2$ = "{" THEN
-        lastt = lastt + 1: Lev(lastt) = level: PassRule(lastt) = 0
-        DitchLev(lastt) = ditchlevel: ditchlevel = level 'store & reset ditch level
-        i = i + 1
-        i2 = INSTR(i, s$, "}")
-        numopts = 0
-        nextopt:
-        numopts = numopts + 1
-        i3 = INSTR(i + 1, s$, "|")
-        IF i3 <> 0 AND i3 < i2 THEN
-            Opt(lastt, numopts) = MID$(s$, i, i3 - i)
-            i = i3 + 1: GOTO nextopt
-        END IF
-        Opt(lastt, numopts) = MID$(s$, i, i2 - i)
-        T(lastt) = numopts
-        'calculate words in each option
-        FOR x = 1 TO T(lastt)
-            w = 1
-            x2 = 1
-            newword:
-            IF INSTR(x2, RTRIM$(Opt(lastt, x)), " ") THEN w = w + 1: x2 = INSTR(x2, RTRIM$(Opt(lastt, x)), " ") + 1: GOTO newword
-            OptWords(lastt, x) = w
-        NEXT
-        i = i2
-
-        'set entry level routine
-        EntryLev(lastt) = level 'default level when continuing a previously entered level
-        IF LevelEntered(level) = 0 THEN
-            EntryLev(lastt) = 0
-            FOR i2 = 1 TO level - 1
-                IF LevelEntered(i2) = 1 THEN EntryLev(lastt) = i2
-            NEXT
-        END IF
-        LevelEntered(level) = 1
-
-        GOTO nextsymbol
-    END IF
-
-    IF s2$ = "?" THEN
-        lastt = lastt + 1: Lev(lastt) = level: PassRule(lastt) = 0
-        DitchLev(lastt) = ditchlevel: ditchlevel = level 'store & reset ditch level
-        T(lastt) = 0
-        'set entry level routine
-        EntryLev(lastt) = level 'default level when continuing a previously entered level
-        IF LevelEntered(level) = 0 THEN
-            EntryLev(lastt) = 0
-            FOR i2 = 1 TO level - 1
-                IF LevelEntered(i2) = 1 THEN EntryLev(lastt) = i2
-            NEXT
-        END IF
-        LevelEntered(level) = 1
-
-        GOTO nextsymbol
-    END IF
-
-    'assume "special" character (like ( ) , . - etc.)
-    lastt = lastt + 1: Lev(lastt) = level: PassRule(lastt) = 0
-    DitchLev(lastt) = ditchlevel: ditchlevel = level 'store & reset ditch level
-    T(lastt) = 1: Opt(lastt, 1) = s2$: OptWords(lastt, 1) = 1: DontPass(lastt) = 1
-
-    'set entry level routine
-    EntryLev(lastt) = level 'default level when continuing a previously entered level
-    IF LevelEntered(level) = 0 THEN
-        EntryLev(lastt) = 0
-        FOR i2 = 1 TO level - 1
-            IF LevelEntered(i2) = 1 THEN EntryLev(lastt) = i2
-        NEXT
-    END IF
-    LevelEntered(level) = 1
-
-    GOTO nextsymbol
-
-    nextsymbol:
-NEXT
-
-
-IF debug THEN
-    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #1:1--------"
-    FOR i = 1 TO lastt
-        PRINT #9, i, "OPT=" + CHR$(34) + RTRIM$(Opt(i, 1)) + CHR$(34)
-        PRINT #9, i, "OPTWORDS="; OptWords(i, 1)
-        PRINT #9, i, "T="; T(i)
-        PRINT #9, i, "DONTPASS="; DontPass(i)
-        PRINT #9, i, "PASSRULE="; PassRule(i)
-        PRINT #9, i, "LEV="; Lev(i)
-        PRINT #9, i, "ENTRYLEV="; EntryLev(i)
-    NEXT
-END IF
-
-
-'Any symbols already have dontpass() set to 1
-'This sets any {}blocks with only one option/word (eg. {PRINT}) at the lowest level to dontpass()=1
-'because their content is manadatory and there is no choice as to which word to use
-FOR x = 1 TO lastt
-    IF Lev(x) = 0 THEN
-        IF T(x) = 1 THEN DontPass(x) = 1
-    END IF
-NEXT
-
-IF debug THEN
-    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #1:2--------"
-    FOR i = 1 TO lastt
-        PRINT #9, i, "OPT=" + CHR$(34) + RTRIM$(Opt(i, 1)) + CHR$(34)
-        PRINT #9, i, "OPTWORDS="; OptWords(i, 1)
-        PRINT #9, i, "T="; T(i)
-        PRINT #9, i, "DONTPASS="; DontPass(i)
-        PRINT #9, i, "PASSRULE="; PassRule(i)
-        PRINT #9, i, "LEV="; Lev(i)
-        PRINT #9, i, "ENTRYLEV="; EntryLev(i)
-    NEXT
-END IF
-
-
-
-
-x1 = 0 'the 'x' position of the beginning element of the current levelled block
-MustPassOpt = 0 'the 'x' position of the FIRST opt () in the block which must be passed
-MustPassOptNeedsFlag = 0 '{}blocks don't need a flag, ? blocks do
-
-'Note: For something like [{HELLO}x] a choice between passing 'hello' or passing a flag to signify x was specified
-'      has to be made, in such cases, a flag is preferable to wasting a full new int32 on 'hello'
-
-templistn = 0
-FOR l = 1 TO 32767
-    scannextlevel = 0
-    FOR x = 1 TO lastt
-        IF Lev(x) > l THEN scannextlevel = 1
-
-        IF x1 THEN
-            IF EntryLev(x) < l THEN 'end of block reached
-                IF MustPassOpt THEN
-                    'If there's an opt () which must be passed that will be identified,
-                    'all the 1 option {}blocks can be assumed...
-                    IF MustPassOptNeedsFlag THEN
-                        'The MustPassOpt requires a flag, so use the same flag for everything
-                        FOR x2 = 1 TO templistn
-                            PassRule(TempList(x2)) = PassFlag
-                        NEXT
-                        PassFlag = PassFlag * 2
-                    ELSE
-                        'The MustPassOpt is a {}block which doesn't need a flag, so everything else needs to
-                        'reference it
-                        FOR x2 = 1 TO templistn
-                            IF TempList(x2) <> MustPassOpt THEN PassRule(TempList(x2)) = -MustPassOpt
-                        NEXT
-                    END IF
-                ELSE
-                    'if not, use a unique flag for everything in this block
-                    FOR x2 = 1 TO templistn: PassRule(TempList(x2)) = PassFlag: NEXT
-                    IF templistn <> 0 THEN PassFlag = PassFlag * 2
-                END IF
-                x1 = 0
-            END IF
-        END IF
-
-
-        IF Lev(x) = l THEN 'on same level
-            IF EntryLev(x) < l THEN 'just (re)entered this level (not continuing along it)
-                x1 = x 'set x1 to the starting element of this level
-                MustPassOpt = 0
-                templistn = 0
-            END IF
-        END IF
-
-        IF x1 THEN
-            IF Lev(x) = l THEN 'same level
-
-                IF T(x) <> 1 THEN
-                    'It isn't a symbol or a {}block with only one option therefore this opt () must be passed
-                    IF MustPassOpt = 0 THEN
-                        MustPassOpt = x 'Only record the first instance (it MAY require a flag)
-                        IF T(x) = 0 THEN MustPassOptNeedsFlag = 1 ELSE MustPassOptNeedsFlag = 0
-                    ELSE
-                        'Update current MustPassOpt to non-flag-based {}block if possible (to save flag usage)
-                        '(Consider [{A|B}?], where a flag is not required)
-                        IF MustPassOptNeedsFlag = 1 THEN
-                            IF T(x) > 1 THEN
-                                MustPassOpt = x: MustPassOptNeedsFlag = 0
-                            END IF
-                        END IF
-                    END IF
-                    'add to list
-                    templistn = templistn + 1: TempList(templistn) = x
-                END IF
-
-                IF T(x) = 1 THEN
-                    'It is a symbol or a {}block with only one option
-                    'a {}block with only one option MAY not need to be passed
-                    'depending on if anything else is in this block could make the existance of this opt () assumed
-                    'Note: Symbols which are not encapsulated inside a {}block never need to be passed
-                    '      Symbols already have dontpass() set to 1
-                    IF DontPass(x) = 0 THEN templistn = templistn + 1: TempList(templistn) = x: DontPass(x) = 1
-                END IF
-
-            END IF
-        END IF
-
-    NEXT
-
-    'scan last run (mostly just a copy of code from above)
-    IF x1 THEN
-        IF MustPassOpt THEN
-            'If there's an opt () which must be passed that will be identified,
-            'all the 1 option {}blocks can be assumed...
-            IF MustPassOptNeedsFlag THEN
-                'The MustPassOpt requires a flag, so use the same flag for everything
-                FOR x2 = 1 TO templistn
-                    PassRule(TempList(x2)) = PassFlag
-                NEXT
-                PassFlag = PassFlag * 2
-            ELSE
-                'The MustPassOpt is a {}block which doesn't need a flag, so everything else needs to
-                'reference it
-                FOR x2 = 1 TO templistn
-                    IF TempList(x2) <> MustPassOpt THEN PassRule(TempList(x2)) = -MustPassOpt
-                NEXT
-            END IF
-        ELSE
-            'if not, use a unique flag for everything in this block
-            FOR x2 = 1 TO templistn: PassRule(TempList(x2)) = PassFlag: NEXT
-            IF templistn <> 0 THEN PassFlag = PassFlag * 2
-        END IF
-        x1 = 0
-    END IF
-
-    IF scannextlevel = 0 THEN EXIT FOR
-NEXT
-
-IF debug THEN
-    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #1:3--------"
-    FOR i = 1 TO lastt
-        PRINT #9, i, "OPT=" + CHR$(34) + RTRIM$(Opt(i, 1)) + CHR$(34)
-        PRINT #9, i, "OPTWORDS="; OptWords(i, 1)
-        PRINT #9, i, "T="; T(i)
-        PRINT #9, i, "DONTPASS="; DontPass(i)
-        PRINT #9, i, "PASSRULE="; PassRule(i)
-        PRINT #9, i, "LEV="; Lev(i)
-        PRINT #9, i, "ENTRYLEV="; EntryLev(i)
-    NEXT
-END IF
-
-
-
-FOR i = 1 TO lastt: separgs(i) = "null": NEXT
-
-
-
-
-'Consider: "?,[?]"
-'Notes: The comma is mandatory but the second ? is entirely optional
-'Consider: "[?[{B}?]{A}]?"
-'Notes: As unlikely as the above is, it is still valid, but pivots on the outcome of {A} being present
-'Consider: "[?]{A}"
-'Consider: "[?{A}][?{B}][?{C}]?"
-'Notes: The trick here is to realize {A} has greater priority than {B}, so all lines of enquiry must
-'       be exhausted before considering {B}
-
-'Use inquiry approach to solve format
-'Each line of inquiry must be exhausted
-'An expression ("?") simply means a branch where you can scan ahead
-
-Branches = 0
-DIM BranchFormatPos(1 TO 100) AS LONG
-DIM BranchTaken(1 TO 100) AS LONG
-'1=taken (this usually involves moving up a level)
-'0=not taken
-DIM BranchInputPos(1 TO 100) AS LONG
-DIM BranchWithExpression(1 TO 100) AS LONG
-'non-zero=expression expected before next item for format item value represents
-'0=no expression allowed before next item
-DIM BranchLevel(1 TO 100) AS LONG 'Level before this branch was/wasn't taken
-
-n = numelements(ca$)
-i = 1 'Position within ca$
-
-level = 0
-Expression = 0
-FOR x = 1 TO lastt
-
-    ContinueScan:
-
-    IF DitchLev(x) < level THEN 'dropping down to a lower level
-        'we can only go as low as the 'ditch' will allow us, which will limit our options
-        level = DitchLev(x)
-    END IF
-
-    IF EntryLev(x) <= level THEN 'possible to enter level
-
-        'But was this optional or were we forced to be on this level?
-        IF EntryLev(x) < Lev(x) THEN
-            optional = 1
-            IF level > EntryLev(x) THEN optional = 0
-        ELSE
-            'entrylev=lev
-            optional = 0
-        END IF
-
-        t = T(x)
-
-        IF t = 0 THEN 'A "?" expression
-            IF Expression THEN
-                '*********backtrack************
-                'We are tracking an expression which we assumed would be present but was not
-                GOTO Backtrack
-                '******************************
-            END IF
-            IF optional THEN
-                Branches = Branches + 1
-                BranchFormatPos(Branches) = x
-                BranchTaken(Branches) = 1
-                BranchInputPos(Branches) = i
-                BranchWithExpression(Branches) = 0
-                BranchLevel(Branches) = level
-                level = Lev(x)
-            END IF
-            Expression = x
-        END IF 'A "?" expression
-
-        IF t THEN
-
-            currentlev = level
-
-            'Add new branch if new level will be entered
-            IF optional THEN
-                Branches = Branches + 1
-                BranchFormatPos(Branches) = x
-                BranchTaken(Branches) = 1
-                BranchInputPos(Branches) = i
-                BranchWithExpression(Branches) = Expression
-                BranchLevel(Branches) = level
-            END IF
-
-            'Scan for Opt () options
-            i1 = i: i2 = i
-            IF Expression THEN i2 = n
-            'Scan a$ for opt () x
-            'Note: Finding the closest opt option is necessary
-            'Note: This needs to be bracket sensitive
-            OutOfRange = 2147483647
-            position = OutOfRange
-            which = 0
-            IF i <= n THEN 'Past end of contect check
-                FOR o = 1 TO t
-                    words = OptWords(x, o)
-                    b = 0
-                    FOR i3 = i1 TO i2
-                        IF i3 + words - 1 <= n THEN 'enough elements exist
-                            c$ = getelement$(a$, i3)
-                            IF b = 0 THEN
-                                'Build comparison string (spacing elements)
-                                FOR w = 2 TO words
-                                    c$ = c$ + " " + getelement$(a$, i3 + w - 1)
-                                NEXT w
-                                'Compare
-                                IF c$ = RTRIM$(Opt(x, o)) THEN
-                                    'Record Match
-                                    IF i3 < position THEN
-                                        position = i3
-                                        which = o
-                                        bvalue = b
-                                        EXIT FOR 'Exit the i3 loop
-                                    END IF 'position check
-                                END IF 'match
-                            END IF
-
-                            IF ASC(c$) = 44 AND b = 0 THEN
-                                EXIT FOR 'Expressions cannot contain a "," in their base level
-                                'Because this wasn't interceppted by the above code it isn't the Opt either
-                            END IF
-                            IF ASC(c$) = 40 THEN
-                                b = b + 1
-                            END IF
-                            IF ASC(c$) = 41 THEN
-                                b = b - 1
-                                IF b = -1 THEN EXIT FOR 'Exited current bracketting level, making any following match invalid
-                            END IF
-
-                        END IF 'enough elements exist
-                    NEXT i3
-                NEXT o
-            END IF 'Past end of contect check
-
-            IF position <> OutOfRange THEN 'Found?
-                'Found...
-                level = Lev(x) 'Adjust level
-                IF Expression THEN
-                    'Found...Expression...
-                    'Has an expression been provided?
-                    IF position > i AND bvalue = 0 THEN
-                        'Found...Expression...Provided...
-                        separgs(Expression) = getelements$(ca$, i, position - 1)
-                        Expression = 0
-                        i = position
-                    ELSE
-                        'Found...Expression...Omitted...
-                        '*********backtrack************
-                        GOTO OptCheckBacktrack
-                        '******************************
-                    END IF
-                END IF 'Expression
-                i = i + OptWords(x, which)
-                separgslayout(x) = CHR$(LEN(RTRIM$(Opt(x, which)))) + RTRIM$(Opt(x, which))
-                separgs(x) = CHR$(0) + str2(which)
-            ELSE
-                'Not Found...
-                '*********backtrack************
-                OptCheckBacktrack:
-                'Was this optional?
-                IF Lev(x) > EntryLev(x) THEN 'Optional Opt ()?
-                    'Not Found...Optional...
-                    'Simply don't enter the optional higher level and continue as normal
-                    BranchTaken(Branches) = 0
-                    level = currentlev 'We aren't entering the level after all, so our level should remain at the opt's entrylevel
-                ELSE
-                    Backtrack:
-                    'Not Found...Mandatory...
-                    '1)Erase previous branches where both options have been tried
-                    FOR branch = Branches TO 1 STEP -1 'Remove branches until last taken branch is found
-                        IF BranchTaken(branch) THEN EXIT FOR
-                        Branches = Branches - 1 'Remove branch (it has already been tried with both possible combinations)
-                    NEXT
-                    IF Branches = 0 THEN 'All options have been exhausted
-                        seperateargs_error = 1
-                        seperateargs_error_message = "Syntax error"
-                        EXIT FUNCTION
-                    END IF
-                    '2)Toggle taken branch to untaken and revert
-                    BranchTaken(Branches) = 0 'toggle branch to untaken
-                    Expression = BranchWithExpression(Branches)
-                    i = BranchInputPos(Branches)
-                    x = BranchFormatPos(Branches)
-                    level = BranchLevel(Branches)
-                    '3)Erase any content created after revert position
-                    IF Expression THEN separgs(Expression) = "null"
-                    FOR x2 = x TO lastt
-                        separgs(x2) = "null"
-                        separgslayout(x2) = ""
-                    NEXT
-                END IF 'Optional Opt ()?
-                '******************************
-
-            END IF 'Found?
-
-        END IF 't
-
-    END IF 'possible to enter level
-
-NEXT x
-
-'Final expression?
-IF Expression THEN
-    IF i <= n THEN
-        separgs(Expression) = getelements$(ca$, i, n)
-
-        'can this be an expression?
-        'check it passes bracketting and comma rules
-        b = 0
-        FOR i2 = i TO n
-            c$ = getelement$(a$, i2)
-            IF ASC(c$) = 44 AND b = 0 THEN
-                GOTO Backtrack
-            END IF
-            IF ASC(c$) = 40 THEN
-                b = b + 1
-            END IF
-            IF ASC(c$) = 41 THEN
-                b = b - 1
-                IF b = -1 THEN GOTO Backtrack
-            END IF
-        NEXT
-        IF b <> 0 THEN GOTO Backtrack
-
-        i = n + 1 'So it passes the test below
-    ELSE
-        GOTO Backtrack
-    END IF
-END IF 'Expression
-
-IF i <> n + 1 THEN GOTO Backtrack 'Trailing content?
-
-IF debug THEN
-    PRINT #9, "--------SEPERATE ARGUMENTS REPORT #2--------"
-    FOR i = 1 TO lastt
-        PRINT #9, i, separgs(i)
-    NEXT
-END IF
-
-'   DIM PassRule(1 TO 100) AS LONG
-'   '0 means no pass rule
-'   'negative values refer to an opt () element
-'   'positive values refer to a flag value
-'   PassFlag = 1
-
-
-IF PassFlag <> 1 THEN seperateargs = 1 'Return whether a 'passed' flags variable is required
-pass& = 0 'The 'passed' value (shared by argument reference)
-
-'Note: The separgs() elements will be compacted to the C++ function arguments
-x = 1 'The new index to move compacted content to within separgs()
-
-FOR i = 1 TO lastt
-
-    IF DontPass(i) = 0 THEN
-
-        IF PassRule(i) > 0 THEN
-            IF separgs(i) <> "null" THEN pass& = pass& OR PassRule(i) 'build 'passed' flags
-        END IF
-
-        separgs(x) = separgs(i)
-        separgslayout(x) = separgslayout(i)
-
-        IF LEN(separgs(x)) THEN
-            IF ASC(separgs(x)) = 0 THEN
-                'switch omit layout tag from item to layout info
-                separgs(x) = RIGHT$(separgs(x), LEN(separgs(x)) - 1)
-                separgslayout(x) = separgslayout(x) + CHR$(0)
-            END IF
-        END IF
-
-        IF separgs(x) = "null" THEN separgs(x) = "NULL"
-        x = x + 1
-
-    ELSE
-        'its gonna be skipped!
-        'add layout to the next one to be safe
-
-        'for syntax such as [{HELLO}] which uses a flag instead of being passed
-        IF PassRule(i) > 0 THEN
-            IF separgs(i) <> "null" THEN pass& = pass& OR PassRule(i) 'build 'passed' flags
-        END IF
-
-        separgslayout(i + 1) = separgslayout(i) + separgslayout(i + 1)
-
-    END IF
-NEXT
-separgslayout(x) = separgslayout(i) 'set final layout
-
-'x = x - 1
-'PRINT "total arguments:"; x
-'PRINT "pass omit (0/1):"; omit
-'PRINT "pass&="; pass&
-
-END FUNCTION
 
 SUB setrefer (a2$, typ2 AS LONG, e2$, method AS LONG)
 a$ = a2$: typ = typ2: e$ = e2$
@@ -24081,435 +32795,6 @@ END IF 'variable
 
 tlayout$ = tl$
 END SUB
-
-FUNCTION str2$ (v AS LONG)
-str2$ = LTRIM$(RTRIM$(STR$(v)))
-END FUNCTION
-
-FUNCTION str2u64$ (v~&&)
-str2u64$ = LTRIM$(RTRIM$(STR$(v~&&)))
-END FUNCTION
-
-FUNCTION str2i64$ (v&&)
-str2i64$ = LTRIM$(RTRIM$(STR$(v&&)))
-END FUNCTION
-
-FUNCTION typ2ctyp$ (t AS LONG, tstr AS STRING)
-ctyp$ = ""
-'typ can be passed as either: (the unused value is ignored)
-'i. as a typ value in t
-'ii. as a typ symbol (eg. "~%") in tstr
-'iii. as a typ name (eg. _UNSIGNED INTEGER) in tstr
-IF tstr$ = "" THEN
-    IF (t AND ISARRAY) THEN EXIT FUNCTION 'cannot return array types
-    IF (t AND ISSTRING) THEN typ2ctyp$ = "qbs": EXIT FUNCTION
-    b = t AND 511
-    IF (t AND ISUDT) THEN typ2ctyp$ = "void": EXIT FUNCTION
-    IF (t AND ISOFFSETINBITS) THEN
-        IF b <= 32 THEN ctyp$ = "int32" ELSE ctyp$ = "int64"
-        IF (t AND ISUNSIGNED) THEN ctyp$ = "u" + ctyp$
-        typ2ctyp$ = ctyp$: EXIT FUNCTION
-    END IF
-    IF (t AND ISFLOAT) THEN
-        IF b = 32 THEN ctyp$ = "float"
-        IF b = 64 THEN ctyp$ = "double"
-        IF b = 256 THEN ctyp$ = "long double"
-    ELSE
-        IF b = 8 THEN ctyp$ = "int8"
-        IF b = 16 THEN ctyp$ = "int16"
-        IF b = 32 THEN ctyp$ = "int32"
-        IF b = 64 THEN ctyp$ = "int64"
-        IF typ AND ISOFFSET THEN ctyp$ = "ptrszint"
-        IF (t AND ISUNSIGNED) THEN ctyp$ = "u" + ctyp$
-    END IF
-    IF t AND ISOFFSET THEN
-        ctyp$ = "ptrszint": IF (t AND ISUNSIGNED) THEN ctyp$ = "uptrszint"
-    END IF
-    typ2ctyp$ = ctyp$: EXIT FUNCTION
-END IF
-
-ts$ = tstr$
-'is ts$ a symbol?
-IF ts$ = "$" THEN ctyp$ = "qbs"
-IF ts$ = "!" THEN ctyp$ = "float"
-IF ts$ = "#" THEN ctyp$ = "double"
-IF ts$ = "##" THEN ctyp$ = "long double"
-IF LEFT$(ts$, 1) = "~" THEN unsgn = 1: ts$ = RIGHT$(ts$, LEN(ts$) - 1)
-IF LEFT$(ts$, 1) = "`" THEN
-    n$ = RIGHT$(ts$, LEN(ts$) - 1)
-    b = 1
-    IF n$ <> "" THEN
-        IF isuinteger(n$) = 0 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
-        b = VAL(n$)
-        IF b > 57 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
-    END IF
-    IF b <= 32 THEN ctyp$ = "int32" ELSE ctyp$ = "int64"
-    IF unsgn THEN ctyp$ = "u" + ctyp$
-    typ2ctyp$ = ctyp$: EXIT FUNCTION
-END IF
-IF ts$ = "%&" THEN
-    typ2ctyp$ = "ptrszint": IF (t AND ISUNSIGNED) THEN typ2ctyp$ = "uptrszint"
-    EXIT FUNCTION
-END IF
-IF ts$ = "%%" THEN ctyp$ = "int8"
-IF ts$ = "%" THEN ctyp$ = "int16"
-IF ts$ = "&" THEN ctyp$ = "int32"
-IF ts$ = "&&" THEN ctyp$ = "int64"
-IF ctyp$ <> "" THEN
-    IF unsgn THEN ctyp$ = "u" + ctyp$
-    typ2ctyp$ = ctyp$: EXIT FUNCTION
-END IF
-'is tstr$ a named type? (eg. 'LONG')
-s$ = type2symbol$(tstr$)
-IF Error_Happened THEN EXIT FUNCTION
-IF LEN(s$) THEN
-    typ2ctyp$ = typ2ctyp$(0, s$)
-    IF Error_Happened THEN EXIT FUNCTION
-    EXIT FUNCTION
-END IF
-
-Give_Error "Invalid type": EXIT FUNCTION
-
-END FUNCTION
-
-FUNCTION type2symbol$ (typ$)
-t$ = typ$
-FOR i = 1 TO LEN(t$)
-    IF MID$(t$, i, 1) = sp THEN MID$(t$, i, 1) = " "
-NEXT
-e$ = "Cannot convert type (" + typ$ + ") to symbol"
-t2$ = "_UNSIGNED _BIT": s$ = "~`1": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_UNSIGNED _BYTE": s$ = "~%%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_UNSIGNED INTEGER": s$ = "~%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_UNSIGNED LONG": s$ = "~&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_UNSIGNED _INTEGER64": s$ = "~&&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_UNSIGNED _OFFSET": s$ = "~%&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_BIT": s$ = "`1": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_BYTE": s$ = "%%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "INTEGER": s$ = "%": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "LONG": s$ = "&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_INTEGER64": s$ = "&&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_OFFSET": s$ = "%&": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "SINGLE": s$ = "!": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "DOUBLE": s$ = "#": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "_FLOAT": s$ = "##": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-t2$ = "STRING": s$ = "$": IF LEFT$(t$, LEN(t2$)) = t2$ THEN GOTO t2sfound
-Give_Error e$: EXIT FUNCTION
-t2sfound:
-type2symbol$ = s$
-IF LEN(t2$) <> LEN(t$) THEN
-    IF s$ <> "$" AND s$ <> "~`1" AND s$ <> "`1" THEN Give_Error e$: EXIT FUNCTION
-    t$ = RIGHT$(t$, LEN(t$) - LEN(t2$))
-    IF LEFT$(t$, 3) <> " * " THEN Give_Error e$: EXIT FUNCTION
-    t$ = RIGHT$(t$, LEN(t$) - 3)
-    IF isuinteger(t$) = 0 THEN Give_Error e$: EXIT FUNCTION
-    v = VAL(t$)
-    IF v = 0 THEN Give_Error e$: EXIT FUNCTION
-    IF s$ <> "$" AND v > 56 THEN Give_Error e$: EXIT FUNCTION
-    IF s$ = "$" THEN
-        s$ = s$ + str2$(v)
-    ELSE
-        s$ = LEFT$(s$, LEN(s$) - 1) + str2$(v)
-    END IF
-    type2symbol$ = s$
-END IF
-END FUNCTION
-
-'Strips away bits/indentifiers which make locating a variables source difficult
-FUNCTION typecomp (typ)
-typ2 = typ
-IF (typ2 AND ISINCONVENTIONALMEMORY) THEN typ2 = typ2 - ISINCONVENTIONALMEMORY
-typecomp = typ2
-END FUNCTION
-
-FUNCTION typname2typ& (t2$)
-typname2typsize = 0 'the default
-
-t$ = t2$
-
-'symbol?
-ts$ = t$
-IF ts$ = "$" THEN typname2typ& = STRINGTYPE: EXIT FUNCTION
-IF ts$ = "!" THEN typname2typ& = SINGLETYPE: EXIT FUNCTION
-IF ts$ = "#" THEN typname2typ& = DOUBLETYPE: EXIT FUNCTION
-IF ts$ = "##" THEN typname2typ& = FLOATTYPE: EXIT FUNCTION
-
-'fixed length string?
-IF LEFT$(ts$, 1) = "$" THEN
-    n$ = RIGHT$(ts$, LEN(ts$) - 1)
-    IF isuinteger(n$) = 0 THEN Give_Error "Invalid index after STRING * type": EXIT FUNCTION
-    b = VAL(n$)
-    IF b = 0 THEN Give_Error "Invalid index after STRING * type": EXIT FUNCTION
-    typname2typsize = b
-    typname2typ& = STRINGTYPE + ISFIXEDLENGTH
-    EXIT FUNCTION
-END IF
-
-'unsigned?
-IF LEFT$(ts$, 1) = "~" THEN unsgn = 1: ts$ = RIGHT$(ts$, LEN(ts$) - 1)
-
-'bit-type?
-IF LEFT$(ts$, 1) = "`" THEN
-    n$ = RIGHT$(ts$, LEN(ts$) - 1)
-    b = 1
-    IF n$ <> "" THEN
-        IF isuinteger(n$) = 0 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
-        b = VAL(n$)
-        IF b > 56 THEN Give_Error "Invalid index after _BIT type": EXIT FUNCTION
-    END IF
-    IF unsgn THEN typname2typ& = UBITTYPE + (b - 1) ELSE typname2typ& = BITTYPE + (b - 1)
-    EXIT FUNCTION
-END IF
-
-t = 0
-IF ts$ = "%%" THEN t = BYTETYPE
-IF ts$ = "%" THEN t = INTEGERTYPE
-IF ts$ = "&" THEN t = LONGTYPE
-IF ts$ = "&&" THEN t = INTEGER64TYPE
-IF ts$ = "%&" THEN t = OFFSETTYPE
-
-IF t THEN
-    IF unsgn THEN t = t + ISUNSIGNED
-    typname2typ& = t: EXIT FUNCTION
-END IF
-'not a valid symbol
-
-'type name?
-FOR i = 1 TO LEN(t$)
-    IF MID$(t$, i, 1) = sp THEN MID$(t$, i, 1) = " "
-NEXT
-IF t$ = "STRING" THEN typname2typ& = STRINGTYPE: EXIT FUNCTION
-
-IF LEFT$(t$, 9) = "STRING * " THEN
-
-    n$ = RIGHT$(t$, LEN(t$) - 9)
-
-    'constant check 2011
-    hashfound = 0
-    hashname$ = n$
-    hashchkflags = HASHFLAG_CONSTANT
-    hashres = HashFindRev(hashname$, hashchkflags, hashresflags, hashresref)
-    DO WHILE hashres
-        IF constsubfunc(hashresref) = subfuncn OR constsubfunc(hashresref) = 0 THEN
-            IF constdefined(hashresref) THEN
-                hashfound = 1
-                EXIT DO
-            END IF
-        END IF
-        IF hashres <> 1 THEN hashres = HashFindCont(hashresflags, hashresref) ELSE hashres = 0
-    LOOP
-    IF hashfound THEN
-        i2 = hashresref
-        t = consttype(i2)
-        IF t AND ISSTRING THEN Give_Error "Expected STRING * numeric-constant": EXIT FUNCTION
-        'convert value to general formats
-        IF t AND ISFLOAT THEN
-            v## = constfloat(i2)
-            v&& = v##
-            v~&& = v&&
-        ELSE
-            IF t AND ISUNSIGNED THEN
-                v~&& = constuinteger(i2)
-                v&& = v~&&
-                v## = v&&
-            ELSE
-                v&& = constinteger(i2)
-                v## = v&&
-                v~&& = v&&
-            END IF
-        END IF
-        IF v&& < 1 OR v&& > 9999999999 THEN Give_Error "STRING * out-of-range constant": EXIT FUNCTION
-        b = v&&
-        GOTO constantlenstr
-    END IF
-
-    IF isuinteger(n$) = 0 OR LEN(n$) > 10 THEN Give_Error "Invalid number/constant after STRING * type": EXIT FUNCTION
-    b = VAL(n$)
-    IF b = 0 OR LEN(n$) > 10 THEN Give_Error "Invalid number after STRING * type": EXIT FUNCTION
-    constantlenstr:
-    typname2typsize = b
-    typname2typ& = STRINGTYPE + ISFIXEDLENGTH
-    EXIT FUNCTION
-END IF
-
-IF t$ = "SINGLE" THEN typname2typ& = SINGLETYPE: EXIT FUNCTION
-IF t$ = "DOUBLE" THEN typname2typ& = DOUBLETYPE: EXIT FUNCTION
-IF t$ = "_FLOAT" THEN typname2typ& = FLOATTYPE: EXIT FUNCTION
-IF LEFT$(t$, 10) = "_UNSIGNED " THEN u = 1: t$ = RIGHT$(t$, LEN(t$) - 10)
-IF LEFT$(t$, 4) = "_BIT" THEN
-    IF t$ = "_BIT" THEN
-        IF u THEN typname2typ& = UBITTYPE ELSE typname2typ& = BITTYPE
-        EXIT FUNCTION
-    END IF
-    IF LEFT$(t$, 7) <> "_BIT * " THEN Give_Error "Expected _BIT * number": EXIT FUNCTION
-
-    n$ = RIGHT$(t$, LEN(t$) - 7)
-    IF isuinteger(n$) = 0 THEN Give_Error "Invalid size after _BIT *": EXIT FUNCTION
-    b = VAL(n$)
-    IF b = 0 OR b > 56 THEN Give_Error "Invalid size after _BIT *": EXIT FUNCTION
-    t = BITTYPE - 1 + b: IF u THEN t = t + ISUNSIGNED
-    typname2typ& = t
-    EXIT FUNCTION
-END IF
-
-t = 0
-IF t$ = "_BYTE" THEN t = BYTETYPE
-IF t$ = "INTEGER" THEN t = INTEGERTYPE
-IF t$ = "LONG" THEN t = LONGTYPE
-IF t$ = "_INTEGER64" THEN t = INTEGER64TYPE
-IF t$ = "_OFFSET" THEN t = OFFSETTYPE
-IF t THEN
-    IF u THEN t = t + ISUNSIGNED
-    typname2typ& = t
-    EXIT FUNCTION
-END IF
-IF u THEN EXIT FUNCTION '_UNSIGNED (nothing)
-
-'UDT?
-FOR i = 1 TO lasttype
-    IF t$ = RTRIM$(udtxname(i)) THEN
-        typname2typ& = ISUDT + ISPOINTER + i
-        EXIT FUNCTION
-    END IF
-NEXT
-
-'return 0 (failed)
-END FUNCTION
-
-FUNCTION uniquenumber&
-uniquenumbern = uniquenumbern + 1
-uniquenumber& = uniquenumbern
-END FUNCTION
-
-FUNCTION validlabel (LABEL2$)
-create = CreatingLabel: CreatingLabel = 0
-validlabel = 0
-IF LEN(LABEL2$) = 0 THEN EXIT FUNCTION
-clabel$ = LABEL2$
-label$ = UCASE$(LABEL2$)
-
-n = numelements(label$)
-
-IF n = 1 THEN
-
-    'Note: Reserved words and internal sub/function names are invalid
-    hashres = HashFind(label$, HASHFLAG_RESERVED + HASHFLAG_SUB + HASHFLAG_FUNCTION, hashresflags, hashresref)
-    DO WHILE hashres
-        IF hashresflags AND (HASHFLAG_SUB + HASHFLAG_FUNCTION) THEN
-            IF ids(hashresref).internal_subfunc THEN EXIT FUNCTION
-
-            IF hashresflags AND HASHFLAG_SUB THEN 'could be a label or a sub call!
-
-                'analyze format
-                IF ASC(ids(hashresref).specialformat) = 32 THEN
-                    IF ids(hashresref).args = 0 THEN onecommandsub = 1 ELSE onecommandsub = 0
-                ELSE
-                    IF ASC(ids(hashresref).specialformat) <> 91 THEN '"["
-                        onecommandsub = 0
-                    ELSE
-                        onecommandsub = 1
-                        a$ = RTRIM$(ids(hashresref).specialformat)
-                        b = 1
-                        FOR x = 2 TO LEN(a$)
-                            a = ASC(a$, x)
-                            IF a = 91 THEN b = b + 1
-                            IF a = 93 THEN b = b - 1
-                            IF b = 0 AND x <> LEN(a$) THEN onecommandsub = 0: EXIT FOR
-                        NEXT
-                    END IF
-                END IF
-                IF create <> 0 AND onecommandsub = 1 THEN
-                    IF INSTR(SubNameLabels$, sp + UCASE$(label$) + sp) = 0 THEN PossibleSubNameLabels$ = PossibleSubNameLabels$ + UCASE$(label$) + sp: EXIT FUNCTION 'treat as sub call
-                END IF
-
-            END IF 'sub name
-
-        ELSE
-            'reserved
-            EXIT FUNCTION
-        END IF
-        IF hashres <> 1 THEN hashres = HashFindCont(hashresflags, hashresref) ELSE hashres = 0
-    LOOP
-
-    'Numeric label?
-    'quasi numbers are possible, but:
-    'a) They may only have one decimal place
-    'b) They must be typed with the exact same characters to match
-    t$ = label$
-    'numeric?
-    a = ASC(t$)
-    IF (a >= 48 AND a <= 57) OR a = 46 THEN
-
-        'refer to original formatting if possible (eg. 1.10 not 1.1)
-        x = INSTR(t$, CHR$(44))
-        IF x THEN
-            t$ = RIGHT$(t$, LEN(t$) - x)
-        END IF
-
-        'note: The symbols ! and # are valid trailing symbols in QBASIC, regardless of the number's size,
-        '      so they are allowed in QB64 for compatibility reasons
-        addsymbol$ = removesymbol$(t$)
-        IF Error_Happened THEN EXIT FUNCTION
-        IF LEN(addsymbol$) THEN
-            IF INSTR(addsymbol$, "$") THEN EXIT FUNCTION
-            IF addsymbol$ <> "#" AND addsymbol$ <> "!" THEN addsymbol$ = ""
-        END IF
-
-        IF a = 46 THEN dp = 1
-        FOR x = 2 TO LEN(t$)
-            a = ASC(MID$(t$, x, 1))
-            IF a = 46 THEN dp = dp + 1
-            IF (a < 48 OR a > 57) AND a <> 46 THEN EXIT FUNCTION 'not numeric
-        NEXT x
-        IF dp > 1 THEN EXIT FUNCTION 'too many decimal points
-        IF dp = 1 AND LEN(t$) = 1 THEN EXIT FUNCTION 'cant have '.' as a label
-
-        tlayout$ = t$ + addsymbol$
-
-        i = INSTR(t$, "."): IF i THEN MID$(t$, i, 1) = "p"
-        IF addsymbol$ = "#" THEN t$ = t$ + "d"
-        IF addsymbol$ = "!" THEN t$ = t$ + "s"
-
-        IF LEN(t$) > 40 THEN EXIT FUNCTION
-
-        LABEL2$ = t$
-        validlabel = 1
-        EXIT FUNCTION
-    END IF 'numeric
-
-END IF 'n=1
-
-'Alpha-numeric label?
-'Build label
-
-'structure check (???.???.???.???)
-IF (n AND 1) = 0 THEN EXIT FUNCTION 'must be an odd number of elements
-FOR nx = 2 TO n - 1 STEP 2
-    a$ = getelement$(LABEL2$, nx)
-    IF a$ <> "." THEN EXIT FUNCTION 'every 2nd element must be a period
-NEXT
-
-'cannot begin with numeric
-c = ASC(clabel$): IF c >= 48 AND c <= 57 THEN EXIT FUNCTION
-
-'elements check
-label3$ = ""
-FOR nx = 1 TO n STEP 2
-    label$ = getelement$(clabel$, nx)
-
-    'alpha-numeric?
-    FOR x = 1 TO LEN(label$)
-        IF alphanumeric(ASC(label$, x)) = 0 THEN EXIT FUNCTION
-    NEXT
-
-    'build label
-    IF label3$ = "" THEN label3$ = UCASE$(label$): tlayout$ = label$ ELSE label3$ = label3$ + fix046$ + UCASE$(label$): tlayout$ = tlayout$ + "." + label$
-NEXT nx
-
-validlabel = 1
-LABEL2$ = label3$
-
-END FUNCTION
 
 SUB xend
 
@@ -25002,6 +33287,18 @@ IF n >= 2 THEN
             a2$ = getelement(ca$, i)
             IF a2$ = "(" THEN b = b + 1
             IF a2$ = ")" THEN b = b - 1
+
+            'Steve mod to fix an error with PRINT USING ".####^^^^";-1234 generating false results.
+            IF LEFT$(a2$, 3) = (CHR$(34) + ".#") THEN
+                a2$ = CHR$(34) + "#" + RIGHT$(a2$, LEN(a2$) - 1)
+                steve = LEN(a2$)
+                DO
+                    steve = steve - 1
+                LOOP UNTIL MID$(a2$, steve, 1) = "," OR steve = 0
+                steve$ = RIGHT$(a2$, LEN(a2$) - steve)
+                a2$ = LEFT$(a2$, steve) + LTRIM$(STR$(1 + VAL(steve$)))
+            END IF
+
             IF b = 0 THEN
                 IF a2$ = "," THEN Give_Error "Expected PRINT USING formatstring ; ...": EXIT SUB
                 IF a2$ = ";" THEN
@@ -25315,491 +33612,6 @@ PRINT #12, cleanupstringprocessingcall$ + "0);"
 layoutdone = 1: IF LEN(layout$) THEN layout$ = layout$ + sp + l$ ELSE layout$ = l$
 END SUB
 
-FUNCTION evaluateconst$ (a2$, t AS LONG)
-a$ = a2$
-IF debug THEN PRINT #9, "evaluateconst:in:" + a$
-
-
-DIM block(1000) AS STRING
-DIM status(1000) AS INTEGER
-'0=unprocessed (can be "")
-'1=processed
-DIM btype(1000) AS LONG 'for status=1 blocks
-
-'put a$ into blocks
-n = numelements(a$)
-FOR i = 1 TO n
-    block(i) = getelement$(a$, i)
-NEXT
-
-evalconstevalbrack:
-
-'find highest bracket level
-l = 0
-b = 0
-FOR i = 1 TO n
-    IF block(i) = "(" THEN b = b + 1
-    IF block(i) = ")" THEN b = b - 1
-    IF b > l THEN l = b
-NEXT
-
-'if brackets exist, evaluate that item first
-IF l THEN
-
-    b = 0
-    e$ = ""
-    FOR i = 1 TO n
-
-        IF block(i) = ")" THEN
-            IF b = l THEN block(i) = "": EXIT FOR
-            b = b - 1
-        END IF
-
-        IF b >= l THEN
-            IF LEN(e$) = 0 THEN e$ = block(i) ELSE e$ = e$ + sp + block(i)
-            block(i) = ""
-        END IF
-
-        IF block(i) = "(" THEN
-            b = b + 1
-            IF b = l THEN i2 = i: block(i) = ""
-        END IF
-
-    NEXT i
-
-    status(i) = 1
-    block(i) = evaluateconst$(e$, btype(i))
-    IF Error_Happened THEN EXIT FUNCTION
-    GOTO evalconstevalbrack
-
-END IF 'l
-
-'linear equation remains with some pre-calculated & non-pre-calc blocks
-
-'problem: type QBASIC assumes and type required to store calc. value may
-'         differ dramatically. in qbasic, this would have caused an overflow,
-'         but in qb64 it MUST work. eg. 32767% * 32767%
-'solution: all interger calc. will be performed using a signed _INTEGER64
-'          all float calc. will be performed using a _FLOAT
-
-'convert non-calc block numbers into binary form with QBASIC-like type
-FOR i = 1 TO n
-    IF status(i) = 0 THEN
-        IF LEN(block(i)) THEN
-
-            a = ASC(block(i))
-            IF (a = 45 AND LEN(block(i)) > 1) OR (a >= 48 AND a <= 57) THEN 'number?
-
-                'integers
-                e$ = RIGHT$(block(i), 3)
-                IF e$ = "~&&" THEN btype(i) = UINTEGER64TYPE - ISPOINTER: GOTO gotconstblkityp
-                IF e$ = "~%%" THEN btype(i) = UBYTETYPE - ISPOINTER: GOTO gotconstblkityp
-                e$ = RIGHT$(block(i), 2)
-                IF e$ = "&&" THEN btype(i) = INTEGER64TYPE - ISPOINTER: GOTO gotconstblkityp
-                IF e$ = "%%" THEN btype(i) = BYTETYPE - ISPOINTER: GOTO gotconstblkityp
-                IF e$ = "~%" THEN btype(i) = UINTEGERTYPE - ISPOINTER: GOTO gotconstblkityp
-                IF e$ = "~&" THEN btype(i) = ULONGTYPE - ISPOINTER: GOTO gotconstblkityp
-                e$ = RIGHT$(block(i), 1)
-                IF e$ = "%" THEN btype(i) = INTEGERTYPE - ISPOINTER: GOTO gotconstblkityp
-                IF e$ = "&" THEN btype(i) = LONGTYPE - ISPOINTER: GOTO gotconstblkityp
-
-                'ubit-type?
-                IF INSTR(block(i), "~`") THEN
-                    x = INSTR(block(i), "~`")
-                    IF x = LEN(block(i)) - 1 THEN block(i) = block(i) + "1"
-                    btype(i) = UBITTYPE - ISPOINTER - 1 + VAL(RIGHT$(block(i), LEN(block(i)) - x - 1))
-                    block(i) = _MK$(_INTEGER64, VAL(LEFT$(block(i), x - 1)))
-                    status(i) = 1
-                    GOTO gotconstblktyp
-                END IF
-
-                'bit-type?
-                IF INSTR(block(i), "`") THEN
-                    x = INSTR(block(i), "`")
-                    IF x = LEN(block(i)) THEN block(i) = block(i) + "1"
-                    btype(i) = BITTYPE - ISPOINTER - 1 + VAL(RIGHT$(block(i), LEN(block(i)) - x))
-                    block(i) = _MK$(_INTEGER64, VAL(LEFT$(block(i), x - 1)))
-                    status(i) = 1
-                    GOTO gotconstblktyp
-                END IF
-
-                'floats
-                IF INSTR(block(i), "E") THEN
-                    block(i) = _MK$(_FLOAT, VAL(block(i)))
-                    btype(i) = SINGLETYPE - ISPOINTER
-                    status(i) = 1
-                    GOTO gotconstblktyp
-                END IF
-                IF INSTR(block(i), "D") THEN
-                    block(i) = _MK$(_FLOAT, VAL(block(i)))
-                    btype(i) = DOUBLETYPE - ISPOINTER
-                    status(i) = 1
-                    GOTO gotconstblktyp
-                END IF
-                IF INSTR(block(i), "F") THEN
-                    block(i) = _MK$(_FLOAT, VAL(block(i)))
-                    btype(i) = FLOATTYPE - ISPOINTER
-                    status(i) = 1
-                    GOTO gotconstblktyp
-                END IF
-
-                Give_Error "Invalid CONST expression.1": EXIT FUNCTION
-
-                gotconstblkityp:
-                block(i) = LEFT$(block(i), LEN(block(i)) - LEN(e$))
-                block(i) = _MK$(_INTEGER64, VAL(block(i)))
-                status(i) = 1
-                gotconstblktyp:
-
-            END IF 'a
-
-            IF a = 34 THEN 'string?
-                'no changes need to be made to block(i) which is of format "CHARACTERS",size
-                btype(i) = STRINGTYPE - ISPOINTER
-                status(i) = 1
-            END IF
-
-        END IF 'len<>0
-    END IF 'status
-NEXT
-
-'remove NULL blocks
-n2 = 0
-FOR i = 1 TO n
-    IF block(i) <> "" THEN
-        n2 = n2 + 1
-        block(n2) = block(i)
-        status(n2) = status(i)
-        btype(n2) = btype(i)
-    END IF
-NEXT
-n = n2
-
-'only one block?
-IF n = 1 THEN
-    IF status(1) = 0 THEN Give_Error "Invalid CONST expression.2": EXIT FUNCTION
-    t = btype(1)
-    evaluateconst$ = block(1)
-    EXIT FUNCTION
-END IF 'n=1
-
-'evaluate equation (equation cannot contain any STRINGs)
-
-'[negation/not][variable]
-e$ = block(1)
-IF status(1) = 0 THEN
-    IF n <> 2 THEN Give_Error "Invalid CONST expression.4": EXIT FUNCTION
-    IF status(2) = 0 THEN Give_Error "Invalid CONST expression.5": EXIT FUNCTION
-    IF btype(2) AND ISSTRING THEN Give_Error "Invalid CONST expression.6": EXIT FUNCTION
-    o$ = block(1)
-
-    IF o$ = "ñ" THEN
-        IF btype(2) AND ISFLOAT THEN
-            r## = -_CV(_FLOAT, block(2))
-            evaluateconst$ = _MK$(_FLOAT, r##)
-        ELSE
-            r&& = -_CV(_INTEGER64, block(2))
-            evaluateconst$ = _MK$(_INTEGER64, r&&)
-        END IF
-        t = btype(2)
-        EXIT FUNCTION
-    END IF
-
-    IF o$ = "NOT" THEN
-        IF btype(2) AND ISFLOAT THEN
-            r&& = _CV(_FLOAT, block(2))
-        ELSE
-            r&& = _CV(_INTEGER64, block(2))
-        END IF
-        r&& = NOT r&&
-        t = btype(2)
-        IF t AND ISFLOAT THEN t = LONGTYPE - ISPOINTER 'markdown to LONG
-        evaluateconst$ = _MK$(_INTEGER64, r&&)
-        EXIT FUNCTION
-    END IF
-
-    Give_Error "Invalid CONST expression.7": EXIT FUNCTION
-END IF
-
-'[variable][bool-operator][variable]...
-
-'get first variable
-et = btype(1)
-ev$ = block(1)
-
-i = 2
-
-evalconstequ:
-
-'get operator
-IF i >= n THEN Give_Error "Invalid CONST expression.8": EXIT FUNCTION
-o$ = block(i)
-i = i + 1
-IF isoperator(o$) = 0 THEN Give_Error "Invalid CONST expression.9": EXIT FUNCTION
-IF i > n THEN Give_Error "Invalid CONST expression.10": EXIT FUNCTION
-
-'string/numeric mismatch?
-IF (btype(i) AND ISSTRING) <> (et AND ISSTRING) THEN Give_Error "Invalid CONST expression.11": EXIT FUNCTION
-
-IF et AND ISSTRING THEN
-    IF o$ <> "+" THEN Give_Error "Invalid CONST expression.12": EXIT FUNCTION
-    'concat strings
-    s1$ = RIGHT$(ev$, LEN(ev$) - 1)
-    s1$ = LEFT$(s1$, INSTR(s1$, CHR$(34)) - 1)
-    s1size = VAL(RIGHT$(ev$, LEN(ev$) - LEN(s1$) - 3))
-    s2$ = RIGHT$(block(i), LEN(block(i)) - 1)
-    s2$ = LEFT$(s2$, INSTR(s2$, CHR$(34)) - 1)
-    s2size = VAL(RIGHT$(block(i), LEN(block(i)) - LEN(s2$) - 3))
-    ev$ = CHR$(34) + s1$ + s2$ + CHR$(34) + "," + str2$(s1size + s2size)
-    GOTO econstmarkedup
-END IF
-
-'prepare left and right values
-IF et AND ISFLOAT THEN
-    linteger = 0
-    l## = _CV(_FLOAT, ev$)
-    l&& = l##
-ELSE
-    linteger = 1
-    l&& = _CV(_INTEGER64, ev$)
-    l## = l&&
-END IF
-IF btype(i) AND ISFLOAT THEN
-    rinteger = 0
-    r## = _CV(_FLOAT, block(i))
-    r&& = r##
-ELSE
-    rinteger = 1
-    r&& = _CV(_INTEGER64, block(i))
-    r## = r&&
-END IF
-
-IF linteger = 1 AND rinteger = 1 THEN
-    IF o$ = "+" THEN r&& = l&& + r&&: GOTO econstmarkupi
-    IF o$ = "-" THEN r&& = l&& - r&&: GOTO econstmarkupi
-    IF o$ = "*" THEN r&& = l&& * r&&: GOTO econstmarkupi
-    IF o$ = "^" THEN r## = l&& ^ r&&: GOTO econstmarkupf
-    IF o$ = "/" THEN r## = l&& / r&&: GOTO econstmarkupf
-    IF o$ = "\" THEN r&& = l&& \ r&&: GOTO econstmarkupi
-    IF o$ = "MOD" THEN r&& = l&& MOD r&&: GOTO econstmarkupi
-    IF o$ = "=" THEN r&& = l&& = r&&: GOTO econstmarkupi16
-    IF o$ = ">" THEN r&& = l&& > r&&: GOTO econstmarkupi16
-    IF o$ = "<" THEN r&& = l&& < r&&: GOTO econstmarkupi16
-    IF o$ = ">=" THEN r&& = l&& >= r&&: GOTO econstmarkupi16
-    IF o$ = "<=" THEN r&& = l&& <= r&&: GOTO econstmarkupi16
-    IF o$ = "<>" THEN r&& = l&& <> r&&: GOTO econstmarkupi16
-    IF o$ = "IMP" THEN r&& = l&& IMP r&&: GOTO econstmarkupi
-    IF o$ = "EQV" THEN r&& = l&& EQV r&&: GOTO econstmarkupi
-    IF o$ = "XOR" THEN r&& = l&& XOR r&&: GOTO econstmarkupi
-    IF o$ = "OR" THEN r&& = l&& OR r&&: GOTO econstmarkupi
-    IF o$ = "AND" THEN r&& = l&& AND r&&: GOTO econstmarkupi
-END IF
-
-IF o$ = "+" THEN r## = l## + r##: GOTO econstmarkupf
-IF o$ = "-" THEN r## = l## - r##: GOTO econstmarkupf
-IF o$ = "*" THEN r## = l## * r##: GOTO econstmarkupf
-IF o$ = "^" THEN r## = l## ^ r##: GOTO econstmarkupf
-IF o$ = "/" THEN r## = l## / r##: GOTO econstmarkupf
-IF o$ = "\" THEN r&& = l## \ r##: GOTO econstmarkupi32
-IF o$ = "MOD" THEN r&& = l## MOD r##: GOTO econstmarkupi32
-IF o$ = "=" THEN r&& = l## = r##: GOTO econstmarkupi16
-IF o$ = ">" THEN r&& = l## > r##: GOTO econstmarkupi16
-IF o$ = "<" THEN r&& = l## < r##: GOTO econstmarkupi16
-IF o$ = ">=" THEN r&& = l## >= r##: GOTO econstmarkupi16
-IF o$ = "<=" THEN r&& = l## <= r##: GOTO econstmarkupi16
-IF o$ = "<>" THEN r&& = l## <> r##: GOTO econstmarkupi16
-IF o$ = "IMP" THEN r&& = l## IMP r##: GOTO econstmarkupi32
-IF o$ = "EQV" THEN r&& = l## EQV r##: GOTO econstmarkupi32
-IF o$ = "XOR" THEN r&& = l## XOR r##: GOTO econstmarkupi32
-IF o$ = "OR" THEN r&& = l## OR r##: GOTO econstmarkupi32
-IF o$ = "AND" THEN r&& = l## AND r##: GOTO econstmarkupi32
-
-Give_Error "Invalid CONST expression.13": EXIT FUNCTION
-
-econstmarkupi16:
-et = INTEGERTYPE - ISPOINTER
-ev$ = _MK$(_INTEGER64, r&&)
-GOTO econstmarkedup
-
-econstmarkupi32:
-et = LONGTYPE - ISPOINTER
-ev$ = _MK$(_INTEGER64, r&&)
-GOTO econstmarkedup
-
-econstmarkupi:
-IF et <> btype(i) THEN
-    'keep unsigned?
-    u = 0: IF (et AND ISUNSIGNED) <> 0 AND (btype(i) AND ISUNSIGNED) <> 0 THEN u = 1
-    lb = et AND 511: rb = btype(i) AND 511
-    ob = 0
-    IF lb = rb THEN
-        IF (et AND ISOFFSETINBITS) <> 0 AND (btype(i) AND ISOFFSETINBITS) <> 0 THEN ob = 1
-        b = lb
-    END IF
-    IF lb > rb THEN
-        IF (et AND ISOFFSETINBITS) <> 0 THEN ob = 1
-        b = lb
-    END IF
-    IF lb < rb THEN
-        IF (btype(i) AND ISOFFSETINBITS) <> 0 THEN ob = 1
-        b = rb
-    END IF
-    et = b
-    IF ob THEN et = et + ISOFFSETINBITS
-    IF u THEN et = et + ISUNSIGNED
-END IF
-ev$ = _MK$(_INTEGER64, r&&)
-GOTO econstmarkedup
-
-econstmarkupf:
-lfb = 0: rfb = 0
-lib = 0: rib = 0
-IF et AND ISFLOAT THEN lfb = et AND 511 ELSE lib = et AND 511
-IF btype(i) AND ISFLOAT THEN rfb = btype(i) AND 511 ELSE rib = btype(i) AND 511
-f = 32
-IF lib > 16 OR rib > 16 THEN f = 64
-IF lfb > 32 OR rfb > 32 THEN f = 64
-IF lib > 32 OR rib > 32 THEN f = 256
-IF lfb > 64 OR rfb > 64 THEN f = 256
-et = ISFLOAT + f
-ev$ = _MK$(_FLOAT, r##)
-
-econstmarkedup:
-
-i = i + 1
-
-IF i <= n THEN GOTO evalconstequ
-
-t = et
-evaluateconst$ = ev$
-
-END FUNCTION
-
-FUNCTION typevalue2symbol$ (t)
-
-IF t AND ISSTRING THEN
-    IF t AND ISFIXEDLENGTH THEN Give_Error "Cannot convert expression type to symbol": EXIT FUNCTION
-    typevalue2symbol$ = "$"
-    EXIT FUNCTION
-END IF
-
-s$ = ""
-
-IF t AND ISUNSIGNED THEN s$ = "~"
-
-b = t AND 511
-
-IF t AND ISOFFSETINBITS THEN
-    IF b > 1 THEN s$ = s$ + "`" + str2$(b) ELSE s$ = s$ + "`"
-    typevalue2symbol$ = s$
-    EXIT FUNCTION
-END IF
-
-IF t AND ISFLOAT THEN
-    IF b = 32 THEN s$ = "!"
-    IF b = 64 THEN s$ = "#"
-    IF b = 256 THEN s$ = "##"
-    typevalue2symbol$ = s$
-    EXIT FUNCTION
-END IF
-
-IF b = 8 THEN s$ = s$ + "%%"
-IF b = 16 THEN s$ = s$ + "%"
-IF b = 32 THEN s$ = s$ + "&"
-IF b = 64 THEN s$ = s$ + "&&"
-typevalue2symbol$ = s$
-
-END FUNCTION
-
-
-FUNCTION id2fulltypename$
-t = id.t
-IF t = 0 THEN t = id.arraytype
-size = id.tsize
-bits = t AND 511
-IF t AND ISUDT THEN
-    a$ = RTRIM$(udtxcname(t AND 511))
-    id2fulltypename$ = a$: EXIT FUNCTION
-END IF
-IF t AND ISSTRING THEN
-    IF t AND ISFIXEDLENGTH THEN a$ = "STRING * " + str2(size) ELSE a$ = "STRING"
-    id2fulltypename$ = a$: EXIT FUNCTION
-END IF
-IF t AND ISOFFSETINBITS THEN
-    IF bits > 1 THEN a$ = "_BIT * " + str2(bits) ELSE a$ = "_BIT"
-    IF t AND ISUNSIGNED THEN a$ = "_UNSIGNED " + a$
-    id2fulltypename$ = a$: EXIT FUNCTION
-END IF
-IF t AND ISFLOAT THEN
-    IF bits = 32 THEN a$ = "SINGLE"
-    IF bits = 64 THEN a$ = "DOUBLE"
-    IF bits = 256 THEN a$ = "_FLOAT"
-ELSE 'integer-based
-    IF bits = 8 THEN a$ = "_BYTE"
-    IF bits = 16 THEN a$ = "INTEGER"
-    IF bits = 32 THEN a$ = "LONG"
-    IF bits = 64 THEN a$ = "_INTEGER64"
-    IF t AND ISUNSIGNED THEN a$ = "_UNSIGNED " + a$
-END IF
-id2fulltypename$ = a$
-END FUNCTION
-
-FUNCTION symbol2fulltypename$ (s2$)
-'note: accepts both symbols and type names
-s$ = s2$
-
-IF LEFT$(s$, 1) = "~" THEN
-    u = 1
-    IF LEN(typ$) = 1 THEN Give_Error "Expected ~...": EXIT FUNCTION
-    s$ = RIGHT$(s$, LEN(s$) - 1)
-    u$ = "_UNSIGNED "
-END IF
-
-IF s$ = "%%" THEN t$ = u$ + "_BYTE": GOTO gotsym2typ
-IF s$ = "%" THEN t$ = u$ + "INTEGER": GOTO gotsym2typ
-IF s$ = "&" THEN t$ = u$ + "LONG": GOTO gotsym2typ
-IF s$ = "&&" THEN t$ = u$ + "_INTEGER64": GOTO gotsym2typ
-IF s$ = "%&" THEN t$ = u$ + "_OFFSET": GOTO gotsym2typ
-
-IF LEFT$(s$, 1) = "`" THEN
-    IF LEN(s$) = 1 THEN
-        t$ = u$ + "_BIT * 1"
-        GOTO gotsym2typ
-    END IF
-    n$ = RIGHT$(s$, LEN(s$) - 1)
-    IF isuinteger(n$) = 0 THEN Give_Error "Expected number after symbol `": EXIT FUNCTION
-    t$ = u$ + "_BIT * " + n$
-    GOTO gotsym2typ
-END IF
-
-IF u = 1 THEN Give_Error "Expected type symbol after ~": EXIT FUNCTION
-
-IF s$ = "!" THEN t$ = "SINGLE": GOTO gotsym2typ
-IF s$ = "#" THEN t$ = "DOUBLE": GOTO gotsym2typ
-IF s$ = "##" THEN t$ = "_FLOAT": GOTO gotsym2typ
-IF s$ = "$" THEN t$ = "STRING": GOTO gotsym2typ
-
-IF LEFT$(s$, 1) = "$" THEN
-    n$ = RIGHT$(s$, LEN(s$) - 1)
-    IF isuinteger(n$) = 0 THEN Give_Error "Expected number after symbol $": EXIT FUNCTION
-    t$ = "STRING * " + n$
-    GOTO gotsym2typ
-END IF
-
-t$ = s$
-
-gotsym2typ:
-
-IF RIGHT$(" " + t$, 5) = " _BIT" THEN t$ = t$ + " * 1" 'clarify (_UNSIGNED) _BIT as (_UNSIGNED) _BIT * 1
-
-FOR i = 1 TO LEN(t$)
-    IF ASC(t$, i) = ASC(sp) THEN ASC(t$, i) = 32
-NEXT
-
-symbol2fulltypename$ = t$
-
-END FUNCTION
-
 SUB lineinput3load (f$)
 OPEN f$ FOR BINARY AS #1
 l = LOF(1)
@@ -25810,86 +33622,11 @@ CLOSE #1
 lineinput3index = 1
 END SUB
 
-FUNCTION lineinput3$
-'returns CHR$(13) if no more lines are available
-l = LEN(lineinput3buffer$)
-IF lineinput3index > l THEN lineinput3$ = CHR$(13): EXIT FUNCTION
-c13 = INSTR(lineinput3index, lineinput3buffer$, CHR$(13))
-c10 = INSTR(lineinput3index, lineinput3buffer$, CHR$(10))
-IF c10 = 0 AND c13 = 0 THEN
-    lineinput3$ = MID$(lineinput3buffer$, lineinput3index, l - lineinput3index + 1)
-    lineinput3index = l + 1
-    EXIT FUNCTION
-END IF
-IF c10 = 0 THEN c10 = 2147483647
-IF c13 = 0 THEN c13 = 2147483647
-IF c10 < c13 THEN
-    '10 before 13
-    lineinput3$ = MID$(lineinput3buffer$, lineinput3index, c10 - lineinput3index)
-    lineinput3index = c10 + 1
-    IF lineinput3index <= l THEN
-        IF ASC(MID$(lineinput3buffer$, lineinput3index, 1)) = 13 THEN lineinput3index = lineinput3index + 1
-    END IF
-ELSE
-    '13 before 10
-    lineinput3$ = MID$(lineinput3buffer$, lineinput3index, c13 - lineinput3index)
-    lineinput3index = c13 + 1
-    IF lineinput3index <= l THEN
-        IF ASC(MID$(lineinput3buffer$, lineinput3index, 1)) = 10 THEN lineinput3index = lineinput3index + 1
-    END IF
-END IF
-END FUNCTION
-
-FUNCTION getfilepath$ (f$)
-FOR i = LEN(f$) TO 1 STEP -1
-    a$ = MID$(f$, i, 1)
-    IF a$ = pathsep$ THEN
-        getfilepath$ = LEFT$(f$, i)
-        EXIT FUNCTION
-    END IF
-NEXT
-getfilepath$ = ""
-END FUNCTION
-
-FUNCTION eleucase$ (a$)
-'this function upper-cases all elements except for quoted strings
-'check first element
-IF LEN(a$) = 0 THEN EXIT FUNCTION
-i = 1
-IF ASC(a$) = 34 THEN
-    i2 = INSTR(a$, sp)
-    IF i2 = 0 THEN eleucase$ = a$: EXIT FUNCTION
-    a2$ = LEFT$(a$, i2 - 1)
-    i = i2
-END IF
-'check other elements
-sp34$ = sp + CHR$(34)
-IF i < LEN(a$) THEN
-    DO WHILE INSTR(i, a$, sp34$)
-        i2 = INSTR(i, a$, sp34$)
-        a2$ = a2$ + UCASE$(MID$(a$, i, i2 - i + 1)) 'everything prior including spacer
-        i3 = INSTR(i2 + 1, a$, sp): IF i3 = 0 THEN i3 = LEN(a$) ELSE i3 = i3 - 1
-        a2$ = a2$ + MID$(a$, i2 + 1, i3 - (i2 + 1) + 1) 'everything from " to before next spacer or end
-        i = i3 + 1
-        IF i > LEN(a$) THEN EXIT DO
-    LOOP
-END IF
-a2$ = a2$ + UCASE$(MID$(a$, i, LEN(a$) - i + 1))
-eleucase$ = a2$
-END FUNCTION
-
-
-
-'NEW IDE SPECIFIC
-'------------------------------ IDE MODULE ------------------------------
-
-DEFSNG A-Z
 SUB getxymouse
 STATIC oldmousex, oldmousey, oldmousebutton1
 mousewheel = 0
 
 DO WHILE _MOUSEINPUT
-
     mousex = _MOUSEX
     mousey = _MOUSEY
     IF _MOUSEBUTTON(1) THEN mousebutton1 = 1 ELSE mousebutton1 = 0
@@ -25906,3782 +33643,8 @@ DO WHILE _MOUSEINPUT
     oldmousebutton1 = mousebutton1
 
     IF change = 1 THEN EXIT SUB
-
 LOOP
 END SUB
-
-DEFLNG A-Z
-
-
-'DIM SHARED idecommand AS STRING
-'DIM SHARED idereturn AS STRING
-'DIM SHARED ideerror AS LONG
-'DIM SHARED idecompiled AS LONG
-'DIM SHARED idemode
-'DIM SHARED ideerrorline AS LONG 'set by qb64-error(...) to the line number it would have reported, this number
-'is later passed to the ide in message #8
-'DIM SHARED idemessage AS STRING 'set by qb64-error(...) to the error message to be reported, this
-'is later passed to the ide in message #8
-
-'the function ?=ide(?) should always be passed 0, it returns a message code number, any further information
-'is passed back in idereturn
-
-'message code numbers:
-'0  no ide present  (auto defined array ide() return 0)
-
-'1  launch ide & with passed filename (compiler->ide)
-
-'2  begin new compilation with returned line of code (compiler<-ide)
-'   [2][line of code]
-
-'3  request next line (compiler->ide)
-'   [3]
-
-'4  next line of code returned (compiler<-ide)
-'   [4][line of code]
-
-'5  no more lines of code exist (compiler<-ide)
-'   [5]
-
-'6  code is OK/ready (compiler->ide)
-'   [6]
-
-'7  repass the code from the beginning (compiler->ide)
-'   [7]
-
-'8  an error has occurred with 'this' message on 'this' line(compiler->ide)
-'   [8][error message][line as LONG]
-
-'9  C++ compile (if necessary) and run with 'this' name (compiler<-ide)
-'   [9][name(no path, no .bas)]
-
-'10 The line requires more time to process
-'       Pass-back 'line of code' using method [4] when ready
-'   [10][line of code]
-
-'11 ".EXE file created" message
-
-'12     The name of the exe I'll create is '...' (compiler->ide)
-'   [12][exe name without .exe]
-
-'255    A qb error happened in the IDE (compiler->ide)
-'   note: detected by the fact that ideerror was not set to 0
-'   [255]
-
-FUNCTION ide (ignore)
-'Note: ide is a function which optimizes the interaction between the IDE and compiler (ide2)
-'      by avoiding unnecessary bloat associated with entering the main IDE function 'ide2'
-
-IF ASC(idecommand$) = 3 THEN 'request next line (compiler->ide)
-    IF idecompiledline < iden THEN
-        IF idecompiledline < idesy OR idecompiledline > idesy + (idewy - 9) THEN 'off screen?
-            IF _EXIT AND 1 THEN ideexit = 1
-            IF ideexit = 0 THEN
-                GetInput 'check for new input
-                IF iCHANGED = 0 AND mB = 0 THEN
-
-                    '-------------------- layout considerations --------------------
-                    'previous line was OK, so use layout if available
-                    IF ideautolayout <> 0 OR ideautoindent <> 0 THEN
-                        IF LEN(layout$) THEN
-
-                            'calculate recommended indent level
-                            l = LEN(layout$)
-                            FOR i = 1 TO l
-                                IF ASC(layout$, i) <> 32 OR i = l THEN
-                                    IF ASC(layout$, i) = 32 THEN
-                                        layout$ = "": indent = i
-                                    ELSE
-                                        indent = i - 1
-                                        layout$ = RIGHT$(layout$, LEN(layout$) - i + 1)
-                                    END IF
-                                    EXIT FOR
-                                END IF
-                            NEXT
-
-                            IF ideautolayout THEN
-                                layout2$ = layout$: i2 = 1
-                                ignoresp = 0
-                                FOR i = 1 TO LEN(layout$)
-                                    a = ASC(layout$, i)
-                                    IF a = 34 THEN
-                                        ignoresp = ignoresp + 1: IF ignoresp = 2 THEN ignoresp = 0
-                                    END IF
-                                    IF ignoresp = 0 THEN
-                                        IF a = sp_asc THEN ASC(layout2$, i2) = 32: i2 = i2 + 1: GOTO skipchar
-                                        IF a = sp2_asc THEN GOTO skipchar
-                                    END IF
-                                    ASC(layout2$, i2) = a: i2 = i2 + 1
-                                    skipchar:
-                                NEXT
-                                layout$ = LEFT$(layout2$, i2 - 1)
-                            END IF
-
-                            IF ideautoindent = 0 THEN
-                                'note: can assume auto-format
-                                'calculate old indent (if any)
-                                indent = 0
-                                l = LEN(idecompiledline$)
-                                FOR i = 1 TO l
-                                    IF ASC(idecompiledline$, i) <> 32 OR i = l THEN
-                                        indent = i - 1
-                                        EXIT FOR
-                                    END IF
-                                NEXT
-                                indent$ = SPACE$(indent)
-                            ELSE
-                                indent$ = SPACE$(indent * ideautoindentsize)
-                            END IF
-
-                            IF ideautolayout = 0 THEN
-                                'note: can assume auto-indent
-                                l = LEN(idecompiledline$)
-                                layout$ = ""
-                                FOR i = 1 TO l
-                                    IF ASC(idecompiledline$, i) <> 32 OR i = l THEN
-                                        layout$ = RIGHT$(idecompiledline$, l - i + 1)
-                                        EXIT FOR
-                                    END IF
-                                NEXT
-                            END IF
-
-                            IF LEN(layout$) THEN
-                                layout$ = indent$ + layout$
-                                IF idecompiledline$ <> layout$ THEN
-                                    idesetline idecompiledline, layout$
-                                END IF
-                            END IF 'len(layout$) after modification
-
-                        END IF 'len(layout$)
-
-                    END IF 'using layout/indent
-                    '---------------------------------------------------------------
-
-                    idecompiledline = idecompiledline + 1
-                    idecompiledline$ = idegetline(idecompiledline)
-                    ide = 4
-                    idereturn$ = idecompiledline$
-                    EXIT FUNCTION
-                END IF
-                IF iCHANGED THEN iCHECKLATER = 1
-            END IF 'ideexit
-        END IF 'not on screen
-    END IF 'idecompiledline<iden
-END IF
-
-ide = ide2(0)
-END FUNCTION
-
-FUNCTION ide2 (ignore)
-c$ = idecommand$
-
-'report any IDE errors which have occurred
-IF ideerror THEN
-    mustdisplay = 1
-    IF ideerror = 1 THEN ideerrormessage "IDE module error"
-    IF ideerror = 2 THEN ideerrormessage "File not found"
-    IF ideerror = 3 THEN ideerrormessage "File access error": CLOSE #150
-    IF ideerror = 4 THEN ideerrormessage "Path not found"
-END IF
-ideerror = 1 'unknown IDE error
-
-IF LEFT$(c$, 1) = CHR$(12) THEN
-    f$ = RIGHT$(c$, LEN(c$) - 1)
-    LOCATE , , 0
-    COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
-    LOCATE idewy - 3, 2
-
-    IF os$ = "LNX" THEN
-        PRINT "Creating executable file named " + CHR$(34) + f$ + extension$ + CHR$(34) + "..."
-    ELSE
-        PRINT "Creating .EXE file named " + CHR$(34) + f$ + extension$ + CHR$(34) + "..."
-    END IF
-
-    PCOPY 3, 0
-    ide2 = 9: idereturn$ = f$
-    EXIT FUNCTION
-END IF
-
-IF c$ = CHR$(100) THEN 'special call for next line (usually for the purpose of line continuation)
-    idecompiledline = idecompiledline + 1 'must increment (to trigger no more lines avail. message later)
-    IF idecompiledline < iden THEN
-        idecompiledline$ = idegetline(idecompiledline)
-        idereturn$ = idecompiledline$
-    ELSE
-        idecompiledline$ = ""
-        idereturn$ = idecompiledline$ 'no more lines
-    END IF
-    EXIT FUNCTION
-END IF
-
-IF idelaunched = 0 THEN
-    idelaunched = 1
-
-    WIDTH idewx, idewy
-    _FONT 16
-
-    'change codepage
-    IF idecpindex THEN
-        FOR x = 128 TO 255
-            u = VAL("&H" + MID$(idecp(idecpindex), x * 8 + 1, 8) + "&")
-            IF u = 0 THEN u = 9744
-            _MAPUNICODE u TO x
-        NEXT
-    END IF
-
-    IF idecustomfont THEN
-        idecustomfonthandle = _LOADFONT(idecustomfontfile$, idecustomfontheight, "MONOSPACE")
-        IF idecustomfonthandle = -1 THEN
-            'failed! - revert to default settings
-            idecustomfont = 0: idecustomfontfile$ = "c:\windows\fonts\lucon.ttf": idecustomfontheight = 21
-        ELSE
-            _FONT idecustomfonthandle
-        END IF
-    END IF
-
-    m = 1: i = 0
-    IdeMakeFileMenu
-
-    m = m + 1: i = 0
-    menu$(m, i) = "Edit": i = i + 1
-    menu$(m, i) = "Cu#t  Shift+Del or CTRL+X": i = i + 1
-    menu$(m, i) = "#Copy  Ctrl+Ins or CTRL+C": i = i + 1
-    menu$(m, i) = "#Paste  Shift+Ins or CTRL+V": i = i + 1
-    menu$(m, i) = "Cl#ear  Del": i = i + 1
-    menu$(m, i) = "Select #All  CTRL+A": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "#Undo  CTRL+Z": i = i + 1
-    menu$(m, i) = "#Redo  CTRL+Y": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "Comment (add ')": i = i + 1
-    menu$(m, i) = "Uncomment (remove ')": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "New #SUB...": i = i + 1
-    menu$(m, i) = "New #FUNCTION...": i = i + 1
-    menusize(m) = i - 1
-
-    m = m + 1: i = 0
-    menu$(m, i) = "View": i = i + 1
-    menu$(m, i) = "#SUBs...  F2": i = i + 1
-    menusize(m) = i - 1
-
-    m = m + 1: i = 0
-    menu$(m, i) = "Search": i = i + 1
-    menu$(m, i) = "#Find...": i = i + 1
-    menu$(m, i) = "#Repeat Last Find  (Shift+) F3": i = i + 1
-    menu$(m, i) = "#Change...": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "Add/Remove #Bookmark  ALT+Left": i = i + 1
-    menu$(m, i) = "#Next Bookmark  ALT+Down": i = i + 1
-    menu$(m, i) = "#Previous Bookmark  ALT+Up": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "#Go to line...": i = i + 1
-
-    menusize(m) = i - 1
-
-    m = m + 1: i = 0
-    menu$(m, i) = "Run": i = i + 1
-    menu$(m, i) = "#Start  F5": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "Start (#Detached)  Ctrl+F5": i = i + 1
-    IF os$ = "LNX" THEN
-        menu$(m, i) = "Make E#xecutable Only  F11": i = i + 1
-    ELSE
-        menu$(m, i) = "Make E#XE Only  F11": i = i + 1
-    END IF
-    menusize(m) = i - 1
-
-    m = m + 1: i = 0
-    menu$(m, i) = "Options": i = i + 1
-    menu$(m, i) = "#Display...": i = i + 1
-    menu$(m, i) = "#Language...": i = i + 1
-    menu$(m, i) = "#Code layout...": i = i + 1
-    IF os$ = "WIN" THEN
-        menu$(m, i) = "#Update...": i = i + 1
-    END IF
-    menu$(m, i) = "#Backup/Undo...": i = i + 1
-    menusize(m) = i - 1
-
-    m = m + 1: i = 0
-    menu$(m, i) = "Help": i = i + 1
-    menu$(m, i) = "#View  Shift+F1": i = i + 1
-    menu$(m, i) = "#Contents page": i = i + 1
-    menu$(m, i) = "Keyword #index": i = i + 1
-    menu$(m, i) = "#Keywords by usage": i = i + 1
-    menu$(m, i) = "ASCII c#hart": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "#Update current page": i = i + 1
-    menu$(m, i) = "Update all #pages": i = i + 1
-    menu$(m, i) = "-": i = i + 1
-    menu$(m, i) = "#About...": i = i + 1
-    menusize(m) = i - 1
-
-
-
-    menus = m
-
-    IF os$ = "WIN" THEN
-        idepathsep$ = "\"
-    END IF
-    IF os$ = "LNX" THEN
-        idepathsep$ = "/"
-    END IF
-
-    initmouse
-    a$ = "QWERTYUIOP????ASDFGHJKL?????ZXCVBNM": x = 16: FOR i = 1 TO LEN(a$): idealtcode(ASC(MID$(a$, i, 1))) = x: x = x + 1: NEXT
-
-    ideroot$ = idezgetroot$
-    idepath$ = ideroot$
-
-    'new blank text field
-    idet$ = MKL$(0) + MKL$(0): idel = 1: ideli = 1: iden = 1: IdeBmkN = 0
-    ideunsaved = -1
-    idechangemade = 1
-
-    redraweverything:
-
-    idesx = 1
-    idesy = 1
-    idecx = 1
-    idecy = 1
-
-    redraweverything2:
-
-
-    menubar$ = "   "
-    FOR i = 1 TO menus - 1
-        menubar$ = menubar$ + menu$(i, 0) + "  "
-    NEXT
-    menubar$ = menubar$ + SPACE$(idewx - LEN(menubar$) - LEN(menu$(i, 0)) - 2)
-    menubar$ = menubar$ + menu$(i, 0) + "  "
-
-
-    SCREEN , , 3, 0
-    VIEW PRINT 1 TO idewy + idesubwindow
-    LOCATE , , , 8, 8
-
-    'static background
-    COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
-    COLOR 15, 1: idebox 1, 2, idewx, idewy - 5
-
-
-    COLOR 15, 1: idebox 1, idewy - 4, idewx, 5
-    'edit corners
-    COLOR 15, 1: LOCATE idewy - 4, 1: PRINT "Ã";: LOCATE idewy - 4, idewx: PRINT "´";
-
-    IF idehelp = 1 THEN
-        COLOR 15, 0: idebox 1, idewy, idewx, idesubwindow + 1
-        COLOR 15, 0: LOCATE idewy, 1: PRINT "Ã";: LOCATE idewy, idewx: PRINT "´";
-        COLOR 15, 0: LOCATE idewy, idewx - 3: PRINT "´XÃ";
-    END IF
-
-    'add status title
-    COLOR 15, 1: LOCATE idewy - 4, (idewx - 8) / 2: PRINT " Status "
-    'status bar
-    COLOR 0, 3: LOCATE idewy + idesubwindow, 1: PRINT SPACE$(idewx);
-    q = idevbar(idewx, idewy - 3, 3, 1, 1)
-    q = idevbar(idewx, 3, idewy - 8, 1, 1)
-    q = idehbar(2, idewy - 5, idewx - 2, 1, 1)
-
-
-    DEF SEG = 0
-    ideshowtext
-
-    IF retval = 1 THEN GOTO skipload
-
-    'restore autosave?
-    'undo/redo
-    OPEN tmpdir$ + "autosave.bin" FOR BINARY AS #150
-    IF LOF(150) = 1 THEN
-        CLOSE #150
-        r$ = iderestore$
-        PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-        IF r$ = "Y" THEN
-            'restore
-            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
-            IF LOF(150) THEN
-                ideunsaved = 1
-                h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
-                'get backup
-                SEEK #150, p2
-                GET #150, , l&
-                GET #150, , idesx: GET #150, , idesy
-                GET #150, , idecx: GET #150, , idecy
-                GET #150, , ideselect: GET #150, , ideselectx1: GET #150, , ideselecty1
-                GET #150, , iden
-                GET #150, , idel
-                GET #150, , ideli
-                'bookmark info [v2]
-                GET #150, , IdeBmkN: REDIM IdeBmk(IdeBmkN + 1) AS IdeBmkType
-                FOR bi = 1 TO IdeBmkN: GET #150, , IdeBmk(bi).y: GET #150, , IdeBmk(bi).x: NEXT
-                GET #150, , x&: idet$ = SPACE$(x&): GET #150, , idet$
-            END IF
-            CLOSE #150
-        END IF
-    ELSE
-        CLOSE #150
-    END IF
-
-    IF ideunsaved <> 1 THEN 'no file restored (takes priority over loading file from command line)
-        IF LEFT$(c$, 1) = CHR$(1) THEN 'load file
-            f$ = RIGHT$(c$, LEN(c$) - 1)
-            IF FileHasExtension(f$) = 0 THEN f$ = f$ + ".bas"
-            path$ = idezgetfilepath$(ideroot$, f$)
-
-            '(copied from ideopen)
-            ideerror = 2
-            OPEN path$ + idepathsep$ + f$ FOR INPUT AS #150: CLOSE #150
-            ideerror = 3
-            idepath$ = path$
-            lineinput3load path$ + idepathsep$ + f$
-            idet$ = SPACE$(LEN(lineinput3buffer) * 8)
-            i2 = 1
-            n = 0
-            chrtab$ = CHR$(9)
-            space1$ = " ": space2$ = "  ": space3$ = "   ": space4$ = "    "
-            chr7$ = CHR$(7): chr11$ = CHR$(11): chr12$ = CHR$(12): chr28$ = CHR$(28): chr29$ = CHR$(29): chr30$ = CHR$(30): chr31$ = CHR$(31)
-            DO
-                a$ = lineinput3$
-                l = LEN(a$)
-                IF l THEN asca = ASC(a$) ELSE asca = -1
-                IF asca <> 13 THEN
-                    IF asca <> -1 THEN
-                        'fix tabs
-                        ideopenfixtabsx:
-                        x = INSTR(a$, chrtab$)
-                        IF x THEN
-                            x2 = (x - 1) MOD 4
-                            IF x2 = 0 THEN a$ = LEFT$(a$, x - 1) + space4$ + RIGHT$(a$, l - x): l = l + 3: GOTO ideopenfixtabsx
-                            IF x2 = 1 THEN a$ = LEFT$(a$, x - 1) + space3$ + RIGHT$(a$, l - x): l = l + 2: GOTO ideopenfixtabsx
-                            IF x2 = 2 THEN a$ = LEFT$(a$, x - 1) + space2$ + RIGHT$(a$, l - x): l = l + 1: GOTO ideopenfixtabsx
-                            IF x2 = 3 THEN a$ = LEFT$(a$, x - 1) + space1$ + RIGHT$(a$, l - x): GOTO ideopenfixtabsx
-                        END IF
-                    END IF 'asca<>-1
-                    MID$(idet$, i2, l + 8) = MKL$(l) + a$ + MKL$(l): i2 = i2 + l + 8: n = n + 1
-                END IF
-            LOOP UNTIL asca = 13
-            lineinput3buffer = ""
-            iden = n: IF n = 0 THEN idet$ = MKL$(0) + MKL$(0): iden = 1 ELSE idet$ = LEFT$(idet$, i2 - 1)
-            IdeBmkN = 0
-            ideerror = 1
-            ideprogname = f$: _TITLE ideprogname + " - QB64"
-            IdeImportBookmarks idepath$ + idepathsep$ + ideprogname$
-            IdeAddRecent idepath$ + idepathsep$ + ideprogname$
-        END IF 'message 1
-
-    END IF 'no restore
-
-    skipload:
-
-
-
-
-
-
-
-
-
-
-
-END IF 'idelaunched
-
-IF c$ = CHR$(3) THEN
-    skipdisplay = 1 'assume .../starting already displayed
-    sendnextline = 1
-
-    'previous line was OK, so use layout if available
-
-    IF ideautolayout = 0 AND ideautoindent = 0 THEN
-
-        layout$ = ""
-        idelayoutallow = 0
-
-    ELSE
-
-        IF LEN(layout$) THEN
-
-            'calculate recommended indent level
-            FOR i = 1 TO LEN(layout$)
-                IF ASC(layout$, i) <> 32 OR i = LEN(layout$) THEN
-                    indent = i - 1
-                    layout$ = RIGHT$(layout$, LEN(layout$) - i + 1)
-                    EXIT FOR
-                END IF
-            NEXT
-
-            IF ideautolayout THEN
-                spacelayout:
-                ignoresp = 0
-                FOR i = 1 TO LEN(layout$)
-                    IF ASC(layout$, i) = 34 THEN
-                        ignoresp = ignoresp + 1: IF ignoresp = 2 THEN ignoresp = 0
-                    END IF
-                    IF ignoresp = 0 THEN
-                        IF MID$(layout$, i, 1) = sp THEN MID$(layout$, i, 1) = " "
-                        IF MID$(layout$, i, 1) = sp2 THEN layout$ = LEFT$(layout$, i - 1) + RIGHT$(layout$, LEN(layout$) - i): GOTO spacelayout
-                    END IF
-                NEXT
-            END IF
-
-            IF ideautoindent = 0 THEN
-                'note: can assume auto-format
-                'calculate old indent (if any)
-                a$ = idecompiledline$
-                indent = 0
-                FOR i = 1 TO LEN(a$)
-                    IF ASC(a$, i) <> 32 OR i = LEN(a$) THEN
-                        indent = i - 1
-                        EXIT FOR
-                    END IF
-                NEXT
-                indent$ = SPACE$(indent)
-            ELSE
-                indent$ = SPACE$(indent * ideautoindentsize)
-            END IF
-
-            IF ideautolayout = 0 THEN
-                'note: can assume auto-indent
-                a$ = idecompiledline$
-                layout$ = ""
-                FOR i = 1 TO LEN(a$)
-                    IF ASC(a$, i) <> 32 OR i = LEN(a$) THEN
-                        layout$ = RIGHT$(a$, LEN(a$) - i + 1)
-                        EXIT FOR
-                    END IF
-                NEXT
-            END IF
-
-            layout$ = indent$ + layout$
-
-            IF idecy <> idecompiledline OR idelayoutallow <> 0 THEN
-                idelayoutallow = 0
-
-                IF idecompiledline$ <> layout$ THEN
-                    idesetline idecompiledline, layout$
-                    IF idecompiledline >= idesy AND idecompiledline <= (idesy + 16) THEN skipdisplay = 0
-                END IF
-
-            ELSE
-
-                IF idecompiledline$ <> layout$ THEN
-                    idecurrentlinelayout = layout$
-                    idecurrentlinelayouti = idecy
-                END IF
-
-            END IF
-
-        END IF 'len(layout$)
-
-    END IF 'using layout/indent
-
-END IF '3
-
-IF c$ = CHR$(6) THEN
-    idecompiling = 0
-    ready = 1
-    IF ideautorun THEN ideautorun = 0: GOTO idemrunspecial
-END IF
-
-IF c$ = CHR$(11) THEN
-    idecompiling = 0
-    ready = 1
-    ideautorun = 0
-    showexecreated = 1
-END IF
-
-IF c$ = CHR$(7) THEN
-    skipdisplay = 1 'assume .../starting already displayed
-    idecompiledline = 0
-    sendnextline = 1
-END IF
-
-IF LEFT$(c$, 1) = CHR$(8) THEN
-    idecompiling = 0
-    failed = 1
-    ideautorun = 0
-END IF
-
-passback = 0
-IF LEFT$(c$, 1) = CHR$(10) THEN 'passback
-    skipdisplay = 1 'assume .../starting already displayed
-    sendnextline = 1
-    idecompiledline = idecompiledline - 1
-    passback = 1
-    passback$ = RIGHT$(c$, LEN(c$) - 1)
-END IF
-
-IF mustdisplay THEN skipdisplay = 0
-
-IF skipdisplay = 0 THEN
-
-    LOCATE , , 0
-
-    'note: menu bar shouldn't need repairing!
-    'COLOR 0, 7: LOCATE 1, 1: PRINT menubar$; 'repair menu bar
-
-    IF c$ <> CHR$(3) THEN
-        COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
-        IF ready THEN LOCATE idewy - 3, 2: PRINT "OK"; 'report OK status
-        IF showexecreated THEN
-            showexecreated = 0
-            LOCATE idewy - 3, 2
-
-            IF os$ = "LNX" THEN
-                PRINT "Executable file created";
-            ELSE
-                PRINT ".EXE file created";
-            END IF
-
-        END IF
-    END IF
-
-END IF 'skipdisplay
-
-idefocusline = 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'main loop
-DO
-    ideloop:
-
-    idedeltxt 'removes temporary strings (typically created by guibox commands) by setting an index to 0
-
-    IF skipdisplay = 0 THEN
-
-        LOCATE , , 0
-
-        'update title of main window
-        COLOR 15, 1: LOCATE 2, 2: PRINT STRING$(idewx - 2, "Ä");
-        IF LEN(ideprogname) THEN a$ = ideprogname ELSE a$ = "Untitled" + tempfolderindexstr$
-        a$ = " " + a$ + " "
-        COLOR 1, 7: LOCATE 2, ((idewx / 2) - 1) - (LEN(a$) - 1) \ 2: PRINT a$;
-
-        'update search bar
-        LOCATE 2, idewx - 30
-        COLOR 15, 1: PRINT "´";
-        COLOR 3, 1: PRINT "Find[                     ]";
-        COLOR 15, 1: PRINT "Ã";
-        f$ = idefindtext
-        IF LEN(f$) > 20 THEN
-            f$ = "úúú" + RIGHT$(f$, 17)
-        END IF
-        LOCATE 2, idewx - 28 + 4: COLOR 3, 1: PRINT f$
-        findtext$ = f$
-
-        'alter cursor style to match insert mode
-        IF ideinsert THEN LOCATE , , , 0, 31 ELSE LOCATE , , , 8, 8
-
-        'display error message (if necessary)
-        IF failed THEN
-            COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
-
-            'scrolling unavailable, but may span multiple lines
-            a$ = MID$(c$, 2, LEN(c$) - 5)
-
-
-            l = CVL(RIGHT$(c$, 4)): IF l <> 0 THEN idefocusline = l
-
-            x = 1
-            y = idewy - 3
-
-            IF l <> 0 AND idecy = l THEN a$ = a$ + " on current line"
-
-            FOR i = 1 TO LEN(a$)
-                x = x + 1: IF x = idewx THEN x = 2: y = y + 1
-                IF y > idewy - 1 THEN EXIT FOR
-                LOCATE y, x
-                PRINT CHR$(ASC(a$, i));
-            NEXT
-
-            IF l <> 0 AND idecy <> l THEN
-                a$ = " on line" + STR$(l)
-                COLOR 11, 1
-                FOR i = 1 TO LEN(a$)
-                    x = x + 1: IF x = idewx THEN x = 2: y = y + 1
-                    IF y > idewy - 1 THEN EXIT FOR
-                    LOCATE y, x
-                    PRINT CHR$(ASC(a$, i));
-                NEXT
-            END IF
-
-        END IF
-
-        IF idechangemade THEN
-            COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
-
-
-            LOCATE idewy - 3, 2: PRINT "..."; 'assume new compilation will begin
-        END IF
-
-        ideshowtext
-
-        IF idehelp THEN
-
-
-
-
-            Help_ShowText
-
-            q = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
-            q = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
-
-            'COLOR 0, 7: LOCATE idewy, (idewx - 6) / 2: PRINT " Help "
-            'create and draw back string
-            Back_Str$ = STRING$(1000, 0)
-            Back_Str_I$ = STRING$(4000, 0)
-            top = UBOUND(back$)
-            FOR x = 1 TO top
-                n$ = Back_Name$(x)
-                IF x = Help_Back_Pos THEN p = LEN(Back_Str$)
-                Back_Str$ = Back_Str$ + " "
-                Back_Str_I$ = Back_Str_I$ + MKL$(x)
-                FOR x2 = 1 TO LEN(n$)
-                    Back_Str$ = Back_Str$ + CHR$(ASC(n$, x2))
-                    Back_Str_I$ = Back_Str_I$ + MKL$(x)
-                NEXT
-                Back_Str$ = Back_Str$ + " "
-                Back_Str_I$ = Back_Str_I$ + MKL$(x)
-
-                IF x <> top THEN
-                    Back_Str$ = Back_Str$ + CHR$(0)
-                    Back_Str_I$ = Back_Str_I$ + MKL$(0)
-                END IF
-            NEXT
-            Back_Str$ = Back_Str$ + STRING$(1000, 0)
-            Back_Str_I$ = Back_Str_I$ + STRING$(4000, 0)
-            Back_Str_Pos = p - idewx \ 2 + (LEN(Back_Name$(Help_Back_Pos)) + 2) \ 2 + 3
-            'COLOR 1, 2
-            'LOCATE idewy, 2: PRINT MID$(Back_Str$, Back_Str_Pos, idewx - 5)
-            LOCATE idewy, 2
-            FOR x = Back_Str_Pos TO Back_Str_Pos + idewx - 6
-                i = CVL(MID$(Back_Str_I$, (x - 1) * 4 + 1, 4))
-                a = ASC(Back_Str$, x)
-                IF a THEN
-                    COLOR 0, 7
-                    IF i < Help_Back_Pos THEN COLOR 9, 7
-                    IF i > Help_Back_Pos THEN COLOR 9, 7
-                    PRINT CHR$(a);
-                ELSE
-                    COLOR 15, 0
-                    PRINT "Ä";
-                END IF
-            NEXT
-            'Help_Search_Str
-            a$ = ""
-            IF LEN(Help_Search_Str) THEN
-                a$ = Help_Search_Str
-                IF LEN(a$) > 20 THEN a$ = "úúú" + RIGHT$(a$, 17)
-                a$ = "[" + a$ + "](DELETE=next)"
-            END IF
-            IdeInfo$ = a$
-        END IF
-
-        IF IdeSystem = 2 THEN 'override cursor position
-            SCREEN , , 0, 0
-            LOCATE 2, idewx - 28 + 4 + LEN(findtext$)
-            SCREEN , , 3, 0
-        END IF
-
-        IF IdeSystem = 3 THEN 'override cursor position
-            SCREEN , , 0, 0
-            _PALETTECOLOR 2, _RGB32(24, 24, 24)
-            LOCATE Help_cy - Help_sy + Help_wy1, Help_cx - Help_sx + Help_wx1
-            SCREEN , , 3, 0
-        END IF
-
-
-        IF IdeSystem <> 3 THEN IdeInfo$ = ""
-
-        'show info message (if any)
-        a$ = IdeInfo$
-        IF LEN(a$) > 60 THEN a$ = LEFT$(a$, 57) + "úúú"
-        IF LEN(a$) < 60 THEN a$ = a$ + SPACE$(60 - LEN(a$))
-        COLOR 0, 3: LOCATE idewy + idesubwindow, 2
-        PRINT a$;
-
-        LOCATE , , 1
-
-
-        PCOPY 3, 0
-
-    END IF 'skipdisplay
-
-
-
-    IF idechangemade THEN
-
-        IF idelayoutallow THEN idelayoutallow = idelayoutallow - 1
-
-        idecurrentlinelayouti = 0 'invalidate
-
-        idechangemade = 0
-        IF ideunsaved = -1 THEN ideunsaved = 0 ELSE ideunsaved = 1
-
-        IF idenoundo = 0 THEN
-
-            'undo/redo
-            'build data so it can be written in a single write (a backup requirement)
-            a$ = ""
-            a$ = a$ + MKL$(idesx) + MKL$(idesy) 'screen position
-            a$ = a$ + MKL$(idecx) + MKL$(idecy) 'cursor position
-            a$ = a$ + MKL$(ideselect) + MKL$(ideselectx1) + MKL$(ideselecty1) 'selection state & position
-            a$ = a$ + MKL$(iden) 'number of lines
-            a$ = a$ + MKL$(idel) 'selected line in buffer
-            a$ = a$ + MKL$(ideli) 'selected line offset in buffer
-            'bookmark info [v2]
-            a$ = a$ + MKL$(IdeBmkN)
-            FOR bi = 1 TO IdeBmkN: a$ = a$ + MKL$(IdeBmk(bi).y) + MKL$(IdeBmk(bi).x): NEXT
-            l& = LEN(idet$)
-            a$ = a$ + MKL$(l&) 'data size
-            a$ = MKL$(l& + LEN(a$)) + a$ + idet$ + MKL$(l& + LEN(a$)) 'header, data & encapsulation (reverse navigatable list)
-
-            'add undo event
-
-            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
-            '[oldest state entry][newest state entry][top-most entry(ignore if no wrapping required)]
-            h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
-
-            IF idemergeundo THEN
-                idemergeundo = 0
-                IF p2 <> p1 THEN 'can it be moved back?
-                    IF p2 = 13 THEN
-                        p2 = plast
-                    ELSE
-                        'get offset of previous message
-                        GET #150, p2 - 4, pp2l
-                        p2 = p2 - 4 - pp2l - 4
-                    END IF
-                END IF
-            END IF
-
-            IF p1 = 0 THEN 'not init
-                p1 = 13: p2 = 13
-            ELSE
-                IF p2 >= p1 THEN
-                    'no wrap
-                    'should we extend?
-                    IF p2 >= idebackupsize * 1000000 THEN
-                        'can't extend
-                        'set p2 as top-most
-                        plast = p2
-                        p2 = 13
-                        'can new state (a$) fit before p1?
-                        DO WHILE (p2 + LEN(a$) - 1) >= p1
-                            IF p1 = ideundobase THEN ideundobase = -1
-                            'no, so move p1 to next entry
-                            'note: it can be assumed that p1, being near/at beginning, won't have to wrap when being moved forward
-                            GET #150, p1, p1l
-                            p1 = p1 + 4 + p1l + 4
-                        LOOP
-                        'p1 & p2 ready
-                    ELSE
-                        'extend
-                        'find size of p2 event
-                        GET #150, p2, p2l
-                        p2 = p2 + 4 + p2l + 4
-                        'p1 & p2 ready
-                    END IF
-                ELSE
-                    'wrap
-                    'find size of p2 event
-                    GET #150, p2, p2l
-                    op2 = p2
-                    p2 = p2 + 4 + p2l + 4
-                    'can new state (a$) fit before p1?
-                    DO WHILE (p2 + LEN(a$) - 1) >= p1
-                        IF p1 = ideundobase THEN ideundobase = -1
-                        'no, so move p1 to next entry
-                        IF p1 = plast THEN
-                            p1 = 13
-                            EXIT DO
-                        ELSE
-                            GET #150, p1, p1l
-                            p1 = p1 + 4 + p1l + 4
-                        END IF
-                    LOOP
-                    'should we extend?
-                    IF p2 >= idebackupsize * 1000000 THEN
-                        'can't extend
-                        'set op2 as top-most
-                        plast = op2
-                        p2 = 13
-                        'can new state (a$) fit before p1?
-                        DO WHILE (p2 + LEN(a$) - 1) >= p1
-                            IF p1 = ideundobase THEN ideundobase = -1
-                            'no, so move p1 to next entry
-                            'note: it can be assumed that p1, being near/at beginning, won't have to wrap when being moved forward
-                            GET #150, p1, p1l
-                            p1 = p1 + 4 + p1l + 4
-                        LOOP
-                    END IF
-                    'p1 & p2 ready
-                END IF
-            END IF
-
-            'update p1,p2,plast
-            h$ = MKL$(p1) + MKL$(p2) + MKL$(plast)
-            PUT #150, 1, h$
-
-            'add new state
-            PUT #150, p2, a$
-
-            CLOSE #150
-
-            ideundopos = p2
-            IF ideundobase = 0 THEN ideundobase = ideundopos
-
-            'set undo flag once
-            IF ideundoflag = 0 THEN
-                ideundoflag = 1
-                OPEN tmpdir$ + "autosave.bin" FOR BINARY AS #150: a$ = CHR$(1): PUT #150, , a$: CLOSE #150 'set flag
-            END IF
-
-        ELSE
-            idenoundo = 0
-        END IF
-
-        'begin new compilation
-        ideautorun = 0
-        idecompiling = 1
-        ide2 = 2
-        idecompiledline$ = idegetline(1)
-        idereturn$ = idecompiledline$
-        idecompiledline = 1
-        EXIT FUNCTION
-    END IF 'idechangemade
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    change = 0
-    waitforinput:
-
-    IF idecurrentlinelayouti THEN
-        IF idecy <> idecurrentlinelayouti THEN
-            idesetline idecurrentlinelayouti, idecurrentlinelayout$
-            idecurrentlinelayouti = 0
-            change = 1 'simulate a change to force a screen update
-        END IF
-    END IF
-
-    exitvalue = _EXIT
-    IF (exitvalue AND 1) <> 0 OR ideexit <> 0 THEN ideexit = 0: GOTO quickexit
-
-    IF UpdateHandle THEN
-        ContinueDownloads
-        IF DL(UpdateHandle).State = 2 THEN 'download complete
-            update 0
-            UpdateHandle = 0
-            change = 1 'simulate a change to force a screen update
-        ELSE
-            IF ABS(TIMER - ideupdatetimerval) >= 5 THEN 'give up after 5 seconds
-                CLOSE DL(UpdateHandle).Handle: DL(UpdateHandle).State = 0: UpdateHandle = 0
-            END IF
-        END IF
-    END IF
-
-    GetInput
-    IF iCHANGED THEN
-        IF (mX <> mox OR mY <> moy) AND mB <> 0 THEN change = 1 'dragging mouse
-        IF mB <> mOB THEN change = 1 'button changed
-        IF mB2 <> mOB2 THEN change = 1 'button changed
-        IF mCLICK <> 0 OR mCLICK2 <> 0 THEN change = 1
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF KSTATECHANGED THEN change = 1
-    END IF
-    IF mB <> 0 AND idembmonitor = 1 THEN change = 1
-    IF mB = 0 THEN idemouseselect = 0: idembmonitor = 0
-
-
-    IF KALT THEN 'alt held
-
-        IF idealthighlight = 0 AND KALTPRESS = -1 THEN
-            'highlist first letter of each menu item
-            idealthighlight = 1
-            LOCATE , , 0: COLOR 15, 7: x = 4
-            FOR i = 1 TO menus
-                LOCATE 1, x: PRINT LEFT$(menu$(i, 0), 1);
-                x = x + LEN(menu$(i, 0)) + 2
-                IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 1
-            NEXT
-            ideentermenu = 1 'alt has just been pressed, so any next keystroke could enter a menu)
-            'IF change = 0 THEN
-            skipdisplay = 0: GOTO ideloop 'force update so cursor will be restored to correct position
-        END IF
-
-    ELSE 'alt not held
-
-        IF idealthighlight = 1 THEN
-            'remove highlight
-            idealthighlight = 0
-            LOCATE , , 0: COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
-            IF ideentermenu = 1 AND KCONTROL = 0 THEN 'alt was pressed then released
-                LOCATE , , , 8, 8: skipdisplay = 0: ideentermenu = 0: GOTO startmenu
-            END IF
-        END IF
-
-    END IF 'alt not held
-
-    IF change = 0 THEN
-
-        'continue compilation?
-        IF idecompiling THEN
-            IF sendnextline THEN
-                IF idecompiledline < iden THEN
-                    idecompiledline = idecompiledline + 1
-                    ide2 = 4
-                    IF passback THEN
-                        idecompiledline$ = passback$
-                        idereturn$ = idecompiledline$
-                    ELSE
-                        idecompiledline$ = idegetline(idecompiledline)
-                        idereturn$ = idecompiledline$
-                    END IF
-                    EXIT FUNCTION
-                ELSE
-                    'finished compilation
-                    ide2 = 5 'end of program reached, what next?
-                    'could return:
-                    'i) 6 code ready for export/run
-                    'ii) 7 repass required (if so send data from the beginning again)
-                    EXIT FUNCTION
-                END IF
-            END IF
-        END IF
-
-        _LIMIT 16
-
-        GOTO waitforinput
-    END IF 'change=0
-
-    ideentermenu = 0
-
-    ideundocombo = ideundocombo - 1
-    IF ideundocombo < 0 THEN ideundocombo = 0
-
-    skipdisplay = 0
-
-    'IdeSystem independent routines
-
-    IF mCLICK THEN
-        IF mX >= 2 AND mX <= idewx AND mY >= idewy - 3 AND mY <= idewy - 1 THEN
-            IF SCREEN(mY, mX, 1) = 11 + 1 * 16 THEN
-                IF idefocusline THEN idecx = 1: idecy = idefocusline: ideselect = 0: GOTO specialchar
-            END IF
-        END IF
-    END IF
-
-    IF KB = KEY_F5 AND KCTRL THEN 'run detached
-        idemdetached:
-        iderunmode = 1
-        GOTO idemrunspecial
-    END IF
-
-    IF KB = KEY_F11 THEN 'make exe only
-        idemexe:
-        iderunmode = 2
-        GOTO idemrunspecial
-    END IF
-
-    IF KB = KEY_F5 THEN 'Note: F5 or SHIFT+F5 accepted
-        idemrun:
-        iderunmode = 0 'standard run
-        idemrunspecial:
-
-        'run program
-        IF ready THEN
-
-            LOCATE , , 0
-            COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
-
-            IF idecompiled THEN
-
-                IF iderunmode = 2 THEN
-                    LOCATE idewy - 3, 2
-
-                    IF os$ = "LNX" THEN
-                        PRINT "Already created executable file!";
-                    ELSE
-                        PRINT "Already created .EXE file!";
-                    END IF
-
-                    GOTO specialchar
-                END IF
-
-                LOCATE idewy - 3, 2: PRINT "Starting program...";
-            ELSE
-
-                IF os$ = "LNX" THEN
-                    LOCATE idewy - 3, 2: PRINT "Creating executable file...";
-                ELSE
-                    LOCATE idewy - 3, 2: PRINT "Creating .EXE file...";
-                END IF
-
-            END IF
-            PCOPY 3, 0
-
-            'send run request
-            'prepare name
-            IF ideprogname$ = "" THEN
-                f$ = "untitled" + tempfolderindexstr$
-            ELSE
-                f$ = ideprogname$
-                f$ = RemoveFileExtension$(f$)
-            END IF
-            ide2 = 9: idereturn$ = f$
-            EXIT FUNCTION
-        END IF
-        'not ready!
-        IF failed = 1 THEN GOTO specialchar
-        'assume still compiling ...
-        ideautorun = 1
-
-        'correct status message
-        LOCATE , , 0
-        COLOR 15, 1: LOCATE idewy - 3, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 2, 2: PRINT SPACE$(idewx - 2);: LOCATE idewy - 1, 2: PRINT SPACE$(idewx - 2); 'clear status window
-
-
-        LOCATE idewy - 3, 2: PRINT "Checking program... (editing program will cancel request)";
-
-        'must move the cursor back to its correct location
-        ideshowtext
-        LOCATE , , 1
-        PCOPY 3, 0
-
-        GOTO specialchar
-    END IF
-
-    LOCATE , , 0
-    LOCATE , , , 8, 8
-
-    IF mCLICK AND idemouseselect = 0 THEN
-        IF mY = 1 THEN
-            x = 3
-            FOR i = 1 TO menus
-                x2 = LEN(menu$(i, 0)) + 2
-                IF mX >= x AND mX < x + x2 THEN
-                    m = i
-                    GOTO showmenu
-                END IF
-                x = x + x2
-                IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 2
-            NEXT
-        END IF
-    END IF
-
-    FOR i = 1 TO menus
-        a$ = UCASE$(LEFT$(menu$(i, 0), 1))
-        IF KALT AND UCASE$(K$) = a$ THEN
-            m = i
-            LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
-            PCOPY 3, 0
-            GOTO showmenu
-        END IF
-    NEXT
-
-
-    IF KB = KEY_F3 THEN
-        IF IdeSystem = 3 THEN IdeSystem = 1
-        idemf3:
-        IF idefindtext$ <> "" THEN
-            IF KSHIFT THEN idefindinvert = 1
-            IdeAddSearched idefindtext
-            idefindagain
-        ELSE
-            GOTO idefindjmp
-        END IF
-        GOTO specialchar
-    END IF
-
-    IF KSHIFT AND KB = KEY_F1 THEN
-        IF idehelp = 0 THEN
-            idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
-            Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
-            idehelp = 1
-            skipdisplay = 0
-            IdeSystem = 3
-            retval = 1: GOTO redraweverything2
-        END IF
-        IdeSystem = 3
-        GOTO specialchar
-    END IF
-
-
-    'Scroll bar code goes here
-    STATIC Help_Scrollbar, Help_Scrollbar_Method
-    '1=arrow less, 2=arrow more, 3=dragging 'bit', 4=clicking in space
-    IF mB = 0 THEN Help_Scrollbar = 0
-    IF idehelp THEN
-        IF IdeSystem = 3 THEN
-            'q = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
-            'q = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
-            IF mCLICK THEN
-                IF mX >= 2 AND mX <= idewx - 1 AND mY = idewy + idesubwindow - 1 THEN
-                    Help_Scrollbar = 1
-                    v = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
-                    IF v <> mX THEN Help_Scrollbar_Method = 3 ELSE Help_Scrollbar_Method = 4
-                    IF mX = 2 THEN Help_Scrollbar_Method = 1
-                    IF mX = idewx - 1 THEN Help_Scrollbar_Method = 2
-                END IF
-                IF mY >= idewy + 1 AND mY <= idewy + idesubwindow - 2 AND mX = idewx THEN
-                    Help_Scrollbar = 2
-                    v = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
-                    IF v <> mY THEN Help_Scrollbar_Method = 3 ELSE Help_Scrollbar_Method = 4
-                    IF mY = idewy + 1 THEN Help_Scrollbar_Method = 1
-                    IF mY = idewy + idesubwindow - 2 THEN Help_Scrollbar_Method = 2
-                END IF
-            END IF 'mclick
-
-            IF Help_Scrollbar THEN
-                idembmonitor = 1
-                IF Help_Scrollbar_Method = 1 THEN
-                    IF Help_Scrollbar = 1 THEN KB = KEY_LEFT: idewait 'fall through...
-                    IF Help_Scrollbar = 2 THEN KB = KEY_UP: idewait 'fall through...
-                END IF
-                IF Help_Scrollbar_Method = 2 THEN
-                    IF Help_Scrollbar = 1 THEN KB = KEY_RIGHT: idewait 'fall through...
-                    IF Help_Scrollbar = 2 THEN KB = KEY_DOWN: idewait 'fall through...
-                END IF
-                IF Help_Scrollbar_Method = 3 THEN
-                    IF Help_Scrollbar = 1 THEN
-                        v = idehbar(2, idewy + idesubwindow - 1, idewx - 2, Help_cx, help_w + 1)
-                        IF mX < v THEN
-                            Help_cx = Help_cx - 8
-                            IF Help_cx < 1 THEN Help_cx = 1
-                            IF Help_sx > Help_cx THEN Help_sx = Help_cx
-                            idewait
-                        END IF
-                        IF mX > v THEN
-                            Help_cx = Help_cx + 8
-                            IF Help_cx > help_w + 1 THEN Help_cx = help_w + 1
-                            idewait
-                        END IF
-                    END IF
-                    IF Help_Scrollbar = 2 THEN
-                        v = idevbar(idewx, idewy + 1, idesubwindow - 2, Help_cy, help_h + 1)
-                        IF mY < v THEN KB = KEY_PAGEUP: idewait 'fall through...
-                        IF mY > v THEN KB = KEY_PAGEDOWN: idewait 'fall through...
-                    END IF
-
-                END IF
-
-
-
-                IF Help_Scrollbar_Method = 4 THEN
-                    IF Help_Scrollbar = 1 THEN
-                        IF help_w > 1 THEN
-                            IF mX <= 3 THEN
-                                Help_sx = 1: Help_cx = 1
-                            ELSEIF mX >= idewx - 2 THEN
-                                Help_sx = help_w + 1: Help_cx = help_w + 1
-                            ELSE
-                                x = mX
-                                p! = x - 4 + .5 '4 (the min pos) becomes .5
-                                p! = p! / (idewx - 3 - 3)
-                                i = p! * (help_w) + 1
-                                Help_sx = i: Help_cx = i
-                            END IF
-                        END IF
-                    END IF
-                    IF Help_Scrollbar = 2 THEN
-                        IF help_h > 1 THEN
-
-                            IF mY <= idewy + 2 THEN
-                                Help_cy = 1
-                            ELSEIF mY >= idewy + idesubwindow - 3 THEN
-                                Help_cy = help_h + 1
-                            ELSE
-                                y = mY
-                                p! = y - idewy - 3 + .5
-                                p! = p! / (idesubwindow - 3 - 3)
-                                i = p! * (help_h) + 1
-                                Help_cy = i
-                            END IF
-                            'fix cursor
-                            IF Help_cx < 1 THEN Help_cx = 1
-                            IF Help_cx > help_w + 1 THEN Help_cx = help_w + 1
-                            IF Help_cy < 1 THEN Help_cy = 1
-                            IF Help_cy > help_h + 1 THEN Help_cy = help_h + 1
-                            'screen follows cursor
-                            IF Help_cx < Help_sx THEN Help_sx = Help_cx
-                            IF Help_cx >= Help_sx + Help_ww THEN Help_sx = Help_cx - Help_ww + 1
-                            IF Help_cy < Help_sy THEN Help_sy = Help_cy
-                            IF Help_cy >= Help_sy + Help_wh THEN Help_sy = Help_cy - Help_wh + 1
-                            'fix screen
-                            IF Help_sx < 1 THEN Help_sx = 1
-                            IF Help_sy < 1 THEN Help_sy = 1
-                        END IF
-                    END IF
-                END IF
-
-                'IF mB AND idemouseselect = 2 THEN
-                '    'move vbar scroller (idecy) to appropriate position
-                '    IF iden > 1 THEN
-                '        IF mY <= 4 THEN idecy = 1
-                '        IF mY >= idewy - 7 THEN idecy = iden
-                '        IF mY > 4 AND mY < idewy - 7 THEN
-                '            y = mY
-                '            p! = y - 3 - 2 + .5
-                '            p! = p! / ((idewy - 8) - 4)
-                '            i = p! * (iden - 1) + 1
-                '            idecy = i
-                '        END IF
-                '    END IF
-                'END IF
-
-
-                IF mCLICK THEN mCLICK = 0
-            END IF
-
-        END IF 'system=3
-    END IF 'idehelp
-
-
-
-
-    'IdeSystem specific code goes here
-
-    IF mCLICK THEN
-        IF mY = 2 AND mX > idewx - 30 AND mX < idewx - 1 THEN 'inside text box
-            IF mX <= idewx - 28 + 2 THEN
-                IF LEN(idefindtext) = 0 THEN
-                    IdeSystem = 2 'no search string, so begin editing
-                ELSE
-                    IdeAddSearched idefindtext
-                    IdeSystem = 1: GOTO idemf3 'F3 functionality
-                END IF
-            ELSE
-                IF mX = idewx - 3 THEN
-                    PCOPY 0, 3
-                    f$ = idesearchedbox
-                    IF LEN(f$) THEN idefindtext = f$
-                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                    IF LEN(f$) THEN GOTO idemf3 'F3 functionality
-                    GOTO ideloop
-                ELSE
-                    IF IdeSystem = 2 THEN idefindtext = "" 'clicking on the text field again clears text
-                    IdeSystem = 2
-                END IF
-            END IF
-        END IF
-    END IF
-
-    'IdeSystem
-
-    IF KB = KEY_F6 THEN 'switch windows
-        IF idehelp = 1 THEN
-            IF IdeSystem = 3 THEN
-                IdeSystem = 1
-            ELSE
-                IdeSystem = 3
-            END IF
-        END IF
-    END IF
-
-    IF idehelp = 1 THEN 'switch windows?
-        IF mCLICK THEN
-            IF IdeSystem = 3 THEN
-                IF mY >= 2 AND mY < idewy THEN
-                    IdeSystem = 1
-                END IF
-            ELSE
-                IF mY >= idewy AND mY < idewy + idesubwindow THEN
-                    IdeSystem = 3
-                END IF
-            END IF
-        END IF
-    END IF
-
-    IF IdeSystem = 2 THEN 'certain keys transfer control
-        z = 0
-        IF KB = KEY_UP THEN z = 1
-        IF KB = KEY_DOWN THEN z = 1
-        IF KB = KEY_PAGEUP THEN z = 1
-        IF KB = KEY_PAGEDOWN THEN z = 1
-        IF mWHEEL THEN z = 1
-        IF z = 1 THEN IdeSystem = 1
-    END IF
-
-    IF IdeSystem = 2 THEN
-
-        IF (KSHIFT AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "V") THEN 'paste from clipboard
-            clip$ = _CLIPBOARD$ 'read clipboard
-            x = INSTR(clip$, CHR$(13))
-            IF x THEN clip$ = LEFT$(clip$, x - 1)
-            x = INSTR(clip$, CHR$(10))
-            IF x THEN clip$ = LEFT$(clip$, x - 1)
-            IF LEN(clip$) THEN
-                idefindtext = clip$
-                GOTO specialchar
-            END IF
-        END IF
-
-        IF ((KCTRL AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "C")) THEN 'copy to clipboard
-            IF LEN(idefindtext) THEN _CLIPBOARD$ = idefindtext
-            GOTO specialchar
-        END IF
-
-        IF LEN(K$) = 1 THEN
-            IF K$ = CHR$(27) THEN
-                IdeSystem = 1
-                GOTO specialchar
-            END IF
-            IF ASC(K$) = 13 THEN
-                IF LEN(idefindtext) THEN IdeAddSearched idefindtext: GOTO idemf3 'F3 functionality
-                GOTO specialchar
-            END IF
-            IF ASC(K$) = 8 THEN
-                IF LEN(idefindtext) THEN idefindtext = LEFT$(idefindtext, LEN(idefindtext) - 1)
-                GOTO specialchar
-            END IF
-            IF ASC(K$) < 32 THEN GOTO specialchar 'block control characters
-
-            idefindtext = idefindtext + K$
-            GOTO specialchar
-        END IF
-
-        IF mCLICK THEN
-            IF mX > 1 AND mX < idewx AND mY > 2 AND mY < (idewy - 5) THEN 'inside text box
-                IdeSystem = 1
-            END IF
-        END IF
-
-        GOTO specialchar
-    END IF
-
-    IF IdeSystem = 3 THEN
-
-        IF mCLICK OR K$ = CHR$(27) THEN
-            IF (mY = idewy AND mX = idewx - 2) OR K$ = CHR$(27) THEN 'close help
-
-
-                'IF idesubwindow THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
-                'idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
-
-                idewy = idewy + idesubwindow
-                idehelp = 0
-                idesubwindow = 0
-                skipdisplay = 0
-                IdeSystem = 1
-                retval = 1: GOTO redraweverything2
-
-            END IF
-        END IF
-
-
-        IF mCLICK THEN
-            IF mY = idewy THEN
-
-                sx = 2
-                FOR x = Back_Str_Pos TO Back_Str_Pos + idewx - 6
-                    IF mX = sx THEN
-                        i = CVL(MID$(Back_Str_I$, (x - 1) * 4 + 1, 4))
-                        a = ASC(Back_Str$, x)
-                        IF a <> 0 AND i <> Help_Back_Pos THEN
-                            Help_Back(Help_Back_Pos).sx = Help_sx 'update position
-                            Help_Back(Help_Back_Pos).sy = Help_sy
-                            Help_Back(Help_Back_Pos).cx = Help_cx
-                            Help_Back(Help_Back_Pos).cy = Help_cy
-                            Help_Back_Pos = i
-                            Help_Select = 0: Help_MSelect = 0
-                            Help_sx = Help_Back(Help_Back_Pos).sx
-                            Help_sy = Help_Back(Help_Back_Pos).sy
-                            Help_cx = Help_Back(Help_Back_Pos).cx
-                            Help_cy = Help_Back(Help_Back_Pos).cy
-                            a$ = Wiki(Back$(Help_Back_Pos))
-                            WikiParse a$
-                            GOTO newpageparsed
-                        END IF
-                    END IF
-                    sx = sx + 1
-                NEXT
-
-                'LOCATE idewy, 2
-                'FOR x = Back_Str_Pos TO Back_Str_Pos + idewx - 5
-                '    i = CVL(MID$(Back_Str_I$, (x - 1) * 4 + 1, 4))
-                '    a = ASC(Back_Str$, x)
-                '    IF a THEN
-                '        COLOR 0, 7
-                '        IF i < Help_Back_Pos THEN COLOR 9, 7
-                '        IF i > Help_Back_Pos THEN COLOR 9, 7
-                '        PRINT CHR$(a);
-                '    ELSE
-                '        COLOR 15, 0
-                '        PRINT "Ä";
-                '    END IF
-                'NEXT
-
-
-            END IF
-        END IF
-
-        IF KCONTROL AND UCASE$(K$) = "A" THEN 'select all
-            IF help_h THEN
-                Help_Select = 2
-                Help_SelX1 = 1
-                Help_SelY1 = 1
-                Help_SelX2 = 10000000
-                Help_SelY2 = help_h
-                Help_cx = 1: Help_cy = help_h + 1
-                GOTO keep_select
-            END IF
-        END IF
-
-        IF ((KCTRL AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "C")) AND Help_Select = 2 THEN 'copy to clipboard
-            clip$ = ""
-            FOR y = Help_SelY1 TO Help_SelY2
-                IF y <> Help_SelY1 THEN clip$ = clip$ + CHR$(13) + CHR$(10)
-                a$ = ""
-                IF y <= help_h THEN
-                    l = CVL(MID$(Help_Line$, (y - 1) * 4 + 1, 4))
-                    x = l
-                    x3 = 1
-                    c = ASC(Help_Txt$, x)
-                    DO UNTIL c = 13
-                        IF Help_Select = 2 THEN
-                            IF y >= Help_SelY1 AND y <= Help_SelY2 THEN
-                                IF x3 >= Help_SelX1 AND x3 <= Help_SelX2 THEN
-                                    a$ = a$ + CHR$(c)
-                                END IF
-                            END IF
-                        END IF
-                        x3 = x3 + 1: x = x + 4: c = ASC(Help_Txt$, x)
-                    LOOP
-                END IF
-                clip$ = clip$ + a$
-            NEXT
-            IF Help_SelY1 = Help_SelY2 AND Help_cy > Help_cy1 THEN clip$ = clip$ + CHR$(13) + CHR$(10)
-            IF clip$ <> "" THEN _CLIPBOARD$ = clip$
-            GOTO keep_select
-        END IF
-
-
-        IF mX >= Help_wx1 AND mY >= Help_wy1 AND mX <= Help_wx2 AND mY <= Help_wy2 THEN
-            IF mCLICK THEN
-                Help_cx = Help_sx + (mX - Help_wx1)
-                Help_cy = Help_sy + (mY - Help_wy1)
-                Help_Select = 1
-                Help_MSelect = 1
-                Help_cx1 = Help_cx: Help_cy1 = Help_cy
-                GOTO keep_select
-            END IF
-            IF (mB AND Help_Scrollbar = 0) THEN
-                Help_cx = Help_sx + (mX - Help_wx1)
-                Help_cy = Help_sy + (mY - Help_wy1)
-                IF Help_Select THEN GOTO keep_select
-            END IF
-        ELSE
-            'outside field
-            IF (mB AND Help_Scrollbar = 0) AND Help_MSelect = 1 AND Help_Select = 2 THEN
-                IF mX < Help_wx1 THEN Help_cx = Help_cx - 1
-                IF mX > Help_wx2 THEN Help_cx = Help_cx + 1
-                IF mY < Help_wy1 THEN Help_cy = Help_cy - 1
-                IF mY > Help_wy2 THEN Help_cy = Help_cy + 1
-                GOTO keep_select
-            END IF
-        END IF
-
-        IF KSHIFT THEN
-            IF Help_Select = 0 THEN
-                Help_Select = 1
-                Help_MSelect = 0
-                Help_cx1 = Help_cx: Help_cy1 = Help_cy
-            END IF
-        ELSE
-            IF (KB > 0 OR mWHEEL <> 0) AND KSTATECHANGED = 0 THEN Help_Select = 0
-        END IF
-        keep_select:
-
-        IF KB = KEY_DELETE THEN
-            IF LEN(Help_Search_Str) THEN norep = 1: GOTO delsrchagain
-        END IF
-
-        IF LEN(K$) = 1 AND KCONTROL = 0 THEN
-            k = ASC(K$)
-            IF alphanumeric(k) OR k = 36 OR k = 32 THEN
-                norep = 0
-                t# = TIMER(0.001)
-                oldk = 0: IF LEN(Help_Search_Str) THEN oldk = ASC(Help_Search_Str, LEN(Help_Search_Str))
-                IF t# > Help_Search_Time + 1 OR t# < Help_Search_Time OR (k = oldk AND LEN(Help_Search_Str) = 1) THEN
-                    IF k = oldk THEN norep = 1
-                    Help_Search_Str = K$
-                ELSE
-                    Help_Search_Str = Help_Search_Str + K$
-                END IF
-                Help_Search_Time = t#
-                'search for next appropriate link
-                delsrchagain:
-                ox = Help_cx
-                oy = Help_cy
-                IF oy > help_h THEN oy = 1
-                cy = oy
-                cx = ox
-                IF norep = 1 THEN cx = cx + 1
-                looped = 0
-                DO
-                    'build the line
-                    l = CVL(MID$(Help_Line$, (cy - 1) * 4 + 1, 4))
-                    x = l
-                    a$ = ""
-                    c = ASC(Help_Txt$, x)
-                    DO UNTIL c = 13
-                        lnk = CVI(MID$(Help_Txt$, x + 2, 2))
-                        IF lnk THEN a$ = a$ + CHR$(c) ELSE a$ = a$ + CHR$(0) 'only add text with links
-                        x = x + 4: c = ASC(Help_Txt$, x)
-                    LOOP
-
-                    helpscanrow:
-                    px = INSTR(cx, UCASE$(a$), UCASE$(Help_Search_Str))
-                    px2 = INSTR(cx, UCASE$(a$), UCASE$("_" + Help_Search_Str))
-                    IF px2 < px AND px2 <> 0 AND LEFT$(Help_Search_Str, 1) <> "_" THEN px = px2
-
-                    IF looped = 1 AND cy = oy AND px = 0 THEN GOTO strnotfound
-                    IF px THEN
-                        'isolate and REVERSE select link
-                        l = CVL(MID$(Help_Line$, (cy - 1) * 4 + 1, 4))
-                        x = l
-                        x2 = 1
-                        a$ = ""
-                        c = ASC(Help_Txt$, x)
-                        oldlnk = 0
-                        lnkx1 = 0: lnkx2 = 0
-                        DO UNTIL c = 13
-                            lnk = CVI(MID$(Help_Txt$, x + 2, 2))
-                            IF lnkx1 = 0 AND lnk <> 0 AND oldlnk = 0 AND px = x2 THEN lnkx1 = x2
-                            IF lnkx1 <> 0 AND lnk = 0 AND lnkx2 = 0 THEN lnkx2 = x2 - 1
-                            x = x + 4: c = ASC(Help_Txt$, x)
-                            x2 = x2 + 1
-                            oldlnk = lnk
-                        LOOP
-
-                        IF Back_Name$(Help_Back_Pos) = "Alphabetical" OR Back_Name$(Help_Back_Pos) = "By Usage" THEN
-                            IF lnkx1 <> 3 THEN
-                                cx = px + 1
-                                GOTO helpscanrow
-                            END IF
-                        END IF
-
-                        IF lnkx1 THEN
-                            IF lnkx2 = 0 THEN lnkx2 = x2 - 1
-                            Help_Select = 2
-                            Help_cx1 = lnkx2 + 1
-                            Help_cx = lnkx1
-                            Help_cy = cy
-                            Help_cy1 = cy
-                            GOTO foundsstr
-                        END IF
-
-                        cx = px + 1
-                        GOTO helpscanrow
-                    END IF
-                    cx = 1
-                    cy = cy + 1
-                    IF cy > help_h THEN cy = 1: looped = 1
-                LOOP
-            END IF
-        END IF
-        foundsstr:
-        strnotfound:
-
-        IF KB = KEY_HOME AND KCONTROL THEN
-            Help_cx = 1: Help_cy = 1
-        END IF
-        IF KB = KEY_END AND KCONTROL THEN
-            Help_cx = 1: Help_cy = help_h + 1
-        END IF
-
-        IF KB = KEY_HOME AND KCONTROL = 0 THEN Help_cx = 1
-        IF KB = KEY_END AND KCONTROL = 0 THEN
-            Help_cx = Help_LineLen(Help_cy - Help_sy) + 1
-        END IF
-
-        IF KB = KEY_PAGEUP THEN
-            Help_cy = Help_cy - (Help_wh - 1)
-        END IF
-
-        IF KB = KEY_PAGEDOWN THEN
-            Help_cy = Help_cy + (Help_wh - 1)
-        END IF
-
-        IF KB = KEY_DOWN THEN Help_cy = Help_cy + 1
-        IF KB = KEY_UP THEN Help_cy = Help_cy - 1
-        IF KB = KEY_LEFT THEN Help_cx = Help_cx - 1
-        IF KB = KEY_RIGHT THEN Help_cx = Help_cx + 1
-
-        'move relative to top/bottom
-        IF mWHEEL < 0 THEN Help_cy = Help_sy
-        IF mWHEEL > 0 THEN Help_cy = Help_sy + (Help_wh - 1)
-        Help_cy = Help_cy + mWHEEL * 3
-
-        'fix cursor
-        IF Help_cx < 1 THEN Help_cx = 1
-        IF Help_cx > help_w + 1 THEN Help_cx = help_w + 1
-        IF Help_cy < 1 THEN Help_cy = 1
-        IF Help_cy > help_h + 1 THEN Help_cy = help_h + 1
-
-        'screen follows cursor
-        IF Help_cx < Help_sx THEN Help_sx = Help_cx
-        IF Help_cx >= Help_sx + Help_ww THEN Help_sx = Help_cx - Help_ww + 1
-
-        IF Help_cy < Help_sy THEN Help_sy = Help_cy
-        IF Help_cy >= Help_sy + Help_wh THEN Help_sy = Help_cy - Help_wh + 1
-
-        'fix screen
-        IF Help_sx < 1 THEN Help_sx = 1
-        IF Help_sy < 1 THEN Help_sy = 1
-
-        IF K$ = CHR$(8) THEN
-            IF Help_Back_Pos > 1 THEN
-                Help_Back(Help_Back_Pos).sx = Help_sx 'update position
-                Help_Back(Help_Back_Pos).sy = Help_sy
-                Help_Back(Help_Back_Pos).cx = Help_cx
-                Help_Back(Help_Back_Pos).cy = Help_cy
-                Help_Back_Pos = Help_Back_Pos - 1
-                Help_Select = 0: Help_MSelect = 0
-                Help_sx = Help_Back(Help_Back_Pos).sx
-                Help_sy = Help_Back(Help_Back_Pos).sy
-                Help_cx = Help_Back(Help_Back_Pos).cx
-                Help_cy = Help_Back(Help_Back_Pos).cy
-                a$ = Wiki(Back$(Help_Back_Pos))
-                WikiParse a$
-                GOTO newpageparsed
-            END IF
-        END IF
-
-        IF Help_cy >= 1 AND Help_cy <= help_h THEN
-            l = CVL(MID$(Help_Line$, (Help_cy - 1) * 4 + 1, 4))
-            x = l
-            x2 = 1
-            c = ASC(Help_Txt$, x)
-            DO UNTIL c = 13
-
-                IF x2 = Help_cx THEN
-                    lnk = CVI(MID$(Help_Txt$, x + 2, 2))
-                    IF lnk THEN
-                        'retrieve lnk info
-                        l1 = 1
-                        FOR lx = 1 TO lnk - 1
-                            l1 = INSTR(l1, Help_Link$, Help_Link_Sep$) + 1
-                        NEXT
-                        l2 = INSTR(l1, Help_Link$, Help_Link_Sep$) - 1
-                        l$ = MID$(Help_Link$, l1, l2 - l1 + 1)
-                        'assume PAGE
-                        l$ = RIGHT$(l$, LEN(l$) - 5)
-
-                        IF mCLICK OR K$ = CHR$(13) THEN
-                            mCLICK = 0
-
-                            IF Back$(Help_Back_Pos) <> l$ THEN
-                                Help_Select = 0: Help_MSelect = 0
-                                'COLOR 15, 0
-
-                                Help_Back(Help_Back_Pos).sx = Help_sx 'update position
-                                Help_Back(Help_Back_Pos).sy = Help_sy
-                                Help_Back(Help_Back_Pos).cx = Help_cx
-                                Help_Back(Help_Back_Pos).cy = Help_cy
-
-                                top = UBOUND(back$)
-
-                                IF Help_Back_Pos < top THEN
-                                    IF Back$(Help_Back_Pos + 1) = l$ THEN
-                                        GOTO usenextentry
-                                    END IF
-                                END IF
-
-                                top = top + 1
-                                REDIM _PRESERVE Back(top) AS STRING
-                                REDIM _PRESERVE Help_Back(top) AS Help_Back_Type
-                                REDIM _PRESERVE Back_Name(top) AS STRING
-                                'Shuffle array upwards after current pos
-                                FOR x = top - 1 TO Help_Back_Pos + 1 STEP -1
-                                    Back_Name$(x + 1) = Back_Name$(x)
-                                    Back$(x + 1) = Back$(x)
-                                    Help_Back(x + 1).sx = Help_Back(x).sx
-                                    Help_Back(x + 1).sy = Help_Back(x).sy
-                                    Help_Back(x + 1).cx = Help_Back(x).cx
-                                    Help_Back(x + 1).cy = Help_Back(x).cy
-                                NEXT
-                                usenextentry:
-                                Help_Back_Pos = Help_Back_Pos + 1
-                                Back$(Help_Back_Pos) = l$
-                                Back_Name$(Help_Back_Pos) = Back2BackName$(l$)
-                                Help_Back(Help_Back_Pos).sx = 1
-                                Help_Back(Help_Back_Pos).sy = 1
-                                Help_Back(Help_Back_Pos).cx = 1
-                                Help_Back(Help_Back_Pos).cy = 1
-                                Help_sx = 1: Help_sy = 1: Help_cx = 1: Help_cy = 1
-                                a$ = Wiki(l$)
-                                WikiParse a$
-                                GOTO newpageparsed
-                            END IF
-                        END IF
-
-                    END IF
-                END IF
-                x = x + 4: c = ASC(Help_Txt$, x)
-                x2 = x2 + 1
-            LOOP
-        END IF
-
-        IF Help_Select THEN
-            Help_Select = 1 'revert to non-selected if cursor moved to neutral pos
-            IF Help_cx <> Help_cx1 OR Help_cy <> Help_cy1 THEN Help_Select = 2
-        END IF
-
-        'Determine the exact region selected
-        IF Help_Select = 2 THEN
-            IF Help_cy = Help_cy1 THEN
-                Help_SelY1 = Help_cy: Help_SelY2 = Help_cy
-                IF Help_cx > Help_cx1 THEN
-                    Help_SelX1 = Help_cx1: Help_SelX2 = Help_cx - 1
-                ELSE
-                    Help_SelX1 = Help_cx: Help_SelX2 = Help_cx1 - 1
-                END IF
-            ELSE
-                Help_SelX1 = 1: Help_SelX2 = 10000000
-                IF Help_cy > Help_cy1 THEN
-                    Help_SelY1 = Help_cy1: Help_SelY2 = Help_cy
-                    IF Help_cx = 1 THEN Help_SelY2 = Help_cy - 1
-                ELSE
-                    Help_SelY1 = Help_cy: Help_SelY2 = Help_cy1
-                END IF
-            END IF
-        END IF
-
-        newpageparsed:
-        GOTO specialchar
-    END IF
-
-
-
-    IF KB = KEY_F1 THEN
-        'identify word or character at current cursor position
-        a$ = idegetline(idecy)
-        x = idecx
-        IF x <= LEN(a$) THEN
-            IF alphanumeric(ASC(a$, x)) THEN
-                x1 = x
-                DO WHILE x1 > 1
-                    IF alphanumeric(ASC(a$, x1 - 1)) OR ASC(a$, x1 - 1) = 36 THEN x1 = x1 - 1 ELSE EXIT DO
-                LOOP
-                x2 = x
-                DO WHILE x2 < LEN(a$)
-                    IF alphanumeric(ASC(a$, x2 + 1)) OR ASC(a$, x2 + 1) = 36 THEN x2 = x2 + 1 ELSE EXIT DO
-                LOOP
-                a2$ = MID$(a$, x1, x2 - x1 + 1)
-            ELSE
-                a2$ = CHR$(ASC(a$, x))
-            END IF
-            a2$ = UCASE$(a2$)
-            'check if F1 is in help links
-            fh = FREEFILE
-            OPEN "internal\help\links.bin" FOR INPUT AS #fh
-            lnks = 0: lnks$ = CHR$(0)
-            DO UNTIL EOF(fh)
-                LINE INPUT #fh, l$
-                c = INSTR(l$, ","): l1$ = LEFT$(l$, c - 1): l2$ = RIGHT$(l$, LEN(l$) - c)
-                IF a2$ = l1$ THEN
-                    IF INSTR(lnks$, CHR$(0) + l2$ + CHR$(0)) = 0 THEN
-                        lnks = lnks + 1
-                        IF l2$ = l1$ THEN
-                            lnks$ = CHR$(0) + l2$ + lnks$
-                        ELSE
-                            lnks$ = lnks$ + l2$ + CHR$(0)
-                        END IF
-                    END IF
-                END IF
-            LOOP
-            CLOSE #fh
-
-            IF lnks THEN
-                lnks$ = MID$(lnks$, 2, LEN(lnks$) - 2)
-                lnk$ = lnks$
-                IF lnks > 1 THEN
-                    'clarify context
-                    lnk$ = idef1box$(lnks$, lnks)
-                END IF
-
-
-                OpenHelpLnk:
-
-
-                Help_Back(Help_Back_Pos).sx = Help_sx 'update position
-                Help_Back(Help_Back_Pos).sy = Help_sy
-                Help_Back(Help_Back_Pos).cx = Help_cx
-                Help_Back(Help_Back_Pos).cy = Help_cy
-
-                top = UBOUND(back$)
-
-
-                IF Back$(Help_Back_Pos) = lnk$ THEN Help_Back_Pos = Help_Back_Pos - 1: GOTO usenextentry2
-                IF Help_Back_Pos < top THEN
-                    IF Back$(Help_Back_Pos + 1) = lnk$ THEN
-                        GOTO usenextentry2
-                    END IF
-                END IF
-
-
-                top = top + 1
-                REDIM _PRESERVE Back(top) AS STRING
-                REDIM _PRESERVE Help_Back(top) AS Help_Back_Type
-                REDIM _PRESERVE Back_Name(top) AS STRING
-                'Shuffle array upwards after current pos
-                FOR x = top - 1 TO Help_Back_Pos + 1 STEP -1
-                    Back_Name$(x + 1) = Back_Name$(x)
-                    Back$(x + 1) = Back$(x)
-                    Help_Back(x + 1).sx = Help_Back(x).sx
-                    Help_Back(x + 1).sy = Help_Back(x).sy
-                    Help_Back(x + 1).cx = Help_Back(x).cx
-                    Help_Back(x + 1).cy = Help_Back(x).cy
-                NEXT
-                usenextentry2:
-                Help_Back_Pos = Help_Back_Pos + 1
-                Back$(Help_Back_Pos) = lnk$
-                Back_Name$(Help_Back_Pos) = Back2BackName$(lnk$)
-                Help_Back(Help_Back_Pos).sx = 1
-                Help_Back(Help_Back_Pos).sy = 1
-                Help_Back(Help_Back_Pos).cx = 1
-                Help_Back(Help_Back_Pos).cy = 1
-                Help_sx = 1: Help_sy = 1: Help_cx = 1: Help_cy = 1
-
-                a$ = Wiki(lnk$)
-
-                IF idehelp = 0 THEN
-                    IF idesubwindow THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
-                    idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
-                    Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
-                    WikiParse a$
-                    idehelp = 1
-                    skipdisplay = 0
-                    IdeSystem = 1 '***
-                    retval = 1: GOTO redraweverything2
-                END IF
-
-                WikiParse a$
-                IdeSystem = 1 '***
-                GOTO specialchar
-
-            END IF 'lnks
-
-        END IF
-        GOTO specialchar
-    END IF
-
-
-
-    IF KALT AND KB = KEY_LEFT THEN
-        bmkremoved = 0
-        bmkremove:
-        FOR b = 1 TO IdeBmkN
-            IF IdeBmk(b).y = idecy THEN
-                FOR b2 = b TO IdeBmkN - 1
-                    IdeBmk(b2) = IdeBmk(b2 + 1)
-                NEXT
-                IdeBmkN = IdeBmkN - 1
-                bmkremoved = 1
-                ideunsaved = 1
-                GOTO bmkremove
-            END IF
-        NEXT
-        IF bmkremoved = 0 THEN
-            IdeBmkN = IdeBmkN + 1
-            IF IdeBmkN > UBOUND(IdeBmk) THEN x = UBOUND(IdeBmk) * 2: REDIM _PRESERVE IdeBmk(x) AS IdeBmkType
-            IdeBmk(IdeBmkN).y = idecy
-            IdeBmk(IdeBmkN).x = idecx
-            IdeBmk(IdeBmkN).reserved = 0: IdeBmk(IdeBmkN).reserved2 = 0
-            ideunsaved = 1
-        END IF
-        GOTO specialchar
-    END IF
-
-    IF KALT AND (KB = KEY_DOWN OR KB = KEY_UP) THEN
-        IF IdeBmkN = 0 THEN
-            idemessagebox "Bookmarks", "No bookmarks exist (Use ALT+Left to create a bookmark)"
-            SCREEN , , 3, 0: idewait4mous: idewait4alt
-            idealthighlight = 0
-            LOCATE , , 0: COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
-            GOTO specialchar
-        END IF
-        IF IdeBmkN = 1 THEN
-            IF idecy = IdeBmk(1).y THEN
-                idemessagebox "Bookmarks", "No other bookmarks exist"
-                SCREEN , , 3, 0: idewait4mous: idewait4alt
-                idealthighlight = 0
-                LOCATE , , 0: COLOR 0, 7: LOCATE 1, 1: PRINT menubar$;
-                GOTO specialchar
-            END IF
-        END IF
-        l = idecy
-        DO
-            IF KB = KEY_DOWN THEN l = l + 1 ELSE l = l - 1
-            IF l < 1 THEN l = iden
-            IF l > iden THEN l = 1
-            FOR b = 1 TO IdeBmkN
-                IF IdeBmk(b).y = l THEN EXIT DO
-            NEXT
-        LOOP
-        idecy = l
-        idecx = IdeBmk(b).x
-        ideselect = 0
-        GOTO specialchar
-    END IF
-
-    IF KALT AND KB = KEY_RIGHT THEN
-        '***RESERVED***
-        GOTO specialchar
-    END IF
-
-
-    IF mCLICK THEN
-        IF mX > 1 AND mX < idewx AND mY > 2 AND mY < (idewy - 5) THEN 'inside text box
-            ideselect = 1
-            idecx = mX - 1 + idesx - 1
-            idecy = mY - 2 + idesy - 1
-            IF idecy > iden THEN idecy = iden
-            ideselect = 1: ideselectx1 = idecx: ideselecty1 = idecy
-            idemouseselect = 1
-        END IF
-    END IF
-
-    IF mCLICK THEN
-        IF mX = idewx THEN
-            IF iden > 1 THEN 'take no action if not slider available
-                y = idevbar(idewx, 3, idewy - 8, idecy, iden)
-                IF y = mY THEN
-                    idemouseselect = 2
-                    ideselect = 0
-                END IF
-            END IF
-        END IF
-    END IF
-
-    IF mCLICK THEN
-        IF mY = idewy - 5 THEN
-            x = idehbar(2, idewy - 5, idewx - 2, idesx, 608)
-            IF x = mX THEN
-                idemouseselect = 3
-                ideselect = 0
-            END IF
-        END IF
-    END IF
-
-    IF mB AND idemouseselect = 0 THEN
-        IF mX = idewx AND mY > 2 AND mY < idewy - 5 THEN 'inside vbar
-            ideselect = 0
-            IF mY = 3 THEN KB = KEY_UP: idewait: idembmonitor = 1
-            IF mY = idewy - 6 THEN KB = KEY_DOWN: idewait: idembmonitor = 1
-            IF mY > 3 AND mY < (idewy - 6) THEN
-                'assume not on slider
-                IF iden > 1 THEN 'take no action if not slider available
-                    y = idevbar(idewx, 3, idewy - 8, idecy, iden)
-                    IF y <> mY THEN
-                        IF mY < y THEN
-                            KB = KEY_PAGEUP: idewait: idembmonitor = 1
-                        ELSE
-                            KB = KEY_PAGEDOWN: idewait: idembmonitor = 1
-                        END IF
-                    END IF
-                END IF
-            END IF
-        END IF
-    END IF
-
-    IF mB AND idemouseselect = 0 THEN
-        IF mY = idewy - 5 AND mX > 1 AND mX < idewx THEN 'inside hbar
-            ideselect = 0
-            IF mX = 2 THEN KB = KEY_LEFT: idewait: idembmonitor = 1
-            IF mX = idewx - 1 THEN KB = KEY_RIGHT: idewait: idembmonitor = 1
-            IF mX > 2 AND mX < idewx - 1 THEN
-                'assume not on slider
-                x = idehbar(2, idewy - 5, idewx - 2, idesx, 608)
-                IF x <> mX THEN
-                    IF mX < x THEN
-                        idecx = idecx - 8
-                        IF idecx < 1 THEN idecx = 1
-                        idewait: idembmonitor = 1
-                    ELSE
-                        idecx = idecx + 8
-                        idewait: idembmonitor = 1
-                    END IF
-                END IF
-
-            END IF
-        END IF
-    END IF
-
-    IF mB AND idemouseselect = 2 THEN
-        'move vbar scroller (idecy) to appropriate position
-        IF iden > 1 THEN
-            IF mY <= 4 THEN idecy = 1
-            IF mY >= idewy - 7 THEN idecy = iden
-            IF mY > 4 AND mY < idewy - 7 THEN
-                y = mY
-                p! = y - 3 - 2 + .5
-                p! = p! / ((idewy - 8) - 4)
-                i = p! * (iden - 1) + 1
-                idecy = i
-            END IF
-        END IF
-    END IF
-
-    IF mB AND idemouseselect = 3 THEN
-        'move hbar scroller (idecx) to appropriate position
-        IF mX <= 3 THEN idesx = 1: idecx = idesx
-        IF mX >= idewx - 2 THEN idesx = 608: idecx = idesx
-        IF mX > 3 AND mX < idewx - 2 THEN
-            x = mX
-            p! = x - 2 - 2 + .5
-            p! = p! / ((idewx - 2) - 4)
-            i = p! * (608 - 1) + 1
-            idesx = i
-            idecx = idesx
-        END IF
-    END IF
-
-    IF mB AND idemouseselect <= 1 THEN
-        IF mX > 1 AND mX < idewx AND mY > 2 AND mY < idewy - 5 THEN 'inside text box
-            IF idemouseselect = 1 THEN
-                idecx = mX - 1 + idesx - 1
-                idecy = mY - 2 + idesy - 1
-                IF idecy > iden THEN idecy = iden
-            END IF
-        END IF
-    END IF
-
-    IF mB THEN
-        IF mX = 1 OR mX = idewx OR mY <= 2 OR mY >= idewy - 5 THEN 'off text window area
-            IF idemouseselect = 1 THEN
-
-                'scroll window
-                IF mY >= idewy - 5 THEN idecy = idecy + 1: IF idecy > iden THEN idecy = iden
-                IF mY <= 2 THEN idecy = idecy - 1: IF idecy < 1 THEN idecy = 1
-                IF mX = 1 THEN idecx = idecx - 1: IF idecx < 1 THEN idecx = 1
-                IF mX = idewx THEN idecx = idecx + 1
-                idewait
-            END IF
-        END IF
-    END IF
-
-
-
-
-
-
-
-    IF KCONTROL AND UCASE$(K$) = "A" THEN 'select all
-        idemselectall:
-        ideselect = 1: ideselectx1 = 1: ideselecty1 = 1
-        idecy = iden
-        a$ = idegetline(idecy)
-        idecx = LEN(a$) + 1
-        GOTO specialchar
-    END IF
-
-    IF K$ = CHR$(0) + CHR$(60) THEN 'F2
-        GOTO idesubsjmp
-    END IF
-
-    IF KCONTROL AND UCASE$(K$) = "Z" THEN 'undo (CTRL+Z)
-        idemundo:
-        IF ideundopos THEN
-            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
-            h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
-
-            'does something exist to undo?
-            u = 0
-            IF p2 >= p1 THEN
-                'linear
-                IF ideundopos > p1 THEN
-                    GET #150, ideundopos - 4, upl
-                    u = ideundopos - 4 - upl - 4
-                END IF
-            ELSE
-                'wrapped
-                IF ideundopos > p1 THEN
-                    GET #150, ideundopos - 4, upl
-                    u = ideundopos - 4 - upl - 4
-                END IF
-                IF ideundopos <= p2 THEN
-                    IF ideundopos = 13 THEN
-                        u = plast
-                    ELSE
-                        GET #150, ideundopos - 4, upl
-                        u = ideundopos - 4 - upl - 4
-                    END IF
-                END IF
-            END IF
-
-            IF u THEN
-
-                IF ideundopos = ideundobase THEN
-                    'if not untitled, then we MUST switch to a special state
-                    'warn
-                    PCOPY 3, 0
-                    what$ = ideyesnobox("Undo", "Undo through previous program content?")
-                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                    IF what$ = "N" THEN
-                        CLOSE #150
-                        GOTO skipundo
-                    END IF
-                    IF ideunsaved = 1 AND ideprogname <> "" THEN
-                        PCOPY 3, 0
-                        r$ = idesavenow
-                        PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                        IF r$ = "C" THEN CLOSE #150: GOTO skipundo
-                        IF r$ = "Y" THEN
-                            idesave idepath$ + idepathsep$ + ideprogname$
-                        END IF
-                    END IF
-                    ideunsaved = 1
-                    ideprogname$ = ""
-                    _TITLE "QB64"
-                    ideundobase = -1 'release base restriction
-                END IF
-
-                ideundopos = u 'set new current state
-
-                'get backup
-                SEEK #150, u
-                GET #150, , l2& 'should be the same as l&
-                GET #150, , idesx: GET #150, , idesy
-                GET #150, , idecx: GET #150, , idecy
-                GET #150, , ideselect: GET #150, , ideselectx1: GET #150, , ideselecty1
-                GET #150, , iden
-                GET #150, , idel
-                GET #150, , ideli
-                'bookmark info [v2]
-                GET #150, , IdeBmkN: REDIM IdeBmk(IdeBmkN + 1) AS IdeBmkType
-                FOR bi = 1 TO IdeBmkN: GET #150, , IdeBmk(bi).y: GET #150, , IdeBmk(bi).x: NEXT
-                GET #150, , x&: idet$ = SPACE$(x&): GET #150, , idet$
-
-                idechangemade = 1: idenoundo = 1
-
-            END IF 'u
-
-            skipundo:
-            CLOSE #150
-        END IF
-        GOTO specialchar
-
-    END IF
-
-
-    IF KCONTROL AND UCASE$(K$) = "Y" THEN 'redo (CTRL+Y)
-        idemredo:
-        IF ideundopos THEN
-            OPEN tmpdir$ + "undo2.bin" FOR BINARY AS #150
-            h$ = SPACE$(12): GET #150, , h$: p1 = CVL(MID$(h$, 1, 4)): p2 = CVL(MID$(h$, 5, 4)): plast = CVL(MID$(h$, 9, 4))
-
-            'does something exist to redo?
-            u = 0
-            IF p2 >= p1 THEN
-                'linear
-                IF ideundopos < p2 THEN
-                    GET #150, ideundopos, upl
-                    u = ideundopos + 4 + upl + 4
-                END IF
-            ELSE
-                'wrapped
-                IF ideundopos >= p1 THEN
-                    IF ideundopos = plast THEN
-                        u = 13
-                    ELSE
-                        GET #150, ideundopos, upl
-                        u = ideundopos + 4 + upl + 4
-                    END IF
-                ELSE
-                    IF ideundopos < p2 THEN
-                        GET #150, ideundopos, upl
-                        u = ideundopos + 4 + upl + 4
-                    END IF
-                END IF
-            END IF
-
-            IF u THEN
-
-                ideundopos = u 'set new current state
-
-                'get backup
-                SEEK #150, u
-                GET #150, , l2& 'should be the same as l&
-                GET #150, , idesx: GET #150, , idesy
-                GET #150, , idecx: GET #150, , idecy
-                GET #150, , ideselect: GET #150, , ideselectx1: GET #150, , ideselecty1
-                GET #150, , iden
-                GET #150, , idel
-                GET #150, , ideli
-                'bookmark info [v2]
-                GET #150, , IdeBmkN: REDIM IdeBmk(IdeBmkN + 1) AS IdeBmkType
-                FOR bi = 1 TO IdeBmkN: GET #150, , IdeBmk(bi).y: GET #150, , IdeBmk(bi).x: NEXT
-                GET #150, , x&: idet$ = SPACE$(x&): GET #150, , idet$
-
-                idechangemade = 1: idenoundo = 1
-
-            END IF 'u
-
-            CLOSE #150
-        END IF
-        GOTO specialchar
-    END IF
-
-
-    IF ((KSHIFT AND KB = KEY_DELETE) OR (KCONTROL AND UCASE$(K$) = "X")) AND ideselect = 1 THEN 'cut to clipboard
-        idemcut:
-        idechangemade = 1
-        GOTO copy2clip
-    END IF
-
-    IF KB = KEY_DELETE AND ideselect = 1 THEN 'delete selection
-        IF ideselecty1 <> idecy OR ideselectx1 <> idecx THEN
-            idechangemade = 1
-            GOSUB delselect
-            GOTO specialchar
-        ELSE
-            ideselect = 0
-        END IF
-    END IF
-
-
-    IF (KSHIFT AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "V") THEN 'paste from clipboard
-        idempaste:
-
-        clip$ = _CLIPBOARD$ 'read clipboard
-
-        IF LEN(clip$) THEN
-            IF ideselect THEN GOSUB delselect
-            IF INSTR(clip$, CHR$(13)) OR INSTR(clip$, CHR$(10)) THEN
-
-                'full lines paste
-
-                idelayoutallow = 2
-                a$ = clip$
-                x3 = 1 'scan from position
-                i = 0 'lines counter
-
-                fullpastenextline:
-
-                x = INSTR(x3, a$, CHR$(13))
-                x2 = INSTR(x3, a$, CHR$(10))
-                IF x = 0 THEN x = x2
-                IF x2 = 0 THEN x2 = x
-                IF x2 < x THEN SWAP x, x2
-                IF x2 > x + 1 THEN x2 = x 'if seperated by more than one character, they are seperate line terminators
-                'x to x2 is the range of the next line terminator (1 or 2 characters)
-
-                IF x THEN
-                    ideinsline idecy + i, converttabs$(MID$(a$, x3, x - x3))
-                    i = i + 1
-                    x3 = x2 + 1
-                ELSE
-                    ideinsline idecy + i, converttabs$(MID$(a$, x3, LEN(a$) - x3 + 1))
-                    i = i + 1
-                    x3 = LEN(a$) + 1
-                END IF
-
-                IF x3 <= LEN(a$) GOTO fullpastenextline
-
-            ELSE
-
-                'insert single line paste
-                a$ = idegetline(idecy)
-                IF LEN(a$) < idecx - 1 THEN a$ = a$ + SPACE$(idecx - 1 - LEN(a$))
-                a$ = LEFT$(a$, idecx - 1) + clip$ + RIGHT$(a$, LEN(a$) - idecx + 1)
-                idesetline idecy, converttabs$(a$)
-
-            END IF
-
-            idechangemade = 1
-        END IF
-        GOTO specialchar
-    END IF
-
-    IF ((KCTRL AND KB = KEY_INSERT) OR (KCONTROL AND UCASE$(K$) = "C")) AND ideselect = 1 THEN 'copy to clipboard
-        copy2clip:
-        clip$ = ""
-        sy1 = ideselecty1
-        sy2 = idecy
-        IF sy1 > sy2 THEN SWAP sy1, sy2
-        sx1 = ideselectx1
-        sx2 = idecx
-        IF sx1 > sx2 THEN SWAP sx1, sx2
-        FOR y = sy1 TO sy2
-            IF y <= iden THEN
-                a$ = idegetline(y)
-                IF sy1 = sy2 THEN 'single line select
-                    FOR x = sx1 TO sx2 - 1
-                        IF x <= LEN(a$) THEN clip$ = clip$ + MID$(a$, x, 1) ELSE clip$ = clip$ + " "
-                    NEXT
-                ELSE 'multiline select
-                    IF idecx = 1 AND y = sy2 AND idecy > sy1 THEN clip$ = clip$ + CHR$(13) + CHR$(10): GOTO nofinalcopy
-                    IF clip$ = "" THEN clip$ = a$ ELSE clip$ = clip$ + CHR$(13) + CHR$(10) + a$
-                    nofinalcopy:
-                END IF
-            END IF
-        NEXT
-        IF clip$ <> "" THEN _CLIPBOARD$ = clip$
-        IF (K$ = CHR$(0) + "S") OR (KSHIFT AND KB = KEY_DELETE) OR (KCONTROL AND UCASE$(K$) = "X") THEN GOSUB delselect
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_INSERT THEN 'toggle INSERT mode
-        ideinsert = ideinsert + 1
-        IF ideinsert = 2 THEN ideinsert = 0
-    END IF
-
-    IF KB = KEY_UP THEN
-        GOSUB selectcheck
-        idecy = idecy - 1
-        IF idecy < 1 THEN idecy = 1
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_DOWN THEN
-        GOSUB selectcheck
-        idecy = idecy + 1
-        IF idecy > iden THEN idecy = iden
-        GOTO specialchar
-    END IF
-
-    IF mWHEEL THEN
-        GOSUB selectcheck
-        'move relative to top/bottom
-        IF mWHEEL < 0 THEN idecy = idesy
-        IF mWHEEL > 0 THEN idecy = idesy + (idewy - 9)
-        idecy = idecy + mWHEEL * 3
-        IF idecy < 1 THEN idecy = 1
-        IF idecy > iden THEN idecy = iden
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_LEFT THEN
-        GOSUB selectcheck
-
-        IF KCONTROL THEN 'move forward to next beginning alphanumeric
-
-            a$ = idegetline(idecy)
-            IF idecx > LEN(a$) THEN idecx = LEN(a$) + 1
-
-            skipping = 1
-            DO
-                'move
-                idecx = idecx - 1
-                'latch onto prev character
-                IF idecx < 1 THEN
-                    DO
-                        IF idecy = 1 THEN idecx = 1: GOTO specialchar
-                        idecy = idecy - 1
-                        a$ = idegetline(idecy)
-                        idecx = LEN(a$)
-                    LOOP UNTIL LEN(a$)
-                END IF
-                'check character
-                IF alphanumeric(ASC(a$, idecx)) THEN
-                    IF idecx = 1 THEN GOTO specialchar
-                    x = idecx: y = idecy
-                    skipping = 0
-                ELSE
-                    IF skipping = 0 THEN idecx = x: idecy = y: GOTO specialchar
-                END IF
-            LOOP
-
-        ELSE
-
-            idecx = idecx - 1
-            IF idecx < 1 THEN idecx = 1
-
-        END IF
-
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_RIGHT THEN
-        GOSUB selectcheck
-
-        IF KCONTROL THEN 'move forward to next beginning alphanumeric
-
-            a$ = idegetline(idecy)
-            skipping = 0
-            first = 1
-            DO
-                'move
-                IF first = 0 THEN idecx = idecx + 1
-                'latch onto next character
-                IF idecx > LEN(a$) THEN
-                    DO
-                        IF idecy = iden THEN GOTO specialchar
-                        idecy = idecy + 1: idecx = 1
-                        a$ = idegetline(idecy)
-                    LOOP UNTIL LEN(a$)
-                    skipping = 0
-                    first = 0
-                END IF
-                'check character
-                IF alphanumeric(ASC(a$, idecx)) THEN
-                    IF first THEN
-                        skipping = 1
-                    ELSE
-                        IF skipping = 0 THEN GOTO specialchar
-                    END IF
-                ELSE
-                    skipping = 0
-                END IF
-                first = 0
-            LOOP
-
-        ELSE
-
-            idecx = idecx + 1
-
-        END IF
-
-        GOTO specialchar
-    END IF
-
-    IF KCONTROL AND KB = KEY_HOME THEN
-        GOSUB selectcheck
-        idecx = 1
-        idecy = 1
-        GOTO specialchar
-    END IF
-
-    IF KCONTROL AND KB = KEY_END THEN
-        GOSUB selectcheck
-        idecy = iden
-        a$ = idegetline(idecy)
-        idecx = LEN(a$) + 1
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_HOME THEN
-        GOSUB selectcheck
-        IF idecx <> 1 THEN
-            idecx = 1
-        ELSE
-            a$ = idegetline(idecy)
-            idecx = 1
-            FOR x = 1 TO LEN(a$)
-                IF ASC(a$, x) <> 32 THEN idecx = x: EXIT FOR
-            NEXT
-        END IF
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_END THEN
-        GOSUB selectcheck
-        a$ = idegetline(idecy)
-        idecx = LEN(a$) + 1
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_PAGEUP THEN
-        GOSUB selectcheck
-        idecy = idecy - (idewy - 9)
-        IF idecy < 1 THEN idecy = 1
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_PAGEDOWN THEN
-        GOSUB selectcheck
-        idecy = idecy + (idewy - 9)
-        IF idecy > iden THEN idecy = iden
-        GOTO specialchar
-    END IF
-
-    GOTO skipgosubs
-
-    selectcheck:
-    IF KSHIFT AND ideselect = 0 THEN ideselect = 1: ideselectx1 = idecx: ideselecty1 = idecy
-    IF KSHIFT = 0 THEN ideselect = 0
-    RETURN
-
-    delselect:
-    sy1 = ideselecty1
-    sy2 = idecy
-    IF sy1 > sy2 THEN SWAP sy1, sy2
-    sx1 = ideselectx1
-    sx2 = idecx
-    IF sx1 > sx2 THEN SWAP sx1, sx2
-    nolastlinedel = 0
-    IF sy1 <> sy2 AND idecx = 1 AND idecy > sy1 THEN sy2 = sy2 - 1: nolastlinedel = 1 'ignore last line of multi-line select?
-    FOR y = sy2 TO sy1 STEP -1
-        IF sy1 = sy2 AND nolastlinedel = 0 THEN 'single line select
-            a$ = idegetline(y)
-            a2$ = ""
-            IF sx1 <= LEN(a$) THEN a2$ = LEFT$(a$, sx1 - 1) ELSE a2$ = a$
-            IF sx2 <= LEN(a$) THEN a2$ = a2$ + RIGHT$(a$, LEN(a$) - sx2 + 1)
-            idesetline y, a2$
-        ELSE 'multiline select
-            IF iden = 1 AND y = 1 THEN idesetline y, "" ELSE idedelline y
-        END IF
-    NEXT
-    idecx = sx1: IF sy1 <> sy2 OR nolastlinedel = 1 THEN idecx = 1
-    idecy = sy1
-    ideselect = 0
-    RETURN
-
-    skipgosubs:
-
-    IF K$ = CHR$(13) THEN
-        ideselect = 0
-        idechangemade = 1
-
-        a$ = idegetline(idecy)
-        IF idecx > LEN(a$) THEN
-            ideinsline idecy + 1, ""
-        ELSE
-            idesetline idecy, LEFT$(a$, idecx - 1)
-            ideinsline idecy + 1, RIGHT$(a$, LEN(a$) - idecx + 1)
-        END IF
-
-        IF idecx = 1 THEN
-            FOR b = 1 TO IdeBmkN
-                IF IdeBmk(b).y = idecy THEN IdeBmk(b).y = IdeBmk(b).y + 1
-            NEXT
-        END IF
-
-        idecy = idecy + 1
-        idecx = 1
-        GOTO specialchar
-    END IF
-
-    IF KB = KEY_DELETE THEN
-        idechangemade = 1
-        a$ = idegetline(idecy)
-        IF idecx <= LEN(a$) THEN
-            a$ = LEFT$(a$, idecx - 1) + RIGHT$(a$, LEN(a$) - idecx)
-            idesetline idecy, a$
-        ELSE
-            a$ = a$ + SPACE$(idecx - LEN(a$) - 1)
-            a$ = a$ + idegetline(idecy + 1)
-            idesetline idecy, a$
-            idedelline idecy + 1
-        END IF
-        GOTO specialchar
-    END IF
-
-    IF K$ = CHR$(8) THEN
-        ideselect = 0
-        idechangemade = 1
-
-        'undocombos
-        IF ideundocombochr <> 8 THEN
-            ideundocombo = 2
-        ELSE
-            ideundocombo = ideundocombo + 1
-            IF ideundocombo = 2 THEN idemergeundo = 1
-        END IF
-        ideundocombochr = 8
-
-        a$ = idegetline(idecy)
-        IF idecx = 1 THEN
-            IF idecy > 1 THEN
-                a2$ = idegetline(idecy - 1)
-                idesetline idecy - 1, a2$ + a$
-                idedelline idecy
-                idecx = LEN(a2$) + 1
-                idecy = idecy - 1
-            END IF
-            GOTO specialchar
-        END IF
-        IF idecx > LEN(a$) + 1 THEN
-            idecx = LEN(a$) + 1
-        ELSE
-            a$ = LEFT$(a$, idecx - 2) + RIGHT$(a$, LEN(a$) - idecx + 1)
-            idesetline idecy, a$
-            idecx = idecx - 1
-        END IF
-        GOTO specialchar
-    END IF
-
-
-
-
-
-
-
-
-
-    'patch#1
-    IF LEN(K$) <> 1 THEN GOTO specialchar
-    IF K$ = CHR$(9) THEN GOTO ideforceinput
-    IF block_chr(ASC(K$)) THEN GOTO specialchar
-    ideforceinput:
-
-    IF K$ = CHR$(9) THEN
-        x = 4
-        IF ideautoindent <> 0 AND ideautoindentsize <> 0 THEN x = ideautoindentsize
-        K$ = SPACE$(x - ((idecx - 1) MOD x))
-    END IF
-
-    'standard character
-    IF ideselect THEN GOSUB delselect
-    idechangemade = 1
-
-    'undocombos
-    IF LEN(K$) = 1 THEN
-        asck = ASC(K$)
-        IF alphanumeric(asck) OR ideundocombochr = asck THEN
-            IF ideundocombochr = 8 THEN ideundocombo = 0
-            IF ideundocombo = 0 THEN
-                ideundocombo = 2
-            ELSE
-                ideundocombo = ideundocombo + 1
-                IF ideundocombo = 2 THEN idemergeundo = 1
-            END IF
-        END IF
-        ideundocombochr = asck
-    END IF
-
-    a$ = idegetline(idecy)
-    IF LEN(a$) < idecx - 1 THEN a$ = a$ + SPACE$(idecx - 1 - LEN(a$))
-
-    IF ideinsert THEN
-        a2$ = RIGHT$(a$, LEN(a$) - idecx + 1)
-        IF LEN(a2$) THEN a2$ = RIGHT$(a$, LEN(a$) - idecx)
-        a$ = LEFT$(a$, idecx - 1) + K$ + a2$
-    ELSE
-        a$ = LEFT$(a$, idecx - 1) + K$ + RIGHT$(a$, LEN(a$) - idecx + 1)
-    END IF
-
-    idesetline idecy, a$
-    idecx = idecx + LEN(K$)
-    specialchar:
-
-LOOP
-
-'--------------------------------------------------------------------------------
-
-startmenu:
-m = 1
-startmenu2:
-altheld = 1
-
-DO
-
-    LOCATE 1, 3
-    FOR i = 1 TO menus
-        IF m = i THEN COLOR 15, 0 ELSE COLOR 15, 7
-        PRINT " " + LEFT$(menu$(i, 0), 1);
-        IF m = i THEN COLOR 15, 0 ELSE COLOR 0, 7
-        PRINT RIGHT$(menu$(i, 0), LEN(menu$(i, 0)) - 1) + " ";
-        IF i = menus - 1 THEN LOCATE 1, idewx - LEN(menu$(menus, 0)) - 2
-    NEXT
-
-    PCOPY 3, 0
-    DO
-
-        lastaltheld = altheld
-
-        GetInput
-        IF iCHANGED = 0 THEN _LIMIT 100
-
-        IF KALT THEN altheld = 1 ELSE altheld = 0
-
-        IF altheld <> 0 AND lastaltheld = 0 THEN
-            DO: _LIMIT 1000: GetInput: LOOP UNTIL KALT = 0
-            KB = KEY_ESC
-        END IF
-
-        IF mCLICK THEN
-            IF mY = 1 THEN
-                x = 3
-                FOR i = 1 TO menus
-                    x2 = LEN(menu$(i, 0)) + 2
-                    IF mX >= x AND mX < x + x2 THEN
-                        m = i
-                        LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
-                        PCOPY 3, 0
-                        GOTO showmenu
-                    END IF
-                    x = x + x2
-                NEXT
-            END IF 'my=1
-            KB = KEY_ESC 'exit menu selection
-        END IF
-    LOOP UNTIL KB
-
-    K$ = UCASE$(K$)
-    FOR i = 1 TO menus
-        a$ = UCASE$(LEFT$(menu$(i, 0), 1))
-        IF K$ = a$ THEN
-            m = i
-            LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
-            PCOPY 3, 0
-            GOTO showmenu
-        END IF
-    NEXT
-
-    IF KB = KEY_LEFT THEN m = m - 1
-    IF KB = KEY_RIGHT THEN m = m + 1
-    IF KB = KEY_ESC THEN
-        LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
-        GOTO ideloop
-    END IF
-    IF m < 1 THEN m = menus
-    IF m > menus THEN m = 1
-    IF KB = KEY_UP OR KB = KEY_DOWN OR KB = KEY_ENTER THEN
-        LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
-        PCOPY 3, 0
-        GOTO showmenu
-    END IF
-
-    'possible ALT+??? code?
-    IF KB > 0 AND KB <= 255 THEN
-        IF KALT = 0 THEN
-            iCHECKLATER = 1
-            LOCATE 1, 1: COLOR 0, 7: PRINT menubar$;
-            GOTO ideloop
-        END IF
-    END IF
-
-LOOP
-
-'--------------------------------------------------------------------------------
-
-showmenu:
-altheld = 1
-PCOPY 0, 2
-SCREEN , , 1, 0
-r = 1
-DO
-    PCOPY 2, 1
-
-    'find pos of menu m
-    x = 4: FOR i = 1 TO m - 1: x = x + LEN(menu$(i, 0)) + 2
-        IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 1
-    NEXT: xx = x
-    LOCATE 1, xx - 1: COLOR 15, 0: PRINT " " + menu$(m, 0) + " "
-    COLOR 0, 7
-    'calculate menu width
-    w = 0
-    FOR i = 1 TO menusize(m)
-        m$ = menu$(m, i)
-        l = LEN(m$)
-        IF INSTR(m$, "#") THEN l = l - 1
-        IF INSTR(m$, "  ") THEN l = l + 2 'min 4 spacing
-        IF l > w THEN w = l
-    NEXT
-    IF xx > idewx - w - 3 THEN xx = idewx - w - 3
-    ideboxshadow xx - 2, 2, w + 4, menusize(m) + 2
-
-
-    'draw menu items
-    FOR i = 1 TO menusize(m)
-        m$ = menu$(m, i)
-        IF m$ = "-" THEN
-            COLOR 0, 7: LOCATE i + 2, xx - 2: PRINT "Ã" + STRING$(w + 2, "Ä") + "´";
-        ELSE
-            IF r = i THEN LOCATE i + 2, xx - 1: COLOR 15, 0: PRINT SPACE$(w + 2);
-            LOCATE i + 2, xx
-            h = -1: x = INSTR(m$, "#"): IF x THEN h = x: m$ = LEFT$(m$, x - 1) + RIGHT$(m$, LEN(m$) - x)
-            x = INSTR(m$, "  "): IF x THEN m1$ = LEFT$(m$, x - 1): m2$ = RIGHT$(m$, LEN(m$) - x - 1): m$ = m1$ + SPACE$(w - LEN(m1$) - LEN(m2$)) + m2$
-            FOR x = 1 TO LEN(m$)
-                IF x = h THEN
-                    IF r = i THEN COLOR 15, 0 ELSE COLOR 15, 7
-                ELSE
-                    IF r = i THEN COLOR 15, 0 ELSE COLOR 0, 7
-                END IF
-                PRINT MID$(m$, x, 1);
-
-            NEXT
-
-
-
-        END IF
-
-    NEXT
-
-    PCOPY 1, 0
-
-    change = 0
-    DO
-        mousedown = 0: mouseup = 0
-        GetInput
-        lastaltheld = altheld: IF KALT THEN altheld = 1 ELSE altheld = 0
-        IF iCHANGED THEN
-            IF KB THEN change = 1
-            IF mCLICK THEN change = 1: mousedown = 1
-            IF mRELEASE THEN change = 1: mouseup = 1
-        END IF
-        IF mB THEN change = 1
-        'revert to previous menuwhen alt pressed again
-        IF altheld <> 0 AND lastaltheld = 0 THEN
-            DO: _LIMIT 1000: GetInput: LOOP UNTIL KALT = 0 'wait till alt is released
-            PCOPY 3, 0: SCREEN , , 3, 0
-            GOTO startmenu2
-        END IF
-        _LIMIT 100
-    LOOP UNTIL change
-
-    s = 0
-
-    'mouse selection
-    IF mouseup THEN
-        'uses pre-calc xx & w
-        IF mX >= xx - 2 AND mX < xx - 2 + w + 4 THEN
-            IF mY > 2 AND mY <= menusize(m) + 2 THEN
-                y = mY - 2
-                IF menu$(m, y) <> "-" THEN
-                    s = r
-                END IF
-            END IF
-        END IF
-
-        IF mX < xx - 2 OR mX >= xx - 2 + w + 4 OR mY > menusize(m) + 3 THEN
-            PCOPY 3, 0: SCREEN , , 3, 0
-            GOTO ideloop
-        END IF
-
-    END IF
-
-    IF mB THEN
-
-        'top row
-        IF mY = 1 THEN
-            lastm = m
-            x = 3
-            FOR i = 1 TO menus
-                x2 = LEN(menu$(i, 0)) + 2
-                IF mX >= x AND mX < x + x2 THEN
-                    m = i
-                    r = 1
-                    IF lastm = m AND mousedown = 1 THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: GOTO ideloop
-                    EXIT FOR
-                END IF
-                x = x + x2
-                IF i = menus - 1 THEN x = idewx - LEN(menu$(menus, 0)) - 2
-            NEXT
-        END IF
-
-        'uses pre-calc xx & w
-        IF mX >= xx - 2 AND mX < xx - 2 + w + 4 THEN
-            IF mY > 2 AND mY <= menusize(m) + 2 THEN
-                y = mY - 2
-                IF menu$(m, y) <> "-" THEN r = y
-            END IF
-        END IF
-
-    END IF 'mb
-
-    IF KB = KEY_LEFT THEN m = m - 1: r = 1
-    IF KB = KEY_RIGHT THEN m = m + 1: r = 1
-    IF m < 1 THEN m = menus
-    IF m > menus THEN m = 1
-    IF KB = KEY_ESC THEN
-        PCOPY 3, 0: SCREEN , , 3, 0
-        GOTO ideloop
-    END IF
-    IF KB = KEY_DOWN THEN
-        r = r + 1
-        IF menu$(m, r) = "-" THEN r = r + 1
-        IF r > menusize(m) THEN r = 1
-    END IF
-
-    IF KB = KEY_UP THEN
-        r = r - 1
-        IF menu$(m, r) = "-" THEN r = r - 1
-        IF r < 1 THEN r = menusize(m)
-    END IF
-
-    'select?
-
-    'with enter
-    IF KB = KEY_ENTER THEN
-        s = r
-    END IF
-
-    'with hotkey
-    K$ = UCASE$(K$)
-    FOR r2 = 1 TO menusize(m)
-        x = INSTR(menu$(m, r2), "#")
-        IF x THEN
-            a$ = UCASE$(MID$(menu$(m, r2), x + 1, 1))
-            IF K$ = a$ THEN s = r2: EXIT FOR
-        END IF
-    NEXT
-
-    IF s THEN
-
-        IF KALT THEN idehl = 1 ELSE idehl = 0 'set idehl, a shared variable used by various dialogue boxes
-
-        IF menu$(m, s) = "Comment (add ')" THEN
-            y1 = idecy: y2 = y1
-            IF ideselect = 1 THEN
-                y1 = ideselecty1
-                IF idecy > ideselecty1 AND idecx = 1 THEN y2 = y2 - 1
-                IF y1 > y2 THEN SWAP y1, y2
-            END IF
-            'calculate lhs
-            lhs = 10000000
-            FOR y = y1 TO y2
-                a$ = idegetline(y)
-                IF LEN(a$) THEN
-                    ta$ = LTRIM$(a$)
-                    t = LEN(a$) - LEN(ta$)
-                    IF t < lhs THEN lhs = t
-                END IF
-            NEXT
-            'edit lines
-            FOR y = y1 TO y2
-                a$ = idegetline(y)
-                IF LEN(a$) THEN
-                    a$ = LEFT$(a$, lhs) + "'" + RIGHT$(a$, LEN(a$) - lhs)
-                    idesetline y, a$
-                    idechangemade = 1
-                END IF
-            NEXT
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "Uncomment (remove ')" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            y1 = idecy: y2 = y1
-            IF ideselect = 1 THEN
-                y1 = ideselecty1
-                IF idecy > ideselecty1 AND idecx = 1 THEN y2 = y2 - 1
-                IF y1 > y2 THEN SWAP y1, y2
-            END IF
-            'edit lines
-            FOR y = y1 TO y2
-                a$ = idegetline(y)
-                IF LEN(a$) THEN
-                    a2$ = LTRIM$(a$)
-                    IF LEN(a2$) THEN
-                        IF ASC(a2$, 1) = 39 THEN
-                            a$ = SPACE$(LEN(a$) - LEN(a2$)) + RIGHT$(a2$, LEN(a2$) - 1)
-                            idesetline y, a$
-                            idechangemade = 1
-                        END IF
-                    END IF
-                END IF
-            NEXT
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Language..." THEN
-            PCOPY 2, 0
-            retval = idelanguagebox
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Display..." THEN
-            PCOPY 2, 0
-            IF idehelp = 0 THEN
-                retval = idedisplaybox
-                IF retval = 1 THEN
-                    'screen dimensions have changed and everything must be redrawn/reapplied
-                    WIDTH idewx, idewy + idesubwindow
-                    IF idecustomfont THEN
-                        _FONT idecustomfonthandle
-                    ELSE
-                        _FONT 16
-                    END IF
-                    skipdisplay = 0
-                    GOTO redraweverything
-                END IF
-            END IF
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Code layout..." THEN
-            PCOPY 2, 0
-            retval = idelayoutbox
-            IF retval THEN idechangemade = 1: idelayoutallow = 2 'recompile if options changed
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "Add/Remove #Bookmark  ALT+Left" THEN
-            PCOPY 2, 0
-            bmkremoved = 0
-            bmkremoveb:
-            FOR b = 1 TO IdeBmkN
-                IF IdeBmk(b).y = idecy THEN
-                    FOR b2 = b TO IdeBmkN - 1
-                        IdeBmk(b2) = IdeBmk(b2 + 1)
-                    NEXT
-                    IdeBmkN = IdeBmkN - 1
-                    bmkremoved = 1
-                    ideunsaved = 1
-                    GOTO bmkremoveb
-                END IF
-            NEXT
-            IF bmkremoved = 0 THEN
-                IdeBmkN = IdeBmkN + 1
-                IF IdeBmkN > UBOUND(IdeBmk) THEN x = UBOUND(IdeBmk) * 2: REDIM _PRESERVE IdeBmk(x) AS IdeBmkType
-                IdeBmk(IdeBmkN).y = idecy
-                IdeBmk(IdeBmkN).x = idecx
-                ideunsaved = 1
-            END IF
-            SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Next Bookmark  ALT+Down" OR menu$(m, s) = "#Previous Bookmark  ALT+Up" THEN
-            PCOPY 2, 0
-            IF IdeBmkN = 0 THEN
-                idemessagebox "Bookmarks", "No bookmarks exist (Use ALT+Left to create a bookmark)"
-                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                GOTO ideloop
-            END IF
-            IF IdeBmkN = 1 THEN
-                IF idecy = IdeBmk(1).y THEN
-                    idemessagebox "Bookmarks", "No other bookmarks exist"
-                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                    GOTO ideloop
-                END IF
-            END IF
-            l = idecy
-            z = 0: IF menu$(m, s) = "#Next Bookmark  ALT+Down" THEN z = 1
-            DO
-                IF z = 1 THEN l = l + 1 ELSE l = l - 1
-                IF l < 1 THEN l = iden
-                IF l > iden THEN l = 1
-                FOR b = 1 TO IdeBmkN
-                    IF IdeBmk(b).y = l THEN EXIT DO
-                NEXT
-            LOOP
-            idecy = l
-            idecx = IdeBmk(b).x
-            ideselect = 0
-            SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-
-
-
-
-
-        IF menu$(m, s) = "#Go to line..." THEN
-            PCOPY 2, 0
-            retval = idegotobox
-            'retval is ignored
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Backup/Undo..." THEN
-            PCOPY 2, 0
-            retval = idebackupbox
-            'retval is ignored
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Update..." THEN
-            PCOPY 2, 0
-            retval = ideupdatebox
-            'retval is ignored
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#About..." THEN
-            PCOPY 2, 0
-            idemessagebox "About", "QB64 Version " + version$
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-
-        IF menu$(m, s) = "ASCII c#hart" THEN
-            PCOPY 2, 0
-            ideASCIIbox
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Contents page" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            lnk$ = "QB64 Help Menu"
-            GOTO OpenHelpLnk
-        END IF
-        IF menu$(m, s) = "Keyword #index" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            lnk$ = "Keyword Reference - Alphabetical"
-            GOTO OpenHelpLnk
-        END IF
-        IF menu$(m, s) = "#Keywords by usage" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            lnk$ = "Keyword Reference - By usage"
-            GOTO OpenHelpLnk
-        END IF
-
-        IF menu$(m, s) = "#View  Shift+F1" THEN
-
-            IF idehelp = 0 THEN
-                IF idesubwindow THEN PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
-                idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
-                Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
-                idehelp = 1
-                skipdisplay = 0
-                IdeSystem = 3
-                retval = 1: GOTO redraweverything2
-            END IF
-
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Update current page" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            IF idehelp THEN
-                Help_IgnoreCache = 1
-                a$ = Wiki$(Back$(Help_Back_Pos))
-                Help_IgnoreCache = 0
-                WikiParse a$
-            END IF
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "Update all #pages" THEN
-            PCOPY 2, 0
-            q$ = ideyesnobox("Update Help", "Redownload all cached help content? (~10 min)")
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            IF q$ = "Y" THEN
-
-                IF idehelp = 0 THEN
-                    old_idesubwindow = idesubwindow: old_idewy = idewy
-                    idesubwindow = idewy \ 2: idewy = idewy - idesubwindow
-                    Help_wx1 = 2: Help_wy1 = idewy + 1: Help_wx2 = idewx - 1: Help_wy2 = idewy + idesubwindow - 2: Help_ww = Help_wx2 - Help_wx1 + 1: Help_wh = Help_wy2 - Help_wy1 + 1
-                    idesubwindow = old_idesubwindow: idewy = old_idewy
-                END IF
-
-                SCREEN , , 4, 4
-                COLOR 15, 1
-                CLS
-
-                PRINT "Generating list of cached content..."
-
-                'Create a list of all files to be recached
-                f$ = CHR$(0) + idezfilelist$("internal/help", 1) + CHR$(0)
-                IF LEN(f$) = 2 THEN f$ = CHR$(0)
-
-                'Prepend core pages to list
-                f$ = CHR$(0) + "Keyword_Reference_-_By_usage.txt" + f$
-                f$ = CHR$(0) + "QB64_Help_Menu.txt" + f$
-                f$ = CHR$(0) + "QB64_FAQ.txt" + f$
-                PRINT "Adding core help pages added to list..."
-
-                'Download and PARSE alphabetical index to build required F1 help links
-                PRINT "Regenerating keyword list..."
-                Help_Recaching = 1: Help_IgnoreCache = 1
-                a$ = Wiki$("Keyword Reference - Alphabetical")
-                Help_Recaching = 0: Help_IgnoreCache = 0
-                WikiParse a$
-
-                'Add all linked pages to download list (if not already in list)
-                fh = FREEFILE
-                OPEN "internal\help\links.bin" FOR INPUT AS #fh
-                DO UNTIL EOF(fh)
-                    LINE INPUT #fh, l$
-                    IF LEN(l$) THEN
-                        c = INSTR(l$, ","): PageName2$ = RIGHT$(l$, LEN(l$) - c)
-                        DO WHILE INSTR(PageName2$, " ")
-                            ASC(PageName2$, INSTR(PageName2$, " ")) = 95
-                        LOOP
-                        DO WHILE INSTR(PageName2$, "&")
-                            i = INSTR(PageName2$, "&")
-                            PageName2$ = LEFT$(PageName2$, i - 1) + "%26" + RIGHT$(PageName2$, LEN(PageName2$) - i)
-                        LOOP
-                        DO WHILE INSTR(PageName2$, "/")
-                            i = INSTR(PageName2$, "/")
-                            PageName2$ = LEFT$(PageName2$, i - 1) + "%2F" + RIGHT$(PageName2$, LEN(PageName2$) - i)
-                        LOOP
-                        PageName2$ = PageName2$ + ".txt"
-                        IF INSTR(f$, CHR$(0) + PageName2$ + CHR$(0)) = 0 THEN
-                            f$ = f$ + PageName2$ + CHR$(0)
-                        END IF
-                    END IF
-                LOOP
-                CLOSE #fh
-
-                'Redownload all listed files
-                IF f$ <> CHR$(0) THEN
-                    c = 0 'count files to download
-                    FOR x = 2 TO LEN(f$)
-                        IF ASC(f$, x) = 0 THEN c = c + 1
-                    NEXT
-                    c = c - 1
-                    PRINT "Updating"; c; "help content files: (Press ESC to cancel)"
-
-                    f$ = RIGHT$(f$, LEN(f$) - 1)
-                    z$ = CHR$(0)
-                    n = 0
-                    DO UNTIL LEN(f$) = 0
-                        x2 = INSTR(f$, z$)
-                        f2$ = LEFT$(f$, x2 - 1): f$ = RIGHT$(f$, LEN(f$) - x2)
-
-                        IF RIGHT$(f2$, 4) = ".txt" THEN
-                            f2$ = LEFT$(f2$, LEN(f2$) - 4)
-                            n = n + 1
-                            PRINT "(" + str2$(n) + "/" + str2$(c) + ") " + f2$
-
-                            Help_IgnoreCache = 1: Help_Recaching = 1: ignore$ = Wiki(f2$): Help_Recaching = 0: Help_IgnoreCache = 0
-                        END IF
-
-                        GetInput
-                        DO WHILE iCHANGED
-                            IF K$ = CHR$(27) THEN GOTO stoprecache
-                            GetInput
-                        LOOP
-                    LOOP
-                END IF
-                stoprecache:
-                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            END IF
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Update" THEN
-            PCOPY 2, 0
-            UpdateHandle = BeginDownload("www.qb64.net/update2.txt")
-            IF UpdateHandle THEN
-                ideupdatetimerval = TIMER
-                DO UNTIL ABS(TIMER - ideupdatetimerval) >= 5
-                    ContinueDownloads
-                    IF DL(UpdateHandle).State = 2 THEN 'download complete
-                        update 1
-                        UpdateHandle = 0
-                        GOTO ideloop
-                    END IF
-                    _LIMIT 10
-                LOOP
-                CLOSE DL(UpdateHandle).Handle: DL(UpdateHandle).State = 0: UpdateHandle = 0
-                idemessagebox "Update", "Could not connect to server."
-            ELSE
-                idemessagebox "Update", "Could not connect to server."
-                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            END IF 'updatehandle
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "New #SUB..." THEN
-            PCOPY 2, 0
-            idenewsf "SUB"
-            ideselect = 0
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-        IF menu$(m, s) = "New #FUNCTION..." THEN
-            PCOPY 2, 0
-            idenewsf "FUNCTION"
-            ideselect = 0
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#SUBs...  F2" THEN
-            PCOPY 2, 0
-            idesubsjmp:
-            r$ = idesubs
-            IF r$ <> "C" THEN ideselect = 0
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-
-
-        IF menu$(m, s) = "#Find..." THEN
-            PCOPY 2, 0
-            idefindjmp:
-            r$ = idefind
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            '...
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Change..." THEN
-            PCOPY 2, 0
-            r$ = idechange
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            IF r$ = "C" OR r$ = "" THEN GOTO ideloop
-            'assume "V", verify changes
-            IdeAddSearched idefindtext
-
-            oldcx = idecx: oldcy = idecy
-            found = 0: looped = 0
-
-            s$ = idefindtext$
-            IF idefindcasesens = 0 THEN s$ = UCASE$(s$)
-            start = idecy: y = start
-            startx = idecx: x1 = startx
-            first = 1
-            idefindnext2:
-
-            l$ = idegetline(y)
-            IF idefindcasesens = 0 THEN l$ = UCASE$(l$)
-
-            IF first = 1 THEN
-                first = 0
-            ELSE
-                x1 = 1
-                IF idefindbackwards THEN
-                    x1 = LEN(l$) - LEN(s$) + 1
-                END IF
-            END IF
-            IF x1 < 0 THEN x1 = 0
-
-            idefindagain2:
-
-            IF idefindbackwards THEN
-                x = 0
-                FOR xx = x1 TO 1 STEP -1
-                    IF ASC(l$, xx) = ASC(s$) THEN 'first char
-                        xxo = xx - 1
-                        FOR xx2 = xx TO xx + LEN(s$) - 1
-                            IF ASC(l$, xx2) <> ASC(s$, xx2 - xxo) THEN EXIT FOR
-                        NEXT
-                        IF xx2 = xx + LEN(s$) THEN
-                            'matched!
-                            x = xx
-                            EXIT FOR
-                        END IF
-                    END IF 'first char
-                NEXT
-                IF y = start AND looped = 1 AND x <= startx THEN x = 0
-            ELSE
-                x = INSTR(x1, l$, s$)
-                IF y = start AND looped = 1 AND x >= startx THEN x = 0
-            END IF
-
-            IF x THEN
-                IF idefindwholeword THEN
-                    whole = 1
-                    IF x > 1 THEN
-                        c = ASC(UCASE$(MID$(l$, x - 1, 1)))
-                        IF c >= 65 AND c <= 90 THEN whole = 0
-                        IF c >= 48 AND c <= 57 THEN whole = 0
-                    END IF
-                    IF x + LEN(s$) <= LEN(l$) THEN
-                        c = ASC(UCASE$(MID$(l$, x + LEN(s$), 1)))
-                        IF c >= 65 AND c <= 90 THEN whole = 0
-                        IF c >= 48 AND c <= 57 THEN whole = 0
-                    END IF
-                    IF whole = 0 THEN
-                        x1 = x + 1: IF idefindbackwards THEN x1 = x - 1
-                        x = 0
-                        IF x1 > 0 AND x1 <= LEN(l$) THEN GOTO idefindagain2
-                    END IF
-                END IF
-            END IF
-
-            IF x THEN
-                ideselect = 1
-                idecx = x: idecy = y
-                ideselectx1 = x + LEN(s$): ideselecty1 = y
-
-                found = 1
-                ideshowtext
-                SCREEN , , 0, 0: LOCATE , , 1: SCREEN , , 3, 0
-                PCOPY 3, 0
-                r$ = idechangeit
-                idedeltxt
-                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                ideselect = 0
-                IF r$ = "C" THEN idecx = oldcx: idecy = oldcy: GOTO ideloop
-                IF r$ = "Y" THEN
-                    l$ = idegetline(idecy)
-                    idechangemade = 1
-                    IF LEN(l$) >= ideselectx1 THEN
-                        l$ = LEFT$(l$, idecx - 1) + idechangeto$ + RIGHT$(l$, LEN(l$) - ideselectx1 + 1)
-                    ELSE
-                        l$ = LEFT$(l$, idecx - 1) + idechangeto$
-                    END IF
-                    idesetline idecy, l$
-                    IF idefindcasesens = 0 THEN l$ = UCASE$(l$)
-
-                    IF idefindbackwards THEN
-                        IF x <= startx AND y = start THEN startx = startx - LEN(s$) + LEN(idechangeto$) 'move startx according to the difference
-                    ELSE
-                        IF x <= startx AND y = start AND looped = 1 THEN startx = startx - LEN(s$) + LEN(idechangeto$) 'move startx according to the difference
-                        x = x + LEN(idechangeto$) - 1 'skip changed portion
-                    END IF
-                ELSE
-                    '"N"
-                    '(no action)
-                END IF
-                IF idefindbackwards THEN x1 = x - 1 ELSE x1 = x + 1
-                GOTO idefindagain2
-            END IF
-
-            IF idefindbackwards THEN
-                y = y - 1
-                IF y = start - 1 AND looped = 1 THEN
-                    GOTO finishedchange
-                END IF
-                IF y < 1 THEN y = iden: looped = 1
-                GOTO idefindnext2
-            ELSE
-                y = y + 1
-                IF y = start + 1 AND looped = 1 THEN
-                    GOTO finishedchange
-                END IF
-                IF y > iden THEN y = 1: looped = 1
-                GOTO idefindnext2
-            END IF
-
-            '-------------------------------------------------
-
-            finishedchange:
-            idecx = oldcx: idecy = oldcy
-            IF found THEN
-                ideshowtext
-                SCREEN , , 0, 0: LOCATE , , 1: SCREEN , , 3, 0
-                PCOPY 3, 0
-                idechanged
-            ELSE
-                idenomatch
-            END IF
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF '#Change...
-
-        IF menu$(m, s) = "#Repeat Last Find  (Shift+) F3" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idemf3
-        END IF
-
-        IF menu$(m, s) = "Cl#ear  Del" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            IF ideselect = 1 THEN
-                idechangemade = 1
-                GOSUB delselect
-            END IF
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Paste  Shift+Ins or CTRL+V" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idempaste
-        END IF
-
-        IF menu$(m, s) = "#Copy  Ctrl+Ins or CTRL+C" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            IF ideselect = 1 THEN GOTO copy2clip
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "Cu#t  Shift+Del or CTRL+X" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            IF ideselect = 1 THEN
-                K$ = CHR$(0) + "S" 'tricks handler into del after copy
-                GOTO idemcut
-            END IF
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Undo  CTRL+Z" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idemundo
-        END IF
-
-        IF menu$(m, s) = "#Redo  CTRL+Y" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idemredo
-        END IF
-
-
-        IF menu$(m, s) = "Select #All  CTRL+A" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idemselectall
-        END IF
-
-        menu$(m, i) = "Select #All  CTRL+A": i = i + 1
-
-        IF menu$(m, s) = "#Start  F5" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idemrun
-        END IF
-
-        IF menu$(m, s) = "Start (#Detached)  Ctrl+F5" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idemdetached
-        END IF
-
-        IF menu$(m, s) = "Make E#XE Only  F11" OR menu$(m, s) = "Make E#xecutable Only  F11" THEN
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO idemexe
-        END IF
-
-        IF menu$(m, s) = "E#xit" THEN
-            PCOPY 2, 0
-            quickexit:
-            IF ideunsaved = 1 THEN
-                r$ = idesavenow
-                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                IF r$ = "C" THEN GOTO ideloop
-                IF r$ = "Y" THEN
-                    IF ideprogname = "" THEN
-                        r$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
-                        IF r$ = "C" THEN
-                            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
-                        END IF
-                    ELSE
-                        idesave idepath$ + idepathsep$ + ideprogname$
-                    END IF
-                END IF
-
-            END IF
-            fh = FREEFILE: OPEN tmpdir$ + "autosave.bin" FOR OUTPUT AS #fh: CLOSE #fh
-            SYSTEM
-        END IF
-
-        IF menu$(m, s) = "#New" THEN
-            PCOPY 2, 0
-            IF ideunsaved = 1 THEN
-                r$ = idesavenow
-                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                IF r$ = "C" THEN GOTO ideloop
-                IF r$ = "Y" THEN
-                    IF ideprogname = "" THEN
-                        r$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
-                        PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                        IF r$ = "C" THEN GOTO ideloop
-                    ELSE
-                        idesave idepath$ + idepathsep$ + ideprogname$
-                    END IF
-                END IF
-            END IF
-            ideunsaved = -1
-            'new blank text field
-            idet$ = MKL$(0) + MKL$(0): idel = 1: ideli = 1: iden = 1: IdeBmkN = 0
-            idesx = 1
-            idesy = 1
-            idecx = 1
-            idecy = 1
-            ideselect = 0
-            ideprogname$ = ""
-            _TITLE "QB64"
-            idechangemade = 1
-            ideundobase = 0 'reset
-            GOTO ideloop
-        END IF
-
-        FOR ml = 1 TO 4
-            IF LEN(IdeRecentLink(ml, 1)) THEN
-                IF menu$(m, s) = IdeRecentLink(ml, 1) THEN
-                    IdeOpenFile$ = IdeRecentLink(ml, 2)
-                    GOTO directopen
-                END IF
-            END IF
-        NEXT
-
-
-        IF menu$(m, s) = "#Recent..." THEN
-            PCOPY 2, 0
-            f$ = iderecentbox
-            IF LEN(f$) THEN
-                IdeOpenFile$ = f$
-                GOTO directopen
-            END IF
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-            GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Open..." THEN
-            IdeOpenFile$ = ""
-            directopen:
-            PCOPY 2, 0
-            IF ideunsaved THEN
-                r$ = idesavenow
-                PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                IF r$ = "C" THEN GOTO ideloop
-                IF r$ = "Y" THEN
-                    IF ideprogname = "" THEN
-                        r$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
-                        IF r$ = "C" THEN GOTO ideloop
-                    ELSE
-                        idesave idepath$ + idepathsep$ + ideprogname$
-                    END IF
-                    PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                END IF '"Y"
-            END IF 'unsaved
-            r$ = ideopen
-            IF r$ <> "C" THEN ideunsaved = -1: idechangemade = 1: idelayoutallow = 2: ideundobase = 0
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
-        END IF
-
-        IF menu$(m, s) = "#Save" THEN
-            PCOPY 2, 0
-            IF ideprogname = "" THEN
-                a$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
-            ELSE
-                idesave idepath$ + idepathsep$ + ideprogname$
-            END IF
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
-        END IF
-
-
-        IF menu$(m, s) = "Save #As..." THEN
-            PCOPY 2, 0
-            IF ideprogname = "" THEN
-                a$ = idesaveas$("untitled" + tempfolderindexstr$ + ".bas")
-            ELSE
-                a$ = idesaveas$(ideprogname$)
-            END IF
-            PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt: GOTO ideloop
-        END IF
-
-
-
-
-        SCREEN , , 0, 0
-        CLS: PRINT "MENU ITEM [" + menu$(m, s) + "] NOT IMPLEMENTED!": END
-    END IF
-
-
-    _LIMIT 100
-
-LOOP
-
-'--------------------------------------------------------------------------------
-
-END FUNCTION
 
 SUB idebox (x, y, w, h)
 LOCATE y, x: PRINT "Ú" + STRING$(w - 2, "Ä") + "¿";
@@ -29716,256 +33679,7 @@ IF y2 <= idewy THEN
         END IF
     NEXT
 END IF
-
-
 END SUB
-
-FUNCTION idechange$
-
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-
-'built initial search strings
-IF ideselect THEN
-    IF ideselecty1 = idecy THEN 'single line selected
-        a$ = idegetline(idecy)
-        a2$ = ""
-        sx1 = ideselectx1: sx2 = idecx
-        IF sx2 < sx1 THEN SWAP sx1, sx2
-        FOR x = sx1 TO sx2 - 1
-            IF x <= LEN(a$) THEN a2$ = a2$ + MID$(a$, x, 1) ELSE a2$ = a2$ + " "
-        NEXT
-    END IF
-END IF
-IF a2$ = "" THEN
-    a2$ = idefindtext
-END IF
-
-i = 0
-idepar p, 60, 12, "Change"
-i = i + 1
-o(i).typ = 1
-o(i).y = 2
-o(i).nam = idenewtxt("#Find What")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-i = i + 1
-o(i).typ = 1
-o(i).y = 5
-o(i).nam = idenewtxt("Change #To")
-o(i).txt = idenewtxt(idechangeto)
-o(i).v1 = LEN(idechangeto)
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 8
-o(i).nam = idenewtxt("#Match Upper/Lowercase")
-o(i).sel = idefindcasesens
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 9
-o(i).nam = idenewtxt("#Whole Word")
-o(i).sel = idefindwholeword
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 10
-o(i).nam = idenewtxt("#Search Backwards")
-o(i).sel = idefindbackwards
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 11
-o(i).txt = idenewtxt("Find and #Verify" + sep + "#Change All" + sep + "Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-
-        IF o(i).typ THEN
-
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-
-            o(i).cx = 0: o(i).cy = 0
-
-            idedrawobj o(i), f 'display object
-
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    'specific post controls
-
-    IF K$ = CHR$(27) OR (focus = 8 AND info <> 0) THEN
-        idechange$ = "C"
-        EXIT FUNCTION
-    END IF
-
-
-
-
-    IF focus = 7 AND info <> 0 THEN 'change all
-        idefindcasesens = o(3).sel
-        idefindwholeword = o(4).sel
-        idefindbackwards = o(5).sel
-
-        s$ = idetxt(o(1).txt)
-        idefindtext$ = s$
-        idechangeto$ = idetxt(o(2).txt)
-        IdeAddSearched idefindtext
-
-        changed = 0
-
-        s$ = idefindtext$
-        IF idefindcasesens = 0 THEN s$ = UCASE$(s$)
-
-        FOR y = 1 TO iden
-            l$ = idegetline(y)
-            l2$ = ""
-
-            x1 = 1
-            idechangeall:
-            IF idefindcasesens = 0 THEN l3$ = UCASE$(l$) ELSE l3$ = l$
-            x = INSTR(x1, l3$, s$)
-
-            IF x THEN
-                IF idefindwholeword THEN
-                    whole = 1
-                    IF x > 1 THEN
-                        c = ASC(UCASE$(MID$(l$, x - 1, 1)))
-                        IF c >= 65 AND c <= 90 THEN whole = 0
-                        IF c >= 48 AND c <= 57 THEN whole = 0
-                    END IF
-                    IF x + LEN(s$) <= LEN(l$) THEN
-                        c = ASC(UCASE$(MID$(l$, x + LEN(s$), 1)))
-                        IF c >= 65 AND c <= 90 THEN whole = 0
-                        IF c >= 48 AND c <= 57 THEN whole = 0
-                    END IF
-                    IF whole = 0 THEN
-                        IF x1 <= LEN(l$) THEN
-                            l2$ = l2$ + MID$(l$, x1, x - x1 + 1)
-                            x1 = x + 1
-                            GOTO idechangeall
-                        END IF
-                        x = 0
-                    END IF
-                END IF
-            END IF
-
-            IF x THEN
-                l2$ = l2$ + MID$(l$, x1, x - x1) + idechangeto$
-                x1 = x + LEN(s$)
-                IF x1 <= LEN(l$) THEN GOTO idechangeall
-            END IF
-
-            l2$ = l2$ + MID$(l$, x1, LEN(l$) - x1 + 1)
-
-            IF l2$ <> l$ THEN idesetline y, l2$: changed = 1
-
-        NEXT
-
-        IF changed = 0 THEN idenomatch ELSE idechanged: idechangemade = 1
-        EXIT FUNCTION
-
-    END IF 'change all
-
-
-    IF (focus = 6 AND info <> 0) OR K$ = CHR$(13) THEN
-        idefindcasesens = o(3).sel
-        idefindwholeword = o(4).sel
-        idefindbackwards = o(5).sel
-        idefindtext$ = idetxt(o(1).txt)
-        idechangeto$ = idetxt(o(2).txt)
-        idechange$ = "V"
-        EXIT FUNCTION
-    END IF
-
-
-    'end of custom controls
-
-
-
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-
-END FUNCTION
 
 SUB idechanged
 
@@ -30082,129 +33796,6 @@ LOOP
 
 END SUB
 
-FUNCTION idechangeit$
-
-'-------- generic dialog box header --------
-PCOPY 3, 0
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-w = 45
-p.x = 40 - w \ 2
-p.y = 21
-p.w = w
-p.h = 2
-p.nam = idenewtxt("Change")
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 2
-o(i).txt = idenewtxt("#Change" + sep + "#Skip" + sep + "Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    IF UCASE$(K$) = "C" THEN altletter$ = "C"
-    IF UCASE$(K$) = "S" THEN altletter$ = "S"
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF K$ = CHR$(27) THEN
-        idechangeit$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    IF info THEN
-        IF info = 1 THEN idechangeit$ = "Y"
-        IF info = 2 THEN idechangeit$ = "N"
-        IF info = 3 THEN idechangeit$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-
-END FUNCTION
 
 SUB idedelline (i)
 
@@ -30300,7 +33891,7 @@ IF o.typ = 2 THEN
                 'skip
             ELSE
                 IF y <= o.h THEN
-                    IF o.sel = n THEN COLOR 15, 0 ELSE COLOR 0, 7
+                    IF o.sel = n THEN COLOR 7, 0 ELSE COLOR 0, 7
                     IF (o.sel = n OR -o.sel = n) AND o.foc = 0 THEN o.cx = o.par.x + o.x + 2: o.cy = o.par.y + o.y + y
                     LOCATE o.par.y + o.y + y, o.par.x + o.x + 1
                     a3$ = " " + a3$ + SPACE$(o.w)
@@ -30517,298 +34108,7 @@ DO 'main loop
     mousedown = 0
     mouseup = 0
 LOOP
-
-
 END SUB
-
-FUNCTION idefileexists$
-'-------- generic dialog box header --------
-PCOPY 3, 0
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-'idepar p, 30, 6, "File already exists. Overwrite?"
-idepar p, 35, 4, ""
-i = i + 1
-o(i).typ = 3
-o(i).y = 4
-o(i).txt = idenewtxt("#Yes" + sep + "#No")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 2, p.x + 3: PRINT "File already exists. Overwrite?";
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
-    IF UCASE$(K$) = "N" THEN altletter$ = "N"
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF K$ = CHR$(27) THEN
-        idefileexists$ = "N"
-        EXIT FUNCTION
-    END IF
-
-    IF info THEN
-        IF info = 1 THEN idefileexists$ = "Y" ELSE idefileexists$ = "N"
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-
-END FUNCTION
-
-
-
-
-FUNCTION idefind$
-
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-
-'built initial search string
-IF ideselect THEN
-    IF ideselecty1 = idecy THEN 'single line selected
-        a$ = idegetline(idecy)
-        a2$ = ""
-        sx1 = ideselectx1: sx2 = idecx
-        IF sx2 < sx1 THEN SWAP sx1, sx2
-        FOR x = sx1 TO sx2 - 1
-            IF x <= LEN(a$) THEN a2$ = a2$ + MID$(a$, x, 1) ELSE a2$ = a2$ + " "
-        NEXT
-    END IF
-END IF
-IF a2$ = "" THEN
-    a2$ = idefindtext
-END IF
-
-
-i = 0
-idepar p, 60, 9, "Find"
-i = i + 1
-o(i).typ = 1
-o(i).y = 2
-o(i).nam = idenewtxt("#Find What")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 5
-o(i).nam = idenewtxt("#Match Upper/Lowercase")
-o(i).sel = idefindcasesens
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 6
-o(i).nam = idenewtxt("#Whole Word")
-o(i).sel = idefindwholeword
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 7
-o(i).nam = idenewtxt("#Search Backwards")
-o(i).sel = idefindbackwards
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 9
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    'specific post controls
-
-    IF K$ = CHR$(27) OR (focus = 6 AND info <> 0) THEN
-        idefind$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    IF K$ = CHR$(13) OR (focus = 5 AND info <> 0) THEN
-        idefindcasesens = o(2).sel
-        idefindwholeword = o(3).sel
-        idefindbackwards = o(4).sel
-        s$ = idetxt(o(1).txt)
-        idefindtext$ = s$
-        IdeAddSearched idefindtext
-        idefindagain
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-
-
-
-    mousedown = 0
-    mouseup = 0
-LOOP
-END FUNCTION
 
 SUB idefindagain
 
@@ -30931,10 +34231,6 @@ END IF
 
 END SUB
 
-FUNCTION idegetline$ (i)
-IF i <> -1 THEN idegotoline i
-idegetline$ = MID$(idet$, ideli + 4, CVL(MID$(idet$, ideli, 4)))
-END FUNCTION
 
 SUB idegotoline (i)
 IF idel = i THEN EXIT SUB
@@ -30954,98 +34250,6 @@ DO
     ideli = ideli + CVL(MID$(idet$, ideli, 4)) + 8
 LOOP UNTIL idel = i
 END SUB
-
-FUNCTION idehbar (x, y, h, i2, n2)
-i = i2: n = n2
-
-'COLOR 0, 7
-'LOCATE y, x: PRINT CHR$(27);
-'LOCATE y, x + w - 1: PRINT CHR$(26);
-'FOR x2 = x + 1 TO x + w - 2
-'LOCATE y, x2: PRINT "°";
-'NEXT
-'IF w > 3 THEN
-'p2! = w - 2 - .00001
-'x2 = x + 1 + INT(p2! * p!)
-'LOCATE y, x2: PRINT "Û";
-'END IF
-
-
-'h is size in characters (inc. arrows)
-
-'draw background & arrows
-COLOR 0, 7
-LOCATE y, x: PRINT CHR$(27);
-LOCATE y, x + h - 1: PRINT CHR$(26);
-FOR x2 = x + 1 TO x + h - 2
-    LOCATE y, x2: PRINT "°";
-NEXT
-
-'draw slider
-
-IF n < 1 THEN n = 1
-IF i < 1 THEN i = 1
-IF i > n THEN i = n
-
-IF h = 2 THEN
-    idehbar = x 'not position for slider exists
-    EXIT FUNCTION
-END IF
-
-IF h = 3 THEN
-    idehbar = x + 1 'dummy value
-    'no slider
-    EXIT FUNCTION
-END IF
-
-IF h = 4 THEN
-    IF n = 1 THEN
-        idehbar = x + 1 'dummy value
-        'no slider required for 1 item
-        EXIT FUNCTION
-    ELSE
-        'show whichever is closer of the two positions
-        p! = (i - 1) / (n - 1)
-        IF p! < .5 THEN x2 = x + 1 ELSE x2 = x + 2
-        LOCATE y, x2: PRINT "Û";
-        idehbar = x2
-        EXIT FUNCTION
-    END IF
-END IF
-
-IF h > 4 THEN
-    IF n = 1 THEN
-        idehbar = x + h \ 4 'dummy value
-        'no slider required for 1 item
-        EXIT FUNCTION
-    END IF
-    IF i = 1 THEN
-        x2 = x + 1
-        LOCATE y, x2: PRINT "Û";
-        idehbar = x2
-        EXIT FUNCTION
-    END IF
-    IF i = n THEN
-        x2 = x + h - 2
-        LOCATE y, x2: PRINT "Û";
-        idehbar = x2
-        EXIT FUNCTION
-    END IF
-    'between i=1 and i=n
-    p! = (i - 1) / (n - 1)
-    p! = p! * (h - 4)
-    x2 = x + 2 + INT(p!)
-    LOCATE y, x2: PRINT "Û";
-    idehbar = x2
-    EXIT FUNCTION
-END IF
-
-
-END FUNCTION
-
-FUNCTION idehlen (a$)
-IF INSTR(a$, "#") THEN idehlen = LEN(a$) - 1 ELSE idehlen = LEN(a$)
-END FUNCTION
 
 SUB idehPRINT (a$)
 COLOR 0, 7
@@ -31233,11 +34437,6 @@ LOOP
 
 END SUB
 
-FUNCTION idenewtxt (a$)
-idetxtlast = idetxtlast + 1
-idetxt$(idetxtlast) = a$
-idenewtxt = idetxtlast
-END FUNCTION
 
 SUB idenomatch
 
@@ -31354,262 +34553,6 @@ LOOP
 
 END SUB
 
-FUNCTION ideopen$
-STATIC AllFiles
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-path$ = idepath$
-filelist$ = idezfilelist$(path$, AllFiles)
-pathlist$ = idezpathlist$(path$)
-
-i = 0
-idepar p, 70, idewy + idesubwindow - 7, "Open"
-i = i + 1
-o(i).typ = 1
-o(i).y = 2
-o(i).nam = idenewtxt("File #Name")
-i = i + 1
-o(i).typ = 2
-o(i).y = 5
-o(i).w = 32: o(i).h = idewy + idesubwindow - 14
-o(i).nam = idenewtxt("#Files")
-o(i).txt = idenewtxt(filelist$): filelist$ = ""
-i = i + 1
-o(i).typ = 2
-o(i).x = 37: o(i).y = 5
-o(i).w = 31: o(i).h = idewy + idesubwindow - 16
-o(i).nam = idenewtxt("#Paths")
-o(i).txt = idenewtxt(pathlist$): pathlist$ = ""
-i = i + 1
-o(i).typ = 4 'check box
-o(i).x = 37
-o(i).y = idewy + idesubwindow - 9
-o(i).nam = idenewtxt(".BAS Only")
-IF AllFiles THEN o(i).sel = 0 ELSE o(i).sel = 1
-i = i + 1
-o(i).typ = 3
-o(i).y = idewy + idesubwindow - 7
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-IF LEN(IdeOpenFile) THEN f$ = IdeOpenFile: GOTO DirectLoad
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 4, p.x + 2: PRINT "Path: ";
-    a$ = path$
-    w = p.w - 8
-    IF LEN(a$) > w - 3 THEN a$ = "úúú" + RIGHT$(a$, w - 3)
-    PRINT a$;
-    '-------- end of custom display changes --------
-
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-
-
-
-
-
-
-
-
-
-    'specific post controls
-
-    IF AllFiles = 1 AND o(4).sel <> 0 THEN
-        AllFiles = 0
-        idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
-        o(2).sel = -1
-        GOTO ideopenloop
-    END IF
-    IF AllFiles = 0 AND o(4).sel = 0 THEN
-        AllFiles = 1
-        idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
-        o(2).sel = -1
-        GOTO ideopenloop
-    END IF
-
-    IF K$ = CHR$(27) OR (focus = 6 AND info <> 0) THEN
-        ideopen$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    IF idetxt(o(2).stx) <> "" THEN
-        idetxt(o(1).txt) = idetxt(o(2).stx)
-        o(1).v1 = LEN(idetxt(o(1).txt))
-    END IF
-
-    IF focus = 3 THEN
-        IF K$ = CHR$(13) OR info = 1 THEN
-
-            path$ = idezchangepath(path$, idetxt(o(3).stx))
-            idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
-            idetxt(o(3).txt) = idezpathlist$(path$)
-
-            o(2).sel = -1
-            o(3).sel = 1
-            IF info = 1 THEN o(3).sel = -1
-            GOTO ideopenloop
-        END IF
-    END IF
-
-    'load file
-    IF K$ = CHR$(13) OR (info = 1 AND focus = 2) OR (focus = 5 AND info <> 0) THEN
-        f$ = idetxt(o(1).txt)
-
-        'change path?
-        IF f$ = ".." OR f$ = "." THEN f$ = f$ + idepathsep$
-        IF RIGHT$(f$, 1) = idepathsep$ THEN
-            path$ = idezgetfilepath$(path$, f$) 'note: path ending with pathsep needn't contain a file
-            idetxt(o(1).txt) = ""
-            idetxt(o(2).txt) = idezfilelist$(path$, AllFiles)
-            o(2).sel = -1
-            idetxt(o(3).txt) = idezpathlist$(path$)
-            o(3).sel = -1
-            GOTO ideopenloop
-        END IF
-
-        'add .bas if not given
-        IF (LCASE$(RIGHT$(f$, 4)) <> ".bas") AND AllFiles = 0 THEN f$ = f$ + ".bas"
-
-        DirectLoad:
-
-        'check/acquire file path
-        path$ = idezgetfilepath$(path$, f$)
-        'check file exists
-        ideerror = 2
-        OPEN path$ + idepathsep$ + f$ FOR INPUT AS #150: CLOSE #150
-        'load file
-        ideerror = 3
-        idet$ = MKL$(0) + MKL$(0): idel = 1: ideli = 1: iden = 1: IdeBmkN = 0
-        idesx = 1
-        idesy = 1
-        idecx = 1
-        idecy = 1
-        ideselect = 0
-        lineinput3load path$ + idepathsep$ + f$
-        idet$ = SPACE$(LEN(lineinput3buffer) * 8)
-        i2 = 1
-        n = 0
-        chrtab$ = CHR$(9)
-        space1$ = " ": space2$ = "  ": space3$ = "   ": space4$ = "    "
-        chr7$ = CHR$(7): chr11$ = CHR$(11): chr12$ = CHR$(12): chr28$ = CHR$(28): chr29$ = CHR$(29): chr30$ = CHR$(30): chr31$ = CHR$(31)
-        DO
-            a$ = lineinput3$
-            l = LEN(a$)
-            IF l THEN asca = ASC(a$) ELSE asca = -1
-            IF asca <> 13 THEN
-                IF asca <> -1 THEN
-                    'fix tabs
-                    ideopenfixtabs:
-                    x = INSTR(a$, chrtab$)
-                    IF x THEN
-                        x2 = (x - 1) MOD 4
-                        IF x2 = 0 THEN a$ = LEFT$(a$, x - 1) + space4$ + RIGHT$(a$, l - x): l = l + 3: GOTO ideopenfixtabs
-                        IF x2 = 1 THEN a$ = LEFT$(a$, x - 1) + space3$ + RIGHT$(a$, l - x): l = l + 2: GOTO ideopenfixtabs
-                        IF x2 = 2 THEN a$ = LEFT$(a$, x - 1) + space2$ + RIGHT$(a$, l - x): l = l + 1: GOTO ideopenfixtabs
-                        IF x2 = 3 THEN a$ = LEFT$(a$, x - 1) + space1$ + RIGHT$(a$, l - x): GOTO ideopenfixtabs
-                    END IF
-                END IF 'asca<>-1
-                MID$(idet$, i2, l + 8) = MKL$(l) + a$ + MKL$(l): i2 = i2 + l + 8: n = n + 1
-            END IF
-        LOOP UNTIL asca = 13
-        lineinput3buffer = ""
-        iden = n: IF n = 0 THEN idet$ = MKL$(0) + MKL$(0): iden = 1 ELSE idet$ = LEFT$(idet$, i2 - 1)
-        ideerror = 1
-        ideprogname = f$: _TITLE ideprogname + " - QB64"
-        idepath$ = path$
-        IdeAddRecent idepath$ + idepathsep$ + ideprogname$
-        IdeImportBookmarks idepath$ + idepathsep$ + ideprogname$
-        EXIT FUNCTION
-    END IF
-
-    ideopenloop:
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-END FUNCTION
-
 SUB idepar (par AS idedbptype, w, h, title$)
 par.x = (idewx \ 2) - w \ 2
 par.y = ((idewy + idesubwindow) \ 2) - h \ 2
@@ -31617,118 +34560,6 @@ par.w = w
 par.h = h
 IF LEN(title$) THEN par.nam = idenewtxt(title$)
 END SUB
-
-FUNCTION iderestore$
-
-'-------- generic dialog box header --------
-PCOPY 3, 0
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-'idepar p, 30, 6, "File already exists. Overwrite?"
-idepar p, 43, 4, ""
-i = i + 1
-o(i).typ = 3
-o(i).y = 4
-o(i).txt = idenewtxt("#Yes" + sep + "#No")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 2, p.x + 3: PRINT "Recover program from auto-saved backup?";
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
-    IF UCASE$(K$) = "N" THEN altletter$ = "N"
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF info THEN
-        IF info = 1 THEN iderestore$ = "Y" ELSE iderestore$ = "N"
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-END FUNCTION
 
 SUB idesave (f$)
 OPEN f$ FOR OUTPUT AS #151
@@ -31741,311 +34572,6 @@ IdeSaveBookmarks f$
 ideunsaved = 0
 END SUB
 
-FUNCTION idesaveas$ (programname$)
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-path$ = idepath$
-pathlist$ = idezpathlist$(path$)
-
-i = 0
-idepar p, 48, idewy + idesubwindow - 7, "Save As"
-
-i = i + 1
-o(i).typ = 1
-o(i).y = 2
-o(i).nam = idenewtxt("File #Name")
-o(i).txt = idenewtxt(programname$)
-o(i).v1 = LEN(programname$)
-
-'i = i + 1
-'o(i).typ = 2
-'o(i).y = 5
-'o(i).w = 32: o(i).h = 11
-'o(i).nam = idenewtxt("#Files")
-'o(i).txt = idenewtxt(filelist$): filelist$ = ""
-
-i = i + 1
-o(i).typ = 2
-'o(i).x = 10:
-o(i).y = 5
-o(i).w = 44: o(i).h = idewy + idesubwindow - 14
-o(i).nam = idenewtxt("#Paths")
-o(i).txt = idenewtxt(pathlist$): pathlist$ = ""
-
-i = i + 1
-o(i).typ = 3
-o(i).y = idewy + idesubwindow - 7
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 4, p.x + 2: PRINT "Path: ";
-    a$ = path$
-    w = p.w - 8
-    IF LEN(a$) > w - 3 THEN a$ = "úúú" + RIGHT$(a$, w - 3)
-    PRINT a$;
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-
-    IF K$ = CHR$(27) OR (focus = 4 AND info <> 0) THEN
-        idesaveas$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    IF focus = 2 THEN
-        IF K$ = CHR$(13) OR info = 1 THEN
-            path$ = idezchangepath(path$, idetxt(o(2).stx))
-            idetxt(o(2).txt) = idezpathlist$(path$)
-            o(2).sel = 1
-            IF info = 1 THEN o(2).sel = -1
-        END IF
-    END IF
-
-    IF (K$ = CHR$(13) AND focus <> 2) OR (focus = 3 AND info <> 0) THEN
-        f$ = idetxt(o(1).txt)
-
-        'change path?
-        IF f$ = ".." OR f$ = "." THEN f$ = f$ + idepathsep$
-        IF RIGHT$(f$, 1) = idepathsep$ THEN
-            path$ = idezgetfilepath$(path$, f$) 'note: path ending with pathsep needn't contain a file
-            idetxt(o(1).txt) = ""
-            idetxt(o(2).txt) = idezpathlist$(path$)
-            o(2).sel = -1
-            GOTO idesaveasloop
-        END IF
-
-        IF FileHasExtension(f$) = 0 THEN f$ = f$ + ".bas"
-
-        path$ = idezgetfilepath$(path$, f$)
-        ideerror = 3
-        OPEN path$ + idepathsep$ + f$ FOR BINARY AS #150
-        ideerror = 1
-        IF LOF(150) THEN
-            CLOSE #150
-            a$ = idefileexists
-            IF a$ = "N" THEN
-                idesaveas$ = "C"
-                EXIT FUNCTION 'user didn't agree to overwrite
-            END IF
-        ELSE
-            CLOSE #150
-        END IF
-        ideprogname$ = f$: _TITLE ideprogname + " - QB64"
-        idesave path$ + idepathsep$ + f$
-        idepath$ = path$
-        IdeAddRecent idepath$ + idepathsep$ + ideprogname$
-        IdeSaveBookmarks idepath$ + idepathsep$ + ideprogname$
-        EXIT FUNCTION
-    END IF
-
-    idesaveasloop:
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-END FUNCTION
-
-FUNCTION idesavenow$
-
-'-------- generic dialog box header --------
-PCOPY 3, 0
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-idepar p, 40, 4, ""
-i = i + 1
-o(i).typ = 3
-o(i).y = 4
-o(i).txt = idenewtxt("#Yes" + sep + "#No" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 2, p.x + 4: PRINT "Program is not saved. Save it now?";
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
-    IF UCASE$(K$) = "N" THEN altletter$ = "N"
-    IF UCASE$(K$) = "C" THEN altletter$ = "C"
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF K$ = CHR$(27) THEN
-        idesavenow$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    IF info THEN
-        IF info = 1 THEN idesavenow$ = "Y"
-        IF info = 2 THEN idesavenow$ = "N"
-        IF info = 3 THEN idesavenow$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-END FUNCTION
-
 SUB idesetline (i, text$)
 
 text$ = RTRIM$(text$)
@@ -32057,6 +34583,35 @@ idet$ = LEFT$(idet$, ideli - 1) + MKL$(textlen) + text$ + MKL$(textlen) + RIGHT$
 END SUB
 
 SUB ideshowtext
+
+'//Steve Edit to allow quick-insert.  Added on 02/02/2013
+'Part 1 starts here
+STATIC init, orig$(), repl$(), instaswap
+
+IF NOT init THEN
+    init = -1
+    file$ = "Instant Replace List.txt"
+    IF _FILEEXISTS(file$) THEN
+        instaswap = -1
+        f = FREEFILE
+        OPEN file$ FOR INPUT AS #f
+        count = 0
+        DO UNTIL EOF(1)
+            count = count + 1
+            LINE INPUT #f, junk$ 'We're just counting number of lines
+        LOOP
+        CLOSE #f
+        REDIM orig$(count), repl$(count)
+        OPEN file$ FOR INPUT AS #1
+        count = 0
+        DO UNTIL EOF(1)
+            count = count + 1
+            INPUT #f, orig$(count), repl$(count)
+        LOOP
+        CLOSE #f
+    END IF
+END IF
+'Part 1 ends here.
 
 cc = -1
 
@@ -32075,12 +34630,42 @@ IF sx1 > sx2 THEN SWAP sx1, sx2
 l = idesy
 FOR y = 0 TO (idewy - 9)
     LOCATE y + 3, 1
-    COLOR 15, 1
+    COLOR 7, 1
     PRINT CHR$(179); 'clear prev bookmarks from lhs
-    IF l = idefocusline AND idecy <> l THEN COLOR 15, 4 ELSE COLOR 15, 1
+    IF l = idefocusline AND idecy <> l THEN COLOR 7, 4 ELSE COLOR 7, 1
 
     IF l <= iden THEN
         a$ = idegetline(l)
+
+        '//Steve edit for quick-insert part 2 starts here.
+        IF instaswap THEN
+            start = INSTR(a$, "'#") 'Keep these 2 lines separate to avoid IDE module errors
+            finish = INSTR(start + 2, a$, "#'")
+            IF start AND (finish > start) THEN
+                compare$ = MID$(a$, start + 2, finish - start - 2)
+                SELECT CASE UCASE$(compare$)
+                    CASE "DATE"
+                        replace1$ = DATE$
+                    CASE "TIME"
+                        replace1$ = TIME$
+                    CASE ELSE
+                        replace1$ = Evaluate_Expression(compare$)
+                END SELECT
+                FOR i = 1 TO UBOUND(orig$)
+                    IF UCASE$(compare$) = UCASE$(orig$(i)) THEN replace1$ = repl$(i): EXIT FOR
+                NEXT
+
+                l$ = LEFT$(a$, start - 1): r$ = RIGHT$(a$, LEN(a$) - finish - 1)
+                text$ = l$ + replace1$ + r$
+                textlen = LEN(text$)
+                l$ = LEFT$(idet$, ideli - 1)
+                m$ = MKL$(textlen) + text$ + MKL$(textlen)
+                r$ = RIGHT$(idet$, LEN(idet$) - ideli - LEN(a$) - 7)
+                idet$ = l$ + m$ + r$
+                idecx = idecx - finish + start + LEN(replace1$) - 2
+            END IF
+        END IF
+        'Part 2 ends here.
 
         IF l = idecy THEN
             IF idecx <= LEN(a$) THEN
@@ -32097,6 +34682,9 @@ FOR y = 0 TO (idewy - 9)
     ELSE
         a2$ = SPACE$((idewx - 2))
     END IF
+
+
+    ' ### STEVE EDIT TO MAKE QUOTES AND COMMENTS STAND OUT WITH MINOR COLOR ADJUSTMENTS ###
 
     'FOR x = 1 TO LEN(a2$)
     '    PRINT CHR$(ASC(a2$, x));
@@ -32130,6 +34718,7 @@ FOR y = 0 TO (idewy - 9)
         PRINT MID$(a2$, m, 1);
     NEXT m
 
+    '### END OF STEVE EDIT
 
     'apply selection color change if necessary
     IF ideselect THEN
@@ -32158,7 +34747,7 @@ FOR y = 0 TO (idewy - 9)
                     END IF
                     x2 = x2 + 1
                 NEXT
-                COLOR 15, 1
+                COLOR 7, 1
             ELSE 'multiline select
                 IF idecx = 1 AND l = sy2 AND idecy > sy1 THEN GOTO nofinalselect
                 LOCATE y + 3, 2
@@ -32168,7 +34757,7 @@ FOR y = 0 TO (idewy - 9)
                     PRINT CHR$(ASC(a2$, x));
                 NEXT
 
-                COLOR 15, 1
+                COLOR 7, 1
                 nofinalselect:
             END IF
         END IF
@@ -32177,7 +34766,7 @@ FOR y = 0 TO (idewy - 9)
     l = l + 1
 NEXT
 
-COLOR 15, 1
+COLOR 7, 1
 FOR b = 1 TO IdeBmkN
     y = IdeBmk(b).y
     IF y >= idesy AND y <= idesy + (idewy - 9) THEN
@@ -32204,348 +34793,6 @@ PRINT a$;
 SCREEN , , 0, 0: LOCATE idecy - idesy + 3, idecx - idesx + 2: SCREEN , , 3, 0
 
 END SUB
-
-FUNCTION idesubs$
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-
-ly$ = MKL$(1)
-l$ = ideprogname$
-IF l$ = "" THEN l$ = "Untitled" + tempfolderindexstr$
-FOR y = 1 TO iden
-    a$ = idegetline(y)
-    a$ = LTRIM$(RTRIM$(a$))
-    sf = 0
-    nca$ = UCASE$(a$)
-    IF LEFT$(nca$, 4) = "SUB " THEN sf = 1: sf$ = "SUB  "
-    IF LEFT$(nca$, 9) = "FUNCTION " THEN sf = 2: sf$ = "FUNC "
-    IF sf THEN
-        IF RIGHT$(nca$, 7) = " STATIC" THEN
-            a$ = RTRIM$(LEFT$(a$, LEN(a$) - 7))
-        END IF
-        ly$ = ly$ + MKL$(y)
-        IF sf = 1 THEN
-            a$ = RIGHT$(a$, LEN(a$) - 4)
-        ELSE
-            a$ = RIGHT$(a$, LEN(a$) - 9)
-        END IF
-        a$ = LTRIM$(RTRIM$(a$))
-        x = INSTR(a$, "(")
-        IF x THEN
-            n$ = RTRIM$(LEFT$(a$, x - 1))
-            args$ = RIGHT$(a$, LEN(a$) - x + 1)
-        ELSE
-            n$ = a$
-            args$ = ""
-        END IF
-        IF LEN(n$) <= 20 THEN
-            n$ = n$ + SPACE$(20 - LEN(n$))
-        ELSE
-            n$ = LEFT$(n$, 17) + "úúú"
-        END IF
-        IF LEN(args$) <= (idewx - 41) THEN
-            args$ = args$ + SPACE$((idewx - 41) - LEN(args$))
-        ELSE
-            args$ = LEFT$(args$, (idewx - 44)) + "úúú"
-        END IF
-        l$ = l$ + sep + "ÃÄ" + n$ + " " + sf$ + args$
-
-    END IF
-NEXT
-
-FOR x = LEN(l$) TO 1 STEP -1
-    a$ = MID$(l$, x, 1)
-    IF a$ = "Ã" THEN MID$(l$, x, 1) = "À": EXIT FOR
-NEXT
-
-
-
-'72,19
-i = 0
-idepar p, idewx - 8, idewy + idesubwindow - 6, "SUBs"
-
-i = i + 1
-o(i).typ = 2
-o(i).y = 1
-'68
-o(i).w = idewx - 12: o(i).h = idewy + idesubwindow - 9
-o(i).txt = idenewtxt(l$)
-o(i).sel = 1
-o(i).nam = idenewtxt("Program Items")
-
-
-i = i + 1
-o(i).typ = 3
-o(i).y = idewy + idesubwindow - 6
-o(i).txt = idenewtxt("#Edit" + sep + "#Cancel")
-o(i).dft = 1
-
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN
-        idesubs$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) OR (info = 1 AND focus = 1) THEN
-        y = o(1).sel
-        IF y < 1 THEN y = -y
-        idecy = CVL(MID$(ly$, y * 4 - 3, 4))
-        idesy = idecy
-        idecx = 1
-        idesx = 1
-        EXIT FUNCTION
-    END IF
-
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-
-
-END FUNCTION
-
-
-FUNCTION idelanguagebox
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-
-'generate list of available code pages
-l$ = idecpname(1)
-FOR x = 2 TO idecpnum
-    l$ = l$ + sep + idecpname(x)
-NEXT
-l$ = UCASE$(l$)
-
-i = 0
-idepar p, idewx - 8, idewy + idesubwindow - 6, "Language"
-
-i = i + 1
-o(i).typ = 2
-o(i).y = 2
-o(i).w = idewx - 12: o(i).h = idewy + idesubwindow - 10
-o(i).txt = idenewtxt(l$)
-o(i).sel = 1: IF idecpindex THEN o(i).sel = idecpindex
-o(i).nam = idenewtxt("Code Pages")
-
-i = i + 1
-o(i).typ = 3
-o(i).y = idewy + idesubwindow - 6
-o(i).txt = idenewtxt("#OK" + sep + "#Cancel")
-o(i).dft = 1
-
-
-
-
-
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 1, p.x + 2: PRINT "Code-page for ASCII-UNICODE mapping: (Default: CP437)"
-
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN
-        '        idesubs$ = "C"
-        EXIT FUNCTION
-    END IF
-
-    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) OR (info = 1 AND focus = 1) THEN
-        y = o(1).sel
-        IF y < 1 THEN y = -y
-
-        FOR x = 128 TO 255
-            u = VAL("&H" + MID$(idecp(y), x * 8 + 1, 8) + "&")
-            IF u = 0 THEN u = 9744
-            _MAPUNICODE u TO x
-        NEXT
-
-        'SEEK 1049
-        '[2]   codepage(=0)
-        'total bytes: 1050
-
-        'save changes
-        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-        SEEK #150, 1049
-        v% = y: PUT #150, , v%: idecpindex = v%
-        CLOSE #150
-
-        EXIT FUNCTION
-    END IF
-
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-
-
-END FUNCTION
 
 SUB ideupdateobj (o AS idedbotype, focus, f, focusoffset, kk$, altletter$, mb, mousedown, mouseup, mx, my, info, mw)
 DIM sep AS STRING * 1
@@ -32960,82 +35207,7 @@ IF t = 4 THEN 'checkbox
     END IF
     f = f + 1
 END IF '4
-
-
 END SUB
-
-FUNCTION idevbar (x, y, h, i2, n2)
-i = i2: n = n2
-
-'h is height in charatcers (inc. arrows)
-
-'draw background & arrows
-COLOR 0, 7
-LOCATE y, x: PRINT CHR$(24);
-LOCATE y + h - 1, x: PRINT CHR$(25);
-FOR y2 = y + 1 TO y + h - 2
-    LOCATE y2, x: PRINT "°";
-NEXT
-
-'draw slider
-
-IF n < 1 THEN n = 1
-IF i < 1 THEN i = 1
-IF i > n THEN i = n
-
-IF h = 2 THEN
-    idevbar = y 'not position for slider exists
-    EXIT FUNCTION
-END IF
-
-IF h = 3 THEN
-    idevbar = y + 1 'dummy value
-    'no slider
-    EXIT FUNCTION
-END IF
-
-IF h = 4 THEN
-    IF n = 1 THEN
-        idevbar = y + 1 'dummy value
-        'no slider required for 1 item
-        EXIT FUNCTION
-    ELSE
-        'show whichever is closer of the two positions
-        p! = (i - 1) / (n - 1)
-        IF p! < .5 THEN y2 = y + 1 ELSE y2 = y + 2
-        LOCATE y2, x: PRINT "Û";
-        idevbar = y2
-        EXIT FUNCTION
-    END IF
-END IF
-
-IF h > 4 THEN
-    IF n = 1 THEN
-        idevbar = y + h \ 4 'dummy value
-        'no slider required for 1 item
-        EXIT FUNCTION
-    END IF
-    IF i = 1 THEN
-        y2 = y + 1
-        LOCATE y2, x: PRINT "Û";
-        idevbar = y2
-        EXIT FUNCTION
-    END IF
-    IF i = n THEN
-        y2 = y + h - 2
-        LOCATE y2, x: PRINT "Û";
-        idevbar = y2
-        EXIT FUNCTION
-    END IF
-    'between i=1 and i=n
-    p! = (i - 1) / (n - 1)
-    p! = p! * (h - 4)
-    y2 = y + 2 + INT(p!)
-    LOCATE y2, x: PRINT "Û";
-    idevbar = y2
-    EXIT FUNCTION
-END IF
-END FUNCTION
 
 SUB idewait
 _DELAY 0.1
@@ -33049,904 +35221,9 @@ SUB idewait4mous
 'stub
 END SUB
 
-FUNCTION idezfilename$ (f$)
-
-IF os$ = "WIN" THEN
-    idezfilename$ = CHR$(34) + f$ + CHR$(34)
-    EXIT FUNCTION
-END IF
-
-IF os$ = "LNX" THEN
-    idezfilename$ = "'" + f$ + "'"
-    EXIT FUNCTION
-END IF
-
-END FUNCTION
-
-FUNCTION idezchangepath$ (path$, newpath$)
-
-idezchangepath$ = path$ 'default (for unsuccessful cases)
-
-IF os$ = "WIN" THEN
-    'go back a path
-    IF newpath$ = ".." THEN
-        FOR x = LEN(path$) TO 1 STEP -1
-            a$ = MID$(path$, x, 1)
-            IF a$ = "\" THEN
-                idezchangepath$ = LEFT$(path$, x - 1)
-                EXIT FOR
-            END IF
-        NEXT
-        EXIT FUNCTION
-    END IF
-    'change drive
-    IF LEN(newpath$) = 2 AND RIGHT$(newpath$, 1) = ":" THEN
-        idezchangepath$ = newpath$
-        EXIT FUNCTION
-    END IF
-    idezchangepath$ = path$ + "\" + newpath$
-    EXIT FUNCTION
-END IF
-
-IF os$ = "LNX" THEN
-
-    'go back a path
-    IF newpath$ = ".." THEN
-        FOR x = LEN(path$) TO 1 STEP -1
-            a$ = MID$(path$, x, 1)
-            IF a$ = "/" THEN
-                idezchangepath$ = LEFT$(path$, x - 1)
-                IF x = 1 THEN idezchangepath$ = "/" 'root path cannot be ""
-                EXIT FOR
-            END IF
-        NEXT
-        EXIT FUNCTION
-    END IF
-    IF path$ = "/" THEN idezchangepath$ = "/" + newpath$ ELSE idezchangepath$ = path$ + "/" + newpath$
-    EXIT FUNCTION
-END IF
-
-END FUNCTION
-
-FUNCTION idezfilelist$ (path$, method) 'method0=*.bas, method1=*.*
-DIM sep AS STRING * 1
-sep = CHR$(0)
-
-IF os$ = "WIN" THEN
-    OPEN ".\internal\temp\files.txt" FOR OUTPUT AS #150: CLOSE #150
-    IF method = 0 THEN SHELL _HIDE "dir /b /ON /A-D " + idezfilename$(path$) + "\*.bas >.\internal\temp\files.txt"
-    IF method = 1 THEN SHELL _HIDE "dir /b /ON /A-D " + idezfilename$(path$) + "\*.* >.\internal\temp\files.txt"
-    filelist$ = ""
-    OPEN ".\internal\temp\files.txt" FOR INPUT AS #150
-    DO UNTIL EOF(150)
-        LINE INPUT #150, a$
-        IF LEN(a$) THEN 'skip blank entries
-            IF filelist$ = "" THEN filelist$ = a$ ELSE filelist$ = filelist$ + sep + a$
-        END IF
-    LOOP
-    CLOSE #150
-    idezfilelist$ = filelist$
-    EXIT FUNCTION
-END IF
-
-IF os$ = "LNX" THEN
-    filelist$ = ""
-    FOR i = 1 TO 2 - method
-        OPEN "./internal/temp/files.txt" FOR OUTPUT AS #150: CLOSE #150
-        IF method = 0 THEN
-            IF i = 1 THEN SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -type f -name " + CHR$(34) + "*.bas" + CHR$(34) + " >./internal/temp/files.txt"
-            IF i = 2 THEN SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -type f -name " + CHR$(34) + "*.BAS" + CHR$(34) + " >./internal/temp/files.txt"
-        END IF
-        IF method = 1 THEN
-            IF i = 1 THEN SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -type f -name " + CHR$(34) + "*" + CHR$(34) + " >./internal/temp/files.txt"
-        END IF
-        OPEN "./internal/temp/files.txt" FOR INPUT AS #150
-        DO UNTIL EOF(150)
-            LINE INPUT #150, a$
-            IF LEN(a$) = 0 THEN EXIT DO
-            FOR x = LEN(a$) TO 1 STEP -1
-                a2$ = MID$(a$, x, 1)
-                IF a2$ = "/" THEN
-                    a$ = RIGHT$(a$, LEN(a$) - x)
-                    EXIT FOR
-                END IF
-            NEXT
-            IF filelist$ = "" THEN filelist$ = a$ ELSE filelist$ = filelist$ + sep + a$
-        LOOP
-        CLOSE #150
-    NEXT
-    idezfilelist$ = filelist$
-    EXIT FUNCTION
-END IF
-
-END FUNCTION
-
-FUNCTION idezgetroot$
-'note: does NOT including a trailing / or \ on the right
-
-IF os$ = "WIN" THEN
-    SHELL _HIDE "cd >.\internal\temp\root.txt"
-    OPEN ".\internal\temp\root.txt" FOR INPUT AS #150
-    LINE INPUT #150, a$
-    idezgetroot$ = a$
-    CLOSE #150
-    EXIT FUNCTION
-END IF
-
-IF os$ = "LNX" THEN
-    SHELL _HIDE "pwd >./internal/temp/root.txt"
-    OPEN "./internal/temp/root.txt" FOR INPUT AS #150
-    LINE INPUT #150, a$
-    idezgetroot$ = a$
-    CLOSE #150
-    EXIT FUNCTION
-END IF
-
-END FUNCTION
-
-FUNCTION idezpathlist$ (path$)
-DIM sep AS STRING * 1
-sep = CHR$(0)
-
-IF os$ = "WIN" THEN
-    OPEN ".\internal\temp\paths.txt" FOR OUTPUT AS #150: CLOSE #150
-    a$ = "": IF RIGHT$(path$, 1) = ":" THEN a$ = "\" 'use a \ after a drive letter
-    SHELL _HIDE "dir /b /ON /AD " + idezfilename$(path$ + a$) + " >.\internal\temp\paths.txt"
-    pathlist$ = ""
-    OPEN ".\internal\temp\paths.txt" FOR INPUT AS #150
-    DO UNTIL EOF(150)
-        LINE INPUT #150, a$
-        IF pathlist$ = "" THEN pathlist$ = a$ ELSE pathlist$ = pathlist$ + sep + a$
-    LOOP
-    CLOSE #150
-    'count instances of / or \
-    c = 0
-    FOR x = 1 TO LEN(path$)
-        b$ = MID$(path$, x, 1)
-        IF b$ = idepathsep$ THEN c = c + 1
-    NEXT
-    IF c >= 1 THEN
-        IF LEN(pathlist$) THEN pathlist$ = ".." + sep + pathlist$ ELSE pathlist$ = ".."
-    END IF
-    'add drive paths
-    FOR i = 0 TO 25
-        IF LEN(pathlist$) THEN pathlist$ = pathlist$ + sep
-        pathlist$ = pathlist$ + CHR$(65 + i) + ":"
-    NEXT
-    idezpathlist$ = pathlist$
-    EXIT FUNCTION
-END IF
-
-IF os$ = "LNX" THEN
-    pathlist$ = ""
-    OPEN "./internal/temp/paths.txt" FOR OUTPUT AS #150: CLOSE #150
-    SHELL _HIDE "find " + idezfilename$(path$) + " -maxdepth 1 -mindepth 1 -type d >./internal/temp/paths.txt"
-    OPEN "./internal/temp/paths.txt" FOR INPUT AS #150
-    DO UNTIL EOF(150)
-        LINE INPUT #150, a$
-        IF LEN(a$) = 0 THEN EXIT DO
-        FOR x = LEN(a$) TO 1 STEP -1
-            a2$ = MID$(a$, x, 1)
-            IF a2$ = "/" THEN
-                a$ = RIGHT$(a$, LEN(a$) - x)
-                EXIT FOR
-            END IF
-        NEXT
-        IF pathlist$ = "" THEN pathlist$ = a$ ELSE pathlist$ = pathlist$ + sep + a$
-    LOOP
-    CLOSE #150
-
-    IF path$ <> "/" THEN
-        a$ = ".."
-
-        IF pathlist$ = "" THEN pathlist$ = a$ ELSE pathlist$ = a$ + sep + pathlist$
-    END IF
-
-    idezpathlist$ = pathlist$
-    EXIT FUNCTION
-END IF
-
-END FUNCTION
-
-FUNCTION ideztakepath$ (f$) 'assume f$ contains a filename with an optional path
-p$ = ""
-
-IF os$ = "WIN" THEN
-    FOR i = LEN(f$) TO 1 STEP -1
-        a$ = MID$(f$, i, 1)
-        IF a$ = "\" THEN
-            p$ = LEFT$(f$, i - 1)
-            f$ = RIGHT$(f$, LEN(f$) - i)
-            EXIT FOR
-        END IF
-    NEXT
-    ideztakepath$ = p$
-    EXIT FUNCTION
-END IF
-
-IF os$ = "LNX" THEN
-    FOR i = LEN(f$) TO 1 STEP -1
-        a$ = MID$(f$, i, 1)
-        IF a$ = "/" THEN
-            p$ = LEFT$(f$, i - 1)
-            f$ = RIGHT$(f$, LEN(f$) - i)
-            EXIT FOR
-        END IF
-    NEXT
-    ideztakepath$ = p$
-    EXIT FUNCTION
-END IF
-
-END FUNCTION
-
-'file f$ exists, and may contain a path
-'return the FULL path (even if it was passed as a relative path)
-'f$ is altered to only contain the name of the actual file
-'root$ is the path to apply relative paths to
-FUNCTION idezgetfilepath$ (root$, f$)
-'step #1: seperate file's name from its path (if any)
-p$ = ideztakepath$(f$) 'note: this is a simple seperation of the string
-'step #2: if path was undefined, set it to root
-IF LEN(p$) = 0 THEN p$ = root$
-'step #3: if path is relative, make it relative to root$
-IF LEFT$(p$, 1) = "." THEN p$ = root$ + idepathsep$ + p$
-'step #4: attempt a CHDIR to the path to (i)  validate its existance
-'                                      & (ii) allow listing the paths full name
-ideerror = 4 'path not found
-p2$ = p$
-IF os$ = "WIN" THEN
-    IF RIGHT$(p2$, 1) = ":" THEN p2$ = p2$ + "\" 'force change to root of drive
-END IF
-CHDIR p2$
-ideerror = 1
-'step #5: get the path's full name (assume success)
-IF os$ = "WIN" THEN
-    SHELL _HIDE "cd >" + idezfilename$(ideroot$) + "\internal\temp\root.txt"
-    OPEN ideroot$ + "\internal\temp\root.txt" FOR INPUT AS #150
-    LINE INPUT #150, p$
-    IF RIGHT$(p$, 1) = "\" THEN p$ = LEFT$(p$, LEN(p$) - 1) 'strip trailing \ after root drive path
-    CLOSE #150
-END IF
-IF os$ = "LNX" THEN
-    SHELL _HIDE "pwd >" + idezfilename$(ideroot$) + "/internal/temp/root.txt"
-    OPEN ideroot$ + "/internal/temp/root.txt" FOR INPUT AS #150
-    LINE INPUT #150, p$
-    CLOSE #150
-END IF
-'step #6: restore root path (assume success)
-CHDIR ideroot$
-'important: no validation of f$ necessary
-idezgetfilepath$ = p$
-END FUNCTION
-
 SUB initmouse
 _MOUSESHOW
 END SUB
-
-
-
-
-
-
-FUNCTION idelayoutbox
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-idepar p, 60, 7, "Code Layout"
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 2
-o(i).nam = idenewtxt("#Auto Spacing & Upper/Lowercase Formatting")
-o(i).sel = ideautolayout
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 4
-o(i).nam = idenewtxt("Auto #Indent -")
-o(i).sel = ideautoindent
-
-a2$ = str2$(ideautoindentsize)
-i = i + 1
-o(i).typ = 1
-o(i).x = 20
-o(i).y = 4
-o(i).nam = idenewtxt("#Spacing")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 7
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    'specific post controls
-
-    a$ = idetxt(o(3).txt)
-    IF LEN(a$) > 2 THEN a$ = LEFT$(a$, 2) '2 character limit
-    FOR i = 1 TO LEN(a$)
-        a = ASC(a$, i)
-        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
-        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
-    NEXT
-    IF LEN(a$) THEN
-        a = VAL(a$)
-        IF a > 64 THEN a$ = "64"
-    END IF
-    idetxt(o(3).txt) = a$
-
-    IF K$ = CHR$(27) OR (focus = 5 AND info <> 0) THEN EXIT FUNCTION
-    IF K$ = CHR$(13) OR (focus = 4 AND info <> 0) THEN
-        'save changes
-        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-        v% = o(1).sel: IF v% <> 0 THEN v% = 1 'ideautolayout
-        PUT #150, , v%
-        IF ideautolayout <> v% THEN ideautolayout = v%: idelayoutbox = 1
-        v% = o(2).sel: IF v% <> 0 THEN v% = 1 'ideautoindent
-        PUT #150, , v%
-        IF ideautoindent <> v% THEN ideautoindent = v%: idelayoutbox = 1
-        v$ = idetxt(o(3).txt) 'ideautoindentsize
-        IF v$ = "" THEN v$ = "4"
-        v% = VAL(v$)
-        IF v% < 0 OR v% > 64 THEN v% = 4
-        PUT #150, , v%
-        IF ideautoindentsize <> v% THEN
-            ideautoindentsize = v%
-            IF ideautoindent <> 0 THEN idelayoutbox = 1
-        END IF
-        CLOSE #150
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-
-    mousedown = 0
-    mouseup = 0
-LOOP
-END FUNCTION
-
-
-
-
-
-
-FUNCTION idebackupbox
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-idepar p, 50, 5, "Backup/Undo"
-
-a2$ = str2$(idebackupsize)
-i = i + 1
-o(i).typ = 1
-o(i).y = 2
-o(i).nam = idenewtxt("#Undo buffer limit (10-2000MB)")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 5
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    'specific post controls
-
-    a$ = idetxt(o(1).txt)
-    IF LEN(a$) > 4 THEN a$ = LEFT$(a$, 4) '4 character limit
-    FOR i = 1 TO LEN(a$)
-        a = ASC(a$, i)
-        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
-        IF a < 48 OR a > 57 THEN a$ = LEFT$(a$, i - 1): EXIT FOR
-    NEXT
-    IF focus <> 1 THEN
-        a = VAL(a$)
-        IF a < 10 THEN a$ = "10"
-        IF a > 2000 THEN a$ = "2000"
-    END IF
-    idetxt(o(1).txt) = a$
-
-
-
-    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN EXIT FUNCTION
-
-    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) THEN
-        'save changes
-        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-        SEEK #150, 1051
-        v$ = idetxt(o(1).txt) 'idebackupsize
-        v& = VAL(v$)
-        IF v& < 10 THEN v& = 10
-        IF v& > 2000 THEN v& = 2000
-
-        IF v& < idebackupsize THEN
-            OPEN tmpdir$ + "undo2.bin" FOR OUTPUT AS #151: CLOSE #151
-            ideundobase = 0
-            ideundopos = 0
-        END IF
-
-        idebackupsize = v&
-        PUT #150, , v&
-        CLOSE #150
-        idebackupbox = 1
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-
-    mousedown = 0
-    mouseup = 0
-LOOP
-END FUNCTION
-
-
-
-
-
-
-
-FUNCTION idegotobox
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-idepar p, 30, 5, "Go To Line"
-
-a2$ = ""
-i = i + 1
-o(i).typ = 1
-o(i).y = 2
-o(i).nam = idenewtxt("#Line")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 5
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    'specific post controls
-
-    a$ = idetxt(o(1).txt)
-    IF LEN(a$) > 8 THEN a$ = LEFT$(a$, 8) '8 character limit
-    FOR i = 1 TO LEN(a$)
-        a = ASC(a$, i)
-        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
-        IF a < 48 OR a > 57 THEN a$ = LEFT$(a$, i - 1): EXIT FOR
-    NEXT
-    IF focus <> 1 THEN
-        a = VAL(a$)
-        IF a < 1 THEN a$ = "1"
-    END IF
-    idetxt(o(1).txt) = a$
-
-    IF K$ = CHR$(27) OR (focus = 3 AND info <> 0) THEN EXIT FUNCTION
-
-    IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) THEN
-        v$ = idetxt(o(1).txt)
-        v& = VAL(v$)
-        IF v& < 1 THEN v& = 1
-        IF v& > iden THEN v& = iden
-        idecy = v&
-        ideselect = 0
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-
-    mousedown = 0
-    mouseup = 0
-LOOP
-END FUNCTION
-
-
-
-
-
-
-
-
-FUNCTION ideupdatebox
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-idepar p, 40, 8, "Update"
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 2
-o(i).nam = idenewtxt("#Check for updates:")
-o(i).sel = ideupdatecheck
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 4
-o(i).x = 8
-o(i).nam = idenewtxt("#Only check once per day")
-o(i).sel = ideupdatedaily
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 6
-o(i).x = 8
-o(i).nam = idenewtxt("#Automatically apply updates")
-o(i).sel = ideupdateauto
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 8
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    'specific post controls
-    IF K$ = CHR$(27) OR (focus = 5 AND info <> 0) THEN EXIT FUNCTION
-    IF K$ = CHR$(13) OR (focus = 4 AND info <> 0) THEN
-        'save changes
-        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-        SEEK #150, 1039
-        v% = o(1).sel: IF v% <> 0 THEN v% = 1
-        PUT #150, , v%
-        ideupdatecheck = v%
-        v% = o(2).sel: IF v% <> 0 THEN v% = 1
-        PUT #150, , v%
-        ideupdatedaily = v%
-        v% = o(3).sel: IF v% <> 0 THEN v% = 1
-        PUT #150, , v%
-        ideupdateauto = v%
-        CLOSE #150
-        EXIT FUNCTION
-    END IF
-    'end of custom controls
-
-    mousedown = 0
-    mouseup = 0
-LOOP
-END FUNCTION
-
-
-
-
 
 SUB idemessagebox (titlestr$, messagestr$)
 
@@ -34058,450 +35335,6 @@ DO 'main loop
 LOOP
 END SUB
 
-
-
-FUNCTION ideyesnobox$ (titlestr$, messagestr$) 'returns "Y" or "N"
-'-------- generic dialog box header --------
-PCOPY 3, 0
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-w = LEN(messagestr$) + 2
-w2 = LEN(titlestr$) + 4
-IF w < w2 THEN w = w2
-idepar p, w, 4, titlestr$
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 4
-o(i).txt = idenewtxt("#Yes" + sep + "#No")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 2, p.x + 2: PRINT messagestr$;
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    IF UCASE$(K$) = "Y" THEN altletter$ = "Y"
-    IF UCASE$(K$) = "N" THEN altletter$ = "N"
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    IF K$ = CHR$(27) THEN
-        ideyesnobox$ = "N"
-        EXIT FUNCTION
-    END IF
-
-    IF info THEN
-        IF info = 1 THEN ideyesnobox$ = "Y" ELSE ideyesnobox$ = "N"
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-    mousedown = 0
-    mouseup = 0
-LOOP
-
-END FUNCTION 'yes/no box
-
-
-FUNCTION idedisplaybox
-
-'-------- generic dialog box header --------
-PCOPY 0, 2
-PCOPY 0, 1
-SCREEN , , 1, 0
-focus = 1
-DIM p AS idedbptype
-DIM o(1 TO 100) AS idedbotype
-DIM oo AS idedbotype
-DIM sep AS STRING * 1
-sep = CHR$(0)
-'-------- end of generic dialog box header --------
-
-'-------- init --------
-i = 0
-
-'idepar p, 60, 16, "Display"
-'note: manually set window position in case display to set too large by accident
-p.x = (80 \ 2) - 60 \ 2
-p.y = (25 \ 2) - 16 \ 2
-p.w = 60
-p.h = 16
-p.nam = idenewtxt("Display")
-
-a2$ = str2$(idewx)
-i = i + 1
-o(i).typ = 1
-o(i).x = 16
-o(i).y = 2
-o(i).nam = idenewtxt("#Width")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-a2$ = str2$(idewy + idesubwindow)
-i = i + 1
-o(i).typ = 1
-o(i).x = 15
-o(i).y = 5
-o(i).nam = idenewtxt("#Height")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-i = i + 1
-o(i).typ = 4 'check box
-o(i).y = 8
-o(i).nam = idenewtxt("Custom #Font:")
-o(i).sel = idecustomfont
-
-a2$ = idecustomfontfile$
-i = i + 1
-o(i).typ = 1
-o(i).x = 10
-o(i).y = 10
-o(i).nam = idenewtxt("File #Name")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-a2$ = str2$(idecustomfontheight)
-i = i + 1
-o(i).typ = 1
-o(i).x = 10
-o(i).y = 13
-o(i).nam = idenewtxt("#Row Height (Pixels)")
-o(i).txt = idenewtxt(a2$)
-o(i).v1 = LEN(a2$)
-
-i = i + 1
-o(i).typ = 3
-o(i).y = 16
-o(i).txt = idenewtxt("OK" + sep + "#Cancel")
-o(i).dft = 1
-'-------- end of init --------
-
-'-------- generic init --------
-FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
-'-------- end of generic init --------
-
-DO 'main loop
-
-
-    '-------- generic display dialog box & objects --------
-    idedrawpar p
-    f = 1: cx = 0: cy = 0
-    FOR i = 1 TO 100
-        IF o(i).typ THEN
-
-            'prepare object
-            o(i).foc = focus - f 'focus offset
-            o(i).cx = 0: o(i).cy = 0
-            idedrawobj o(i), f 'display object
-            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
-        END IF
-    NEXT i
-    lastfocus = f - 1
-    '-------- end of generic display dialog box & objects --------
-
-    '-------- custom display changes --------
-    COLOR 0, 7: LOCATE p.y + 2, p.x + 2: PRINT "Window Size -";
-    COLOR 0, 7: LOCATE p.y + 9, p.x + 29: PRINT " Monospace TTF Font ";
-    '-------- end of custom display changes --------
-
-    'update visual page and cursor position
-    PCOPY 1, 0
-    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
-
-    '-------- read input --------
-    change = 0
-    DO
-        GetInput
-        IF mWHEEL THEN change = 1
-        IF KB THEN change = 1
-        IF mCLICK THEN mousedown = 1: change = 1
-        IF mRELEASE THEN mouseup = 1: change = 1
-        IF mB THEN change = 1
-        alt = KALT: IF alt <> oldalt THEN change = 1
-        oldalt = alt
-        _LIMIT 100
-    LOOP UNTIL change
-    IF alt THEN idehl = 1 ELSE idehl = 0
-    'convert "alt+letter" scancode to letter's ASCII character
-    altletter$ = ""
-    IF alt THEN
-        IF LEN(K$) = 1 THEN
-            k = ASC(UCASE$(K$))
-            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
-        END IF
-    END IF
-    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
-    '-------- end of read input --------
-
-    '-------- generic input response --------
-    info = 0
-    IF K$ = "" THEN K$ = CHR$(255)
-    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
-    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
-    IF focus < 1 THEN focus = lastfocus
-    IF focus > lastfocus THEN focus = 1
-    f = 1
-    FOR i = 1 TO 100
-        t = o(i).typ
-        IF t THEN
-            focusoffset = focus - f
-            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
-        END IF
-    NEXT
-    '-------- end of generic input response --------
-
-    'specific post controls
-
-    a$ = idetxt(o(1).txt)
-    IF LEN(a$) > 3 THEN a$ = LEFT$(a$, 3) '3 character limit
-    FOR i = 1 TO LEN(a$)
-        a = ASC(a$, i)
-        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
-        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
-    NEXT
-    IF focus <> 1 THEN
-        IF LEN(a$) THEN a = VAL(a$) ELSE a = 0
-        IF a < 80 THEN a$ = "80"
-    END IF
-    idetxt(o(1).txt) = a$
-
-    a$ = idetxt(o(2).txt)
-    IF LEN(a$) > 3 THEN a$ = LEFT$(a$, 3) '3 character limit
-    FOR i = 1 TO LEN(a$)
-        a = ASC(a$, i)
-        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
-        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
-    NEXT
-    IF focus <> 2 THEN
-        IF LEN(a$) THEN a = VAL(a$) ELSE a = 0
-        IF a < 25 THEN a$ = "25"
-    END IF
-    idetxt(o(2).txt) = a$
-
-    a$ = idetxt(o(4).txt)
-    IF LEN(a$) > 1024 THEN a$ = LEFT$(a$, 1024)
-    idetxt(o(4).txt) = a$
-
-    a$ = idetxt(o(5).txt)
-    IF LEN(a$) > 2 THEN a$ = LEFT$(a$, 2) '2 character limit
-    FOR i = 1 TO LEN(a$)
-        a = ASC(a$, i)
-        IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
-        IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
-    NEXT
-    IF focus <> 5 THEN
-        IF LEN(a$) THEN a = VAL(a$) ELSE a = 0
-        IF a < 8 THEN a$ = "8"
-    END IF
-    idetxt(o(5).txt) = a$
-
-
-
-    IF K$ = CHR$(27) OR (focus = 7 AND info <> 0) THEN EXIT FUNCTION
-    IF K$ = CHR$(13) OR (focus = 6 AND info <> 0) THEN
-
-        x = 0 'change to custom font
-
-        'get size in v%
-        v$ = idetxt(o(5).txt): IF v$ = "" THEN v$ = "0"
-        v% = VAL(v$)
-        IF v% < 8 THEN v% = 8
-        IF v% > 99 THEN v% = 99
-        IF v% <> idecustomfontheight THEN x = 1
-
-        IF o(3).sel <> idecustomfont THEN
-            IF o(3).sel = 0 THEN
-                _FONT 16
-                _FREEFONT idecustomfonthandle
-            ELSE
-                x = 1
-            END IF
-        END IF
-
-
-        v$ = idetxt(o(4).txt): IF v$ <> idecustomfontfile$ THEN x = 1
-
-        IF o(3).sel = 1 AND x = 1 THEN
-            oldhandle = idecustomfonthandle
-            idecustomfonthandle = _LOADFONT(v$, v%, "MONOSPACE")
-            IF idecustomfonthandle = -1 THEN
-                'failed! - revert to default settings
-                o(3).sel = 0: idetxt(o(4).txt) = "c:\windows\fonts\lucon.ttf": idetxt(o(5).txt) = "21": _FONT 16
-            ELSE
-                _FONT idecustomfonthandle
-            END IF
-            IF idecustomfont = 1 THEN _FREEFONT oldhandle
-        END IF
-
-        'save changes
-        OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-
-        SEEK #150, 7
-
-        v$ = idetxt(o(1).txt): IF v$ = "" THEN v$ = "0"
-        v% = VAL(v$)
-        IF v% < 80 THEN v% = 80
-        IF v% > 999 THEN v% = 999
-        PUT #150, , v%
-        IF v% <> idewx THEN idedisplaybox = 1
-        idewx = v%
-
-        v$ = idetxt(o(2).txt): IF v$ = "" THEN v$ = "0"
-        v% = VAL(v$)
-        IF v% < 25 THEN v% = 25
-        IF v% > 999 THEN v% = 999
-        PUT #150, , v%
-        IF v% <> idewy THEN idedisplaybox = 1
-        idewy = v% - idesubwindow
-        v% = o(3).sel
-        IF v% <> 0 THEN v% = 1
-        PUT #150, , v%
-        idecustomfont = v%
-
-        v$ = idetxt(o(4).txt)
-        IF LEN(v$) > 1024 THEN v$ = LEFT$(v$, 1024)
-        idecustomfontfile$ = v$
-        v$ = v$ + SPACE$(1024 - LEN(v$))
-        PUT #150, , v$
-
-        v$ = idetxt(o(5).txt): IF v$ = "" THEN v$ = "0"
-        v% = VAL(v$)
-        IF v% < 8 THEN v% = 8
-        IF v% > 99 THEN v% = 99
-        PUT #150, , v%
-        idecustomfontheight = v%
-
-        CLOSE #150
-        EXIT FUNCTION
-    END IF
-
-    'end of custom controls
-
-    mousedown = 0
-    mouseup = 0
-LOOP
-END FUNCTION
-
-
-FUNCTION HashValue& (a$) 'returns the hash table value of a string
-'[5(first)][5(second)][5(last)][5(2nd-last)][3(length AND 7)][1(first char is underscore)]
-l = LEN(a$)
-IF l = 0 THEN EXIT FUNCTION 'an (invalid) NULL string equates to 0
-a = ASC(a$)
-IF a <> 95 THEN 'does not begin with underscore
-    SELECT CASE l
-        CASE 1
-            HashValue& = hash1char(a) + 1048576
-            EXIT FUNCTION
-        CASE 2
-            HashValue& = hash2char(CVI(a$)) + 2097152
-            EXIT FUNCTION
-        CASE 3
-            HashValue& = hash2char(CVI(a$)) + hash1char(ASC(a$, 3)) * 1024 + 3145728
-            EXIT FUNCTION
-        CASE ELSE
-            HashValue& = hash2char(CVI(a$)) + hash2char(ASC(a$, l) + ASC(a$, l - 1) * 256) * 1024 + (l AND 7) * 1048576
-            EXIT FUNCTION
-    END SELECT
-ELSE 'does begin with underscore
-    SELECT CASE l
-        CASE 1
-            HashValue& = (1048576 + 8388608): EXIT FUNCTION 'note: underscore only is illegal in QB64 but supported by hash
-        CASE 2
-            HashValue& = hash1char(ASC(a$, 2)) + (2097152 + 8388608)
-            EXIT FUNCTION
-        CASE 3
-            HashValue& = hash2char(ASC(a$, 2) + ASC(a$, 3) * 256) + (3145728 + 8388608)
-            EXIT FUNCTION
-        CASE 4
-            HashValue& = hash2char((CVL(a$) AND &HFFFF00) \ 256) + hash1char(ASC(a$, 4)) * 1024 + (4194304 + 8388608)
-            EXIT FUNCTION
-        CASE ELSE
-            HashValue& = hash2char((CVL(a$) AND &HFFFF00) \ 256) + hash2char(ASC(a$, l) + ASC(a$, l - 1) * 256) * 1024 + (l AND 7) * 1048576 + 8388608
-            EXIT FUNCTION
-    END SELECT
-END IF
-END FUNCTION
-
 SUB HashAdd (a$, flags, reference)
 
 'find the index to use
@@ -34541,137 +35374,6 @@ HashList(i).Reference = reference
 HashListName(i) = UCASE$(a$)
 
 END SUB
-
-FUNCTION HashFind (a$, searchflags, resultflags, resultreference)
-'(0,1,2)z=hashfind[rev]("RUMI",Hashflag_label,resflag,resref)
-'0=doesn't exist
-'1=found, no more items to scan
-'2=found, more items still to scan
-i = HashTable(HashValue(a$))
-IF i THEN
-    ua$ = UCASE$(a$) + SPACE$(256 - LEN(a$))
-    hashfind_next:
-    f = HashList(i).Flags
-    IF searchflags AND f THEN 'flags in common
-        IF HashListName(i) = ua$ THEN
-            resultflags = f
-            resultreference = HashList(i).Reference
-            i2 = HashList(i).NextItem
-            IF i2 THEN
-                HashFind = 2
-                HashFind_NextListItem = i2
-                HashFind_Reverse = 0
-                HashFind_SearchFlags = searchflags
-                HashFind_Name = ua$
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            ELSE
-                HashFind = 1
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            END IF
-        END IF
-    END IF
-    i = HashList(i).NextItem
-    IF i THEN GOTO hashfind_next
-END IF
-END FUNCTION
-
-FUNCTION HashFindRev (a$, searchflags, resultflags, resultreference)
-'(0,1,2)z=hashfind[rev]("RUMI",Hashflag_label,resflag,resref)
-'0=doesn't exist
-'1=found, no more items to scan
-'2=found, more items still to scan
-i = HashTable(HashValue(a$))
-IF i THEN
-    i = HashList(i).LastItem
-    ua$ = UCASE$(a$) + SPACE$(256 - LEN(a$))
-    hashfindrev_next:
-    f = HashList(i).Flags
-    IF searchflags AND f THEN 'flags in common
-        IF HashListName(i) = ua$ THEN
-            resultflags = f
-            resultreference = HashList(i).Reference
-            i2 = HashList(i).PrevItem
-            IF i2 THEN
-                HashFindRev = 2
-                HashFind_NextListItem = i2
-                HashFind_Reverse = 1
-                HashFind_SearchFlags = searchflags
-                HashFind_Name = ua$
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            ELSE
-                HashFindRev = 1
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            END IF
-        END IF
-    END IF
-    i = HashList(i).PrevItem
-    IF i THEN GOTO hashfindrev_next
-END IF
-END FUNCTION
-
-FUNCTION HashFindCont (resultflags, resultreference)
-'(0,1,2)z=hashfind[rev](resflag,resref)
-'0=no more items exist
-'1=found, no more items to scan
-'2=found, more items still to scan
-IF HashFind_Reverse THEN
-
-    i = HashFind_NextListItem
-    hashfindrevc_next:
-    f = HashList(i).Flags
-    IF HashFind_SearchFlags AND f THEN 'flags in common
-        IF HashListName(i) = HashFind_Name THEN
-            resultflags = f
-            resultreference = HashList(i).Reference
-            i2 = HashList(i).PrevItem
-            IF i2 THEN
-                HashFindCont = 2
-                HashFind_NextListItem = i2
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            ELSE
-                HashFindCont = 1
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            END IF
-        END IF
-    END IF
-    i = HashList(i).PrevItem
-    IF i THEN GOTO hashfindrevc_next
-    EXIT FUNCTION
-
-ELSE
-
-    i = HashFind_NextListItem
-    hashfindc_next:
-    f = HashList(i).Flags
-    IF HashFind_SearchFlags AND f THEN 'flags in common
-        IF HashListName(i) = HashFind_Name THEN
-            resultflags = f
-            resultreference = HashList(i).Reference
-            i2 = HashList(i).NextItem
-            IF i2 THEN
-                HashFindCont = 2
-                HashFind_NextListItem = i2
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            ELSE
-                HashFindCont = 1
-                HashRemove_LastFound = i
-                EXIT FUNCTION
-            END IF
-        END IF
-    END IF
-    i = HashList(i).NextItem
-    IF i THEN GOTO hashfindc_next
-    EXIT FUNCTION
-
-END IF
-END FUNCTION
 
 SUB HashRemove
 
@@ -34801,661 +35503,6 @@ IF p417 AND 8 THEN x = x + 1
 IF x > 1 THEN p417 = p417 AND 243
 END SUB
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'######## UPDATE.BAS ########
-
-FUNCTION decompress_2_huff$ (a$)
-IF ASC(a$) <> 2 THEN SCREEN 0, , 0, 0: PRINT "decompress_2_huff: invalid type": END
-
-'get no. of branches and encoded bits
-totalbits = ASC(a$, 5)
-totalbits = totalbits * 256 + ASC(a$, 4)
-totalbits = totalbits * 256 + ASC(a$, 3)
-totalbits = totalbits * 256 + ASC(a$, 2)
-totalbytes = (totalbits + 7) \ 8
-nb = (LEN(a$) - totalbytes - 5) \ 3 'number of branches
-
-'read branches
-FOR i = 0 TO nb - 1
-    v = ASC(a$, 6 + i * 3) + ASC(a$, 6 + i * 3 + 1) * 256 + ASC(a$, 6 + i * 3 + 2) * 65536
-    huff_branch0(i) = v AND 4095
-    huff_branch1(i) = v \ 4096
-NEXT
-
-'buffer for decompression
-bufsiz = totalbits * 8
-IF bufsiz > 1000000 THEN bufsiz = 1000000
-b$ = SPACE$(bufsiz)
-
-'decompress
-byteoff = LEN(a$) - totalbytes + 1
-bitmask = 1
-x = 0
-b = 0 'branch
-byteval = ASC(a$, byteoff)
-huffreadbits:
-bit = byteval AND bitmask
-totalbits = totalbits - 1
-
-IF bit THEN
-    b = huff_branch1(b)
-ELSE
-    b = huff_branch0(b)
-END IF
-
-IF huff_branch0(b) = 0 THEN
-    x = x + 1: IF x > bufsiz THEN b$ = b$ + SPACE$(bufsiz): bufsiz = bufsiz * 2
-    ASC(b$, x) = huff_branch1(b)
-    IF totalbits = 0 THEN GOTO hufffinished
-    b = 0
-END IF
-
-bitmask = bitmask * 2: IF bitmask = 256 THEN bitmask = 1: byteoff = byteoff + 1: byteval = ASC(a$, byteoff)
-GOTO huffreadbits
-
-hufffinished:
-decompress_2_huff$ = LEFT$(b$, x)
-
-END FUNCTION
-
-FUNCTION compress_2_huff$ (a$)
-
-'count weights
-FOR i = 0 TO 255
-    huff_count(i) = 0
-NEXT
-FOR i = 1 TO LEN(a$)
-    v = ASC(a$, i)
-    huff_count(v) = huff_count(v) + 1
-NEXT
-
-'setup initial branches
-b = 0 'note: pos 0 reserved for initial branch
-FOR i = 0 TO 255
-    IF huff_count(i) THEN
-        b = b + 1
-        huff_branch(i) = b
-        huff_weight(b) = huff_count(i)
-        huff_bit0link(b) = 0 'it's a value
-        huff_bit1link(b) = i 'the value
-        huff_parent(b) = -1
-    END IF
-NEXT
-
-IF b = 1 THEN 'create a fake branch to allow for 1 bit encoding of uniform data
-    b = b + 1
-    huff_weight(b) = 1
-    huff_bit0link(b) = 0 'it's a value
-    huff_bit1link(b) = 0 'the value
-    huff_parent(b) = -1
-END IF
-
-'find 2 lowest weights
-huff_buildbranches:
-w1 = 2147483647
-w2 = 2147483647
-FOR i = 1 TO b
-    w = huff_weight(i)
-    IF w <> 2147483647 THEN
-        'pump up (w1=lowest, w2=second lowest)
-        IF w < w1 THEN
-            w2 = w1: i2 = i1
-            w1 = w: i1 = i
-        ELSE
-            IF w < w2 THEN w2 = w: i2 = i
-        END IF
-    END IF
-NEXT
-
-'form new branch
-IF w1 <> 2147483647 AND w2 <> 2147483647 THEN 'combine branches
-    b = b + 1
-    huff_weight(b) = huff_weight(i1) + huff_weight(i2)
-    huff_parent(b) = -1
-    huff_bit0link(b) = i1: huff_bit1link(b) = i2
-    huff_weight(i1) = 2147483647: huff_weight(i2) = 2147483647
-    huff_parent(i1) = b: huff_parent(i2) = b
-    huff_bit(i1) = 0: huff_bit(i2) = 1
-    GOTO huff_buildbranches
-END IF
-
-'note: i1 contains root branch
-'copy final branch links to position 0
-huff_bit0link(0) = huff_bit0link(i1): huff_bit1link(0) = huff_bit1link(i1)
-lastbranch = b - 1 '*for storage of key*
-
-'build bit masks (clearing remainder of final byte of each to 0)
-totalbits = 0
-FOR i = 0 TO 255
-    IF huff_count(i) THEN
-
-        'calc number of bits
-        nbits = 0
-        b = huff_branch(i)
-        huff_calcnbits:
-        p = huff_parent(b)
-        IF p <> -1 THEN nbits = nbits + 1: b = p: GOTO huff_calcnbits
-        huff_mask_bits(i) = nbits
-        totalbits = totalbits + nbits * huff_count(i)
-
-        baseoffset = i * 256 'base offset
-
-        'clear bytes
-        bytes = ((nbits + 7) + 7) \ 8
-        FOR x = 0 TO 7
-            byteo = baseoffset + (x * 32)
-            FOR x2 = 0 TO bytes - 1
-                huff_mask(byteo + x2) = 0
-            NEXT
-        NEXT
-
-        'create mask
-        o1 = nbits
-        b = huff_branch(i)
-
-        huff_nextbranch:
-        o1 = o1 - 1
-        IF huff_parent(b) <> -1 THEN
-
-            IF huff_bit(b) THEN
-                bitval = huff_bitval(o1 AND 7)
-                FOR o2 = 0 TO 7
-                    o = o1 + o2
-                    byteo = baseoffset + (o2 * 32) + (o \ 8)
-                    huff_mask(byteo) = huff_mask(byteo) OR bitval
-                    bitval = bitval + bitval: IF bitval = 256 THEN bitval = 1
-                NEXT
-            END IF 'bit set
-            b = huff_parent(b)
-            GOTO huff_nextbranch
-        END IF
-
-    END IF
-NEXT
-
-totalbytes = (totalbits + 7) \ 8
-totalbytes = totalbytes + (lastbranch + 1) * 3 + 4 + 1
-b$ = STRING$(totalbytes, 0)
-ASC(b$, 1) = 2 'type
-
-'create key
-'[4]store number of bits
-ASC(b$, 2) = totalbits AND 255: totalbits = totalbits \ 256
-ASC(b$, 3) = totalbits AND 255: totalbits = totalbits \ 256
-ASC(b$, 4) = totalbits AND 255: totalbits = totalbits \ 256
-ASC(b$, 5) = totalbits
-
-'[3*(lastbranch+1)]store branches
-x = 5
-FOR i = 0 TO lastbranch
-    v = huff_bit0link(i) + huff_bit1link(i) * 4096
-    x = x + 1: ASC(b$, x) = v AND 255
-    x = x + 1: ASC(b$, x) = (v \ 256) AND 255
-    x = x + 1: ASC(b$, x) = v \ 65536
-NEXT
-
-'store huffman encoded data (using masks to speed up process)
-x = x + 1
-bitpos = 0
-FOR z = 1 TO LEN(a$)
-    v = ASC(a$, z)
-    nbits = huff_mask_bits(v)
-    nbytes = (bitpos + nbits + 7) \ 8
-    o = v * 256 + bitpos * 32
-    FOR i = 0 TO nbytes - 1
-        ASC(b$, x) = ASC(b$, x) OR huff_mask(o + i)
-        x = x + 1
-    NEXT
-    bitpos = (bitpos + nbits) AND 7
-    IF bitpos <> 0 THEN x = x - 1
-NEXT
-
-compress_2_huff$ = b$
-END FUNCTION
-
-FUNCTION decompress_1_rle$ (a$)
-IF ASC(a$) <> 1 THEN SCREEN 0, , 0, 0: PRINT "decompress_1_rle: invalid type": END
-
-'calculate size of final string required
-i = 2
-siz = 0
-x = ASC(a$, i)
-DO WHILE x
-    IF x AND 128 THEN
-        i = i + 1: x = ASC(a$, i)
-        IF x AND 128 THEN
-            i = i + 1: x = ASC(a$, i)
-            IF x2 AND 128 THEN
-                i = i + 1: x = ASC(a$, i)
-            END IF
-        END IF
-    END IF
-    i = i + 2 'skip value
-    s = ASC(a$, i)
-    IF s = 255 THEN
-        i = i + 1: s = ASC(a$, i)
-        i = i + 1: s2 = ASC(a$, i)
-        IF s = 255 AND s2 = 255 THEN
-            i = i + 1
-            s = ASC(a$, i + 3)
-            s = s * 256 + ASC(a$, i + 2)
-            s = s * 256 + ASC(a$, i + 1)
-            s = s * 256 + ASC(a$, i)
-            i = i + 3
-        ELSE
-            s = s + s2 * 256
-        END IF
-    END IF
-    siz = siz + s + 4
-    i = i + 1: x = ASC(a$, i)
-LOOP
-i = i + 1 'i=beginning of uncompressed data
-siz = siz + (LEN(a$) - i + 1)
-b$ = SPACE$(siz)
-
-'begin decompression
-h = 1
-p = 1
-ins = i
-n = LEN(a$)
-
-unrle_getnext:
-h = h + 1: x = ASC(a$, h)
-IF x AND 128 THEN
-    h = h + 1: x2 = ASC(a$, h): x = (x AND 127) + (x2 AND 127) * 128
-    IF x2 AND 128 THEN
-        h = h + 1: x2 = ASC(a$, h): x = x + (x2 AND 127) * 16384
-        IF x2 AND 128 THEN
-            h = h + 1: x2 = ASC(a$, h): x = x + (x2 AND 127) * 2097152
-        END IF
-    END IF
-END IF
-IF x = 0 THEN
-    ins = 2147483647
-ELSE
-    ins = ins + x - 1
-    h = h + 1: v = ASC(a$, h)
-    h = h + 1
-    s = ASC(a$, h)
-    IF s = 255 THEN
-        h = h + 1: s = ASC(a$, h)
-        h = h + 1: s2 = ASC(a$, h)
-        IF s = 255 AND s2 = 255 THEN
-            h = h + 1
-            s = ASC(a$, h + 3)
-            s = s * 256 + ASC(a$, h + 2)
-            s = s * 256 + ASC(a$, h + 1)
-            s = s * 256 + ASC(a$, h)
-            h = h + 3
-        ELSE
-            s = s + s2 * 256
-        END IF
-    END IF
-    c = s + 4
-END IF
-
-n2 = ins - 1
-IF n2 > n THEN n2 = n
-FOR i = i TO n2
-    ASC(b$, p) = ASC(a$, i): p = p + 1
-NEXT
-IF ins <> 2147483647 THEN
-    FOR x = 1 TO c
-        ASC(b$, p) = v: p = p + 1
-    NEXT
-    GOTO unrle_getnext
-END IF
-
-decompress_1_rle$ = b$
-
-END FUNCTION
-
-FUNCTION compress_1_rle$ (a$) 'IMPORTANT: the contents of a$ are corrupted in producing rle$
-'[1-4:offset from previous position][1:val][[1]/{255}[2]/{65535}[4]]:repeats-4]
-' ^top bit indicates also use bits of following byte (max offset=268435456)
-'                                                 ^255 indicates larger format used
-n = LEN(a$)
-h$ = SPACE$(LEN(a$) + 2)
-ASC(h$, 1) = 1 'method 1
-hp = 2 'header position
-i = 1 'source position
-p = 1 'dest position
-o = 1 'offset to reference position from
-DO
-    v = ASC(a$, i)
-    FOR i2 = i + 1 TO n
-        IF v <> ASC(a$, i2) THEN EXIT FOR
-    NEXT
-    reps = i2 - i
-
-    x = p - o + 1 'x=relative offset to insert data+1
-
-    IF x <= 127 THEN
-        IF reps < 4 GOTO no_rle
-        ASC(h$, hp) = x: hp = hp + 1
-    ELSEIF x <= 16383 THEN
-        IF reps < 5 GOTO no_rle
-        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
-        ASC(h$, hp) = x: hp = hp + 1
-    ELSEIF x <= 2097151 THEN
-        IF reps < 6 GOTO no_rle
-        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
-        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
-        ASC(h$, hp) = x: hp = hp + 1
-    ELSE
-        IF reps < 7 GOTO no_rle
-        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
-        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
-        ASC(h$, hp) = (x AND 127) + 128: x = x \ 128: hp = hp + 1
-        ASC(h$, hp) = x: hp = hp + 1
-    END IF
-    o = p
-
-    'encode value
-    ASC(h$, hp) = v: hp = hp + 1
-    'encode reps-4
-    reps = reps - 4
-    IF reps >= 255 THEN
-        ASC(h$, hp) = 255: hp = hp + 1
-        IF reps >= 65535 THEN
-            ASC(h$, hp) = 255: hp = hp + 1
-            ASC(h$, hp) = 255: hp = hp + 1
-            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
-            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
-            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
-            ASC(h$, hp) = reps: hp = hp + 1
-        ELSE
-            ASC(h$, hp) = reps AND 255: reps = reps \ 256: hp = hp + 1
-            ASC(h$, hp) = reps: hp = hp + 1
-        END IF
-    ELSE
-        ASC(h$, hp) = reps: hp = hp + 1
-    END IF
-
-
-    GOTO rle_applied
-
-    no_rle: 'not enough repeats to encode
-    IF i <> p THEN
-        FOR i3 = i TO i2 - 1
-            ASC(a$, p) = ASC(a$, i3)
-            p = p + 1
-        NEXT
-    ELSE
-        p = p + (i2 - i)
-    END IF
-
-    rle_applied:
-    i = i2
-
-LOOP UNTIL i > n
-
-'finialize header
-ASC(h$, hp) = 0: hp = hp + 1
-
-compress_1_rle$ = LEFT$(h$, hp - 1) + LEFT$(a$, p - 1)
-
-END FUNCTION
-
-FUNCTION compress$ (a$)
-a$ = CHR$(0) + a$
-a$ = compress_1_rle$(a$)
-a$ = compress_2_huff$(a$)
-compress$ = a$
-END FUNCTION
-
-FUNCTION decompress$ (a$)
-x = ASC(a$)
-DO WHILE x
-    IF x = 1 THEN a$ = decompress_1_rle$(a$)
-    IF x = 2 THEN a$ = decompress_2_huff$(a$)
-    x = ASC(a$)
-LOOP
-a$ = RIGHT$(a$, LEN(a$) - 1) 'remove NULL byte indicating compression complete
-decompress$ = a$
-END FUNCTION
-
-FUNCTION download (url$, file$) 'note: set file$ to "" to use string data only
-
-PRINT "Downloading " + CHR$(34) + url$ + CHR$(34)
-
-retry = 0
-
-retry:
-PRINT "[                                                  ]";
-LOCATE CSRLIN, 2
-
-_DELAY 0.25 'allow time for closure of any previous connections, to avoid possible denial of multiple connections from host
-
-url2$ = url$
-x = INSTR(url2$, "/")
-IF x THEN url2$ = LEFT$(url$, x - 1)
-c = _OPENCLIENT("TCP/IP:80:" + url2$)
-IF c = 0 THEN
-    EXIT FUNCTION
-END IF
-
-e$ = CHR$(13) + CHR$(10)
-
-url3$ = RIGHT$(url$, LEN(url$) - x + 1)
-x$ = "GET " + url3$ + " HTTP/1.1" + e$
-x$ = x$ + "Host: " + url2$ + e$ + e$
-PUT #c, , x$
-
-lasttime# = TIMER(0.001)
-cancelmess = 0
-dp = 0
-dp2 = 0
-a$ = ""
-l = 0
-
-DO
-
-    _DELAY 0.1
-
-    GET #c, , a2$
-    a$ = a$ + a2$
-
-    IF LEN(a2$) THEN lasttime# = TIMER(0.001)
-
-    IF TIMER(0.001) > lasttime# + 5 THEN
-        IF retry < 10 THEN 'automatically retry up to 10 times
-            retry = retry + 1
-            CLOSE #c
-            PRINT
-            PRINT "Retry attempt" + STR$(retry) + "/10"
-            GOTO retry
-        END IF
-    END IF
-
-    IF TIMER(0.001) > lasttime# + 20 THEN
-        IF cancelmess = 0 THEN
-            cancelmess = 1
-            cl = CSRLIN
-            cp = POS(0)
-            LOCATE 25, 1
-            PRINT "Download may still be active! To abort this download press the ESC key.";
-            LOCATE cl, cp
-            DO UNTIL INKEY$ = "": LOOP 'flush kb buffer
-        END IF
-    END IF
-
-    IF cancelmess = 1 THEN
-        IF INKEY$ = CHR$(27) THEN
-            PRINT
-            CLOSE #c
-            EXIT FUNCTION
-        END IF
-    END IF
-
-    IF l THEN 'length is known
-        IF i3 <> 0 THEN
-            dp = (LEN(a$) - i3) / l * 50
-            IF dp > 50 THEN dp = 50
-            IF dp < 0 THEN dp = 0
-            DO WHILE dp2 < dp
-                PRINT "þ";
-                dp2 = dp2 + 1
-            LOOP
-        END IF
-    END IF
-
-    i = INSTR(a$, "Content-Length:")
-    IF i THEN
-        i2 = INSTR(i, a$, e$)
-        IF i2 THEN
-            l = VAL(MID$(a$, i + 15, i2 - i - 14))
-            i3 = INSTR(i2, a$, e$ + e$)
-            IF i3 THEN
-                i3 = i3 + 4 'move i3 to start of data
-                IF (LEN(a$) - i3 + 1) = l THEN
-                    CLOSE c
-                    Download_String$ = MID$(a$, i3, l)
-                    IF file$ <> "" THEN
-                        fh = FREEFILE
-                        OPEN file$ FOR OUTPUT AS #fh: CLOSE #fh
-                        OPEN file$ FOR BINARY AS #fh
-                        PUT #fh, , Download_String$
-                        CLOSE #fh
-                    END IF
-                    download = -1
-                    DO WHILE dp2 < 50
-                        PRINT "þ";
-                        dp2 = dp2 + 1
-                    LOOP
-                    PRINT
-                    EXIT FUNCTION
-                END IF 'availabledata=l
-            END IF 'i3
-        END IF 'i2
-    END IF 'i
-LOOP
-END FUNCTION
-
-FUNCTION chksum&& (f$)
-DIM c AS _INTEGER64, x AS _INTEGER64, b AS _INTEGER64
-OPEN f$ FOR BINARY ACCESS READ SHARED AS #123
-a$ = SPACE$(LOF(123))
-GET #123, , a$
-CLOSE #123
-c = LEN(a$)
-b = 1
-$CHECKING:OFF
-FOR i = 1 TO LEN(a$)
-    c = c + (b * (ASC(a$, i) + 1))
-    b = b + b
-    IF b = 281474976710656 THEN b = 1
-NEXT
-$CHECKING:ON
-chksum&& = c
-END FUNCTION
-
-FUNCTION BeginDownload (url$)
-FOR i = 1 TO DLs
-    IF DL(i).State = 0 THEN EXIT FOR
-NEXT
-IF i > DLs THEN DLs = DLs + 1
-IF i > Maxdls THEN SCREEN 0, , 0, 0: PRINT "Too many active downloads!": END
-url2$ = url$
-x = INSTR(url2$, "/")
-IF x THEN url2$ = LEFT$(url$, x - 1)
-h = _OPENCLIENT("TCP/IP:80:" + url2$)
-IF h = 0 THEN EXIT FUNCTION '0=failed
-e$ = CHR$(13) + CHR$(10)
-url3$ = RIGHT$(url$, LEN(url$) - x + 1)
-x$ = "GET " + url3$ + " HTTP/1.1" + e$
-x$ = x$ + "Host: " + url2$ + e$ + e$
-PUT #h, , x$
-DL(i).State = 1
-DL(i).Handle = h
-DL_Data(i) = ""
-BeginDownload = i
-END FUNCTION
-
 SUB ContinueDownloads
 e$ = CHR$(13) + CHR$(10)
 FOR d = 1 TO DLs
@@ -35488,12 +35535,6 @@ FOR d = 1 TO DLs
     END IF
 NEXT
 END SUB
-
-FUNCTION rippath$ (a$) 'doesn't include final \
-FOR i = LEN(a$) TO 1 STEP -1
-    IF ASC(a$, i) = 92 THEN rippath$ = LEFT$(a$, i - 1): EXIT FUNCTION
-NEXT
-END FUNCTION
 
 SUB update (how)
 '0=called by IDE via automatic checking
@@ -35571,7 +35612,7 @@ END IF
 
 IF how < 2 THEN
     SCREEN 0, , 0, 0
-    COLOR 15, 1
+    COLOR 7, 1
     CLS
 END IF
 
@@ -35621,7 +35662,7 @@ IF NOT OK THEN
     IF how <= 1 THEN
         PCOPY 3, 0: what$ = ideyesnobox("Download Failed", "Retry?"): PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
         IF what$ = "Y" THEN
-            SCREEN 0, , 0, 0: COLOR 15, 1: CLS: GOTO dlretry2
+            SCREEN 0, , 0, 0: COLOR 7, 1: CLS: GOTO dlretry2
         END IF
         ON ERROR GOTO qberror
         EXIT SUB
@@ -35692,7 +35733,7 @@ DO UNTIL EOF(1)
                                     idemessagebox "This file has been modified by you but will be overwritten!", a1$
                                     PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
                                     SCREEN 0, , 0, 0
-                                    COLOR 15, 1
+                                    COLOR 7, 1
                                     CLS
                                 END IF
                                 IF how >= 2 THEN
@@ -35771,7 +35812,7 @@ DO UNTIL EOF(1)
                     PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
                     IF what$ = "Y" THEN
                         SCREEN 0, , 0, 0
-                        COLOR 15, 1
+                        COLOR 7, 1
                         CLS
                         GOTO dlretry
                     END IF
@@ -35896,94 +35937,6 @@ ON ERROR GOTO qberror
 IF how = 3 THEN SYSTEM
 END SUB
 
-FUNCTION removecast$ (a$)
-removecast$ = a$
-IF INSTR(a$, "  )") THEN
-    removecast$ = RIGHT$(a$, LEN(a$) - INSTR(a$, "  )") - 2)
-END IF
-END FUNCTION
-
-FUNCTION converttabs$ (a2$)
-IF ideautoindent THEN s = ideautoindentsize ELSE s = 4
-a$ = a2$
-DO WHILE INSTR(a$, chr_tab)
-    x = INSTR(a$, chr_tab)
-    a$ = LEFT$(a$, x - 1) + SPACE$(s - ((x - 1) MOD s)) + RIGHT$(a$, LEN(a$) - x)
-LOOP
-converttabs$ = a$
-END FUNCTION
-
-FUNCTION CTRL2
-IF MacOSX THEN
-    IF _KEYDOWN(100309) THEN CTRL2 = 1
-    IF _KEYDOWN(100310) THEN CTRL2 = 1
-END IF
-END FUNCTION
-
-FUNCTION NewByteElement$
-a$ = "byte_element_" + str2$(uniquenumber)
-NewByteElement$ = a$
-IF use_global_byte_elements THEN
-    PRINT #18, "byte_element_struct *" + a$ + "=(byte_element_struct*)malloc(12);"
-ELSE
-    PRINT #13, "byte_element_struct *" + a$ + "=NULL;"
-    PRINT #13, "if (!" + a$ + "){"
-    PRINT #13, "if ((mem_static_pointer+=12)<mem_static_limit) " + a$ + "=(byte_element_struct*)(mem_static_pointer-12); else " + a$ + "=(byte_element_struct*)mem_static_malloc(12);"
-    PRINT #13, "}"
-END IF
-END FUNCTION
-
-FUNCTION validname (a$)
-'notes:
-'1) '_1' is invalid because it has no alphabet letters
-'2) 'A_' is invalid because it has a trailing _
-'3) '_1A' is invalid because it contains a number before the first alphabet letter
-'4) names cannot be longer than 40 characters
-l = LEN(a$)
-
-IF l = 0 OR l > 40 THEN
-    IF l = 0 THEN EXIT FUNCTION
-    'Note: variable names with periods need to be obfuscated, and this affects their length
-    i = INSTR(a$, fix046$)
-    DO WHILE i
-        l = l - LEN(fix046$) + 1
-        i = INSTR(i + 1, a$, fix046$)
-    LOOP
-    IF l > 40 THEN EXIT FUNCTION
-    l = LEN(a$)
-END IF
-
-'check for single, leading underscore
-IF l >= 2 THEN
-    IF ASC(a$, 1) = 95 AND ASC(a$, 2) <> 95 THEN EXIT FUNCTION
-END IF
-
-FOR i = 1 TO l
-    a = ASC(a$, i)
-    IF alphanumeric(a) = 0 THEN EXIT FUNCTION
-    IF isnumeric(a) THEN
-        trailingunderscore = 0
-        IF alphabetletter = 0 THEN EXIT FUNCTION
-    ELSE
-        IF a = 95 THEN
-            trailingunderscore = 1
-        ELSE
-            alphabetletter = 1
-            trailingunderscore = 0
-        END IF
-    END IF
-NEXT
-IF trailingunderscore THEN EXIT FUNCTION
-validname = 1
-END FUNCTION
-
-FUNCTION str_nth$ (x)
-IF x = 1 THEN str_nth$ = "1st": EXIT FUNCTION
-IF x = 2 THEN str_nth$ = "2nd": EXIT FUNCTION
-IF x = 3 THEN str_nth$ = "3rd": EXIT FUNCTION
-str_nth$ = str2(x) + "th"
-END FUNCTION
-
 SUB Give_Error (a$)
 Error_Happened = 1
 Error_Message = a$
@@ -36057,7 +36010,7 @@ END IF
 
 REDIM Help_LineLen(Help_wh)
 
-COLOR 15, 0
+COLOR 7, 0
 
 'CLS
 'FOR y = Help_wy1 - 1 TO Help_wy2 + 1
@@ -36117,7 +36070,7 @@ FOR y = Help_sy TO Help_sy + Help_wh - 1
         LOCATE sy, sx
         x3 = Help_sx
         FOR x4 = 1 TO Help_ww
-            COLOR 15, 0
+            COLOR 7, 0
             IF Help_Select = 2 THEN
                 IF y >= Help_SelY1 AND y <= Help_SelY2 THEN
                     IF x3 >= Help_SelX1 AND x3 <= Help_SelX2 THEN
@@ -36151,19 +36104,253 @@ NEXT
 
 END SUB
 
+SUB Mathbox
+'Draw a box
 
-'Too much math stuff!!
+'-------- generic dialog box header --------
+PCOPY 0, 2
+PCOPY 0, 1
+SCREEN , , 1, 0
+focus = 1
+DIM p AS idedbptype
+DIM o(1 TO 100) AS idedbotype
+DIM oo AS idedbotype
+DIM sep AS STRING * 1
+sep = CHR$(0)
+'-------- end of generic dialog box header --------
+
+DoAnother:
+titlestr$ = "          Give me a Math Equation          "
+messagestr$ = ""
+
+'-------- init --------
+i = 0
+w = LEN(messagestr$) + 2
+w2 = LEN(titlestr$) + 4
+IF w < w2 THEN w = w2
+idepar p, w, 4, titlestr$
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 4
+o(i).txt = idenewtxt("OK")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 2, p.x + 2: PRINT messagestr$;
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+            IF K$ = CHR$(27) THEN EXIT SUB
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    IF K$ > CHR$(31) AND K$ < CHR$(123) THEN messagestr$ = messagestr$ + K$
+    IF K$ = CHR$(8) THEN messagestr$ = LEFT$(messagestr$, LEN(messagestr$) - 1)
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+    IF K$ = CHR$(27) OR K$ = CHR$(13) OR (focus = 1 AND info <> 0) THEN EXIT DO
+    'end of custom controls
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+
+
+temp$ = messagestr$ 'Make a back up of our user return
+titlestr$ = "(H)ex/(D)ec  (U)n(C)omment  (ESC)ape/(R)edo"
+ev$ = Evaluate_Expression$(messagestr$)
+messagestr$ = ev$
+
+'-------- init --------
+i = 0
+w = LEN(messagestr$) + 2
+w2 = LEN(titlestr$) + 4
+IF w < w2 THEN w = w2
+idepar p, w, 4, titlestr$
+
+i = i + 1
+o(i).typ = 3
+o(i).y = 4
+o(i).txt = idenewtxt("OK")
+o(i).dft = 1
+'-------- end of init --------
+
+'-------- generic init --------
+FOR i = 1 TO 100: o(i).par = p: NEXT 'set parent info of objects
+'-------- end of generic init --------
+
+
+
+
+DO 'main loop
+
+
+    '-------- generic display dialog box & objects --------
+    idedrawpar p
+    f = 1: cx = 0: cy = 0
+    FOR i = 1 TO 100
+        IF o(i).typ THEN
+
+            'prepare object
+            o(i).foc = focus - f 'focus offset
+            o(i).cx = 0: o(i).cy = 0
+            idedrawobj o(i), f 'display object
+            IF o(i).cx THEN cx = o(i).cx: cy = o(i).cy
+        END IF
+    NEXT i
+    lastfocus = f - 1
+    '-------- end of generic display dialog box & objects --------
+
+    '-------- custom display changes --------
+    COLOR 0, 7: LOCATE p.y + 2, p.x + 2: PRINT messagestr$;
+    '-------- end of custom display changes --------
+
+    'update visual page and cursor position
+    PCOPY 1, 0
+    IF cx THEN SCREEN , , 0, 0: LOCATE cy, cx, 1: SCREEN , , 1, 0
+
+    '-------- read input --------
+    change = 0
+    DO
+        GetInput
+        IF mWHEEL THEN change = 1
+        IF KB THEN change = 1
+        IF mCLICK THEN mousedown = 1: change = 1
+        IF mRELEASE THEN mouseup = 1: change = 1
+        IF mB THEN change = 1
+        alt = KALT: IF alt <> oldalt THEN change = 1
+        oldalt = alt
+        _LIMIT 100
+    LOOP UNTIL change
+    IF alt THEN idehl = 1 ELSE idehl = 0
+    'convert "alt+letter" scancode to letter's ASCII character
+    altletter$ = ""
+    IF alt THEN
+        IF LEN(K$) = 1 THEN
+            k = ASC(UCASE$(K$))
+            IF k >= 65 AND k <= 90 THEN altletter$ = CHR$(k)
+        END IF
+    END IF
+    SCREEN , , 0, 0: LOCATE , , 0: SCREEN , , 1, 0
+    '-------- end of read input --------
+
+    '-------- generic input response --------
+    info = 0
+    IF K$ = "" THEN K$ = CHR$(255)
+    IF KSHIFT = 0 AND K$ = CHR$(9) THEN focus = focus + 1
+    IF KSHIFT AND K$ = CHR$(9) THEN focus = focus - 1
+    IF focus < 1 THEN focus = lastfocus
+    IF focus > lastfocus THEN focus = 1
+    IF K$ = "H" OR K$ = "h" THEN ev$ = "&H" + HEX$(VAL(ev$))
+    IF K$ = "D" OR K$ = "d" THEN ev$ = STR$(VAL(ev$))
+    IF K$ = "U" OR K$ = "u" THEN comment = 0
+    IF K$ = "C" OR K$ = "c" THEN comment = -1
+    IF K$ = "R" OR K$ = "r" THEN GOTO DoAnother
+    IF K$ = CHR$(27) THEN EXIT SUB
+    IF comment THEN messagestr$ = ev$ + " ' " + temp$ ELSE messagestr$ = ev$
+
+    f = 1
+    FOR i = 1 TO 100
+        t = o(i).typ
+        IF t THEN
+            focusoffset = focus - f
+            ideupdateobj o(i), focus, f, focusoffset, K$, altletter$, mB, mousedown, mouseup, mX, mY, info, mWHEEL
+        END IF
+    NEXT
+    '-------- end of generic input response --------
+
+    'specific post controls
+    IF K$ = CHR$(27) OR K$ = CHR$(13) OR (focus = 1 AND info <> 0) THEN EXIT DO
+    'end of custom controls
+
+    mousedown = 0
+    mouseup = 0
+LOOP
+
+IF INSTR(messagestr$, " LINES INSERTED") THEN EXIT SUB
+
+l = idecy
+a$ = idegetline(l)
+l$ = LEFT$(a$, idecx - 1): r$ = RIGHT$(a$, LEN(a$) - idecx + 1)
+text$ = l$ + messagestr$ + r$
+textlen = LEN(text$)
+l$ = LEFT$(idet$, ideli - 1)
+m$ = MKL$(textlen) + text$ + MKL$(textlen)
+r$ = RIGHT$(idet$, LEN(idet$) - ideli - LEN(a$) - 7)
+idet$ = l$ + m$ + r$
+idecx = idecx + LEN(messagestr$)
+END SUB
 
 FUNCTION Evaluate_Expression$ (e$)
 t$ = e$ 'So we preserve our original data, we parse a temp copy of it
-
-b = INSTR(UCASE$(e$), "EQL") 'take out assignment before the preparser sees it
-IF b THEN t$ = MID$(e$, b + 3): var$ = UCASE$(LTRIM$(RTRIM$(MID$(e$, 1, b - 1))))
-
-QuickReturn = 0
 PreParse t$
 
-IF QuickReturn THEN Evaluate_Expression$ = t$: EXIT FUNCTION
 
 IF LEFT$(t$, 5) = "ERROR" THEN Evaluate_Expression$ = t$: EXIT FUNCTION
 
@@ -36181,16 +36368,19 @@ DO
             END IF
         LOOP
         s = Eval_E - c + 1
-        IF s < 1 THEN PRINT "ERROR -- BAD () Count": END
+        IF s < 1 THEN Evaluate_Expression$ = "ERROR -- BAD () Count": EXIT SUB
         eval$ = " " + MID$(exp$, s, Eval_E - s) + " " 'pad with a space before and after so the parser can pick up the values properly.
-        ParseExpression eval$
 
+        'PRINT "Before ParseExpression: "; eval$
+        ParseExpression eval$
+        'PRINT "After ParseExpression: "; eval$
         eval$ = LTRIM$(RTRIM$(eval$))
         IF LEFT$(eval$, 5) = "ERROR" THEN Evaluate_Expression$ = eval$: EXIT SUB
         exp$ = DWD(LEFT$(exp$, s - 2) + eval$ + MID$(exp$, Eval_E + 1))
+        'PRINT exp$
         IF MID$(exp$, 1, 1) = "N" THEN MID$(exp$, 1) = "-"
 
-        temppp$ = DWD(LEFT$(exp$, s - 2) + " ## " + eval$ + " ## " + MID$(exp$, E + 1))
+        'temppp$ = DWD(LEFT$(exp$, s - 2) + " ## " + eval$ + " ## " + MID$(exp$, e + 1))
     END IF
 LOOP UNTIL Eval_E = 0
 c = 0
@@ -36209,8 +36399,10 @@ END FUNCTION
 
 SUB ParseExpression (exp$)
 DIM num(10) AS STRING
+'PRINT exp$
+exp$ = DWD(exp$)
 'We should now have an expression with no () to deal with
-IF MID$(exp$, 2, 1) = "-" THEN exp$ = "0+" + MID$(exp$, 2)
+'IF MID$(exp$, 2, 1) = "-" THEN exp$ = "0+" + MID$(exp$, 2)
 FOR J = 1 TO 250
     lowest = 0
     DO UNTIL lowest = LEN(exp$)
@@ -36241,7 +36433,8 @@ FOR J = 1 TO 250
                 SELECT CASE MID$(exp$, op + c + 1, 1)
                     CASE "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "N": numset = -1 'Valid digit
                     CASE "-" 'We need to check if it's a minus or a negative
-                        IF OName(OpOn) = "PI" OR numset THEN EXIT DO
+                        IF OName(OpOn) = "_PI" OR numset THEN EXIT DO
+                    CASE ",": numset = 0
                     CASE ELSE 'Not a valid digit, we found our separator
                         EXIT DO
                 END SELECT
@@ -36277,7 +36470,11 @@ FOR J = 1 TO 250
             num(2) = MID$(exp$, op + LEN(OName(OpOn)), E - op - LEN(OName(OpOn)) + 1) 'Get our second number
             IF MID$(num(1), 1, 1) = "N" THEN MID$(num(1), 1) = "-"
             IF MID$(num(2), 1, 1) = "N" THEN MID$(num(2), 1) = "-"
-            num(3) = EvaluateNumbers(OpOn, num())
+            IF num(1) = "-" THEN
+                num(3) = "N" + EvaluateNumbers(OpOn, num())
+            ELSE
+                num(3) = EvaluateNumbers(OpOn, num())
+            END IF
             IF MID$(num(3), 1, 1) = "-" THEN MID$(num(3), 1) = "N"
             'PRINT "*************"
             'PRINT num(1), OName(OpOn), num(2), num(3), exp$
@@ -36297,346 +36494,346 @@ SUB Set_OrderOfOperations
 'PL sets our priortity level. 1 is highest to 65535 for the lowest.
 'I used a range here so I could add in new priority levels as needed.
 'OName ended up becoming the name of our commands, as I modified things.... Go figure!  LOL!
-
-IF _DIREXISTS("internal") THEN
-    'Good, we're being run from within the QB64 folder as intended
-ELSE
-    MKDIR "internal" 'Make us an internal folder so we don't generate errors.
-END IF
-IF _DIREXISTS("internal/MathEval") THEN
-    'Good, we're have the proper subfolder as well
-ELSE
-    MKDIR "internal/MathEval" 'Make us an internal folder so we don't generate errors.
-END IF
-
+REDIM OName(10000) AS STRING, PL(10000) AS INTEGER
 'Constants get evaluated first, with a Priority Level of 1
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ANS" 'the result of the previous calculation
-REDIM _PRESERVE PL(i): PL(i) = 1
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "PI"
-REDIM _PRESERVE PL(i): PL(i) = 1
-'I'm not certain where exactly percentages should go.  They kind of seem like a special case to me.  COS10% should be COS.1 I'd think...
-'I'm putting it here for now, and if anyone knows someplace better for it in our order of operations, let me know.
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "%"
-REDIM _PRESERVE PL(i): PL(i) = 5
+
+i = i + 1: OName(i) = "C_UOF": PL(i) = 5 'convert to unsigned offset
+i = i + 1: OName(i) = "C_OF": PL(i) = 5 'convert to offset
+i = i + 1: OName(i) = "C_UBY": PL(i) = 5 'convert to unsigned byte
+i = i + 1: OName(i) = "C_BY": PL(i) = 5 'convert to byte
+i = i + 1: OName(i) = "C_UIN": PL(i) = 5 'convert to unsigned integer
+i = i + 1: OName(i) = "C_IN": PL(i) = 5 'convert to integer
+i = i + 1: OName(i) = "C_UIF": PL(i) = 5 'convert to unsigned int64
+i = i + 1: OName(i) = "C_IF": PL(i) = 5 'convert to int64
+i = i + 1: OName(i) = "C_ULO": PL(i) = 5 'convert to unsigned long
+i = i + 1: OName(i) = "C_LO": PL(i) = 5 'convert to long
+i = i + 1: OName(i) = "C_SI": PL(i) = 5 'convert to single
+i = i + 1: OName(i) = "C_FL": PL(i) = 5 'convert to float
+i = i + 1: OName(i) = "C_DO": PL(i) = 5 'convert to double
+i = i + 1: OName(i) = "C_UBI": PL(i) = 5 'convert to unsigned bit
+i = i + 1: OName(i) = "C_BI": PL(i) = 5 'convert to bit
+
 'Then Functions with PL 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCCOS"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCSIN"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCSEC"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCCSC"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ARCCOT"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SECH"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "CSCH"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COTH"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COS"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SIN"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "TAN"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "LOG"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "EXP"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ATN"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2R"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2G"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2D"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2G"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2D"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2R"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ABS"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SGN"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "INT"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "_ROUND"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "FIX"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SEC"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "CSC"
-REDIM _PRESERVE PL(i): PL(i) = 10
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COT"
-REDIM _PRESERVE PL(i): PL(i) = 10
+i = i + 1:: OName(i) = "_PI": PL(i) = 10
+i = i + 1: OName(i) = "_ACOS": PL(i) = 10
+i = i + 1: OName(i) = "_ASIN": PL(i) = 10
+i = i + 1: OName(i) = "_ARCSEC": PL(i) = 10
+i = i + 1: OName(i) = "_ARCCSC": PL(i) = 10
+i = i + 1: OName(i) = "_ARCCOT": PL(i) = 10
+i = i + 1: OName(i) = "_SECH": PL(i) = 10
+i = i + 1: OName(i) = "_CSCH": PL(i) = 10
+i = i + 1: OName(i) = "_COTH": PL(i) = 10
+i = i + 1: OName(i) = "COS": PL(i) = 10
+i = i + 1: OName(i) = "SIN": PL(i) = 10
+i = i + 1: OName(i) = "TAN": PL(i) = 10
+i = i + 1: OName(i) = "LOG": PL(i) = 10
+i = i + 1: OName(i) = "EXP": PL(i) = 10
+i = i + 1: OName(i) = "ATN": PL(i) = 10
+i = i + 1: OName(i) = "_D2R": PL(i) = 10
+i = i + 1: OName(i) = "_D2G": PL(i) = 10
+i = i + 1: OName(i) = "_R2D": PL(i) = 10
+i = i + 1: OName(i) = "_R2G": PL(i) = 10
+i = i + 1: OName(i) = "_G2D": PL(i) = 10
+i = i + 1: OName(i) = "_G2R": PL(i) = 10
+i = i + 1: OName(i) = "ABS": PL(i) = 10
+i = i + 1: OName(i) = "SGN": PL(i) = 10
+i = i + 1: OName(i) = "INT": PL(i) = 10
+i = i + 1: OName(i) = "_ROUND": PL(i) = 10
+i = i + 1: OName(i) = "_CEIL": PL(i) = 10
+i = i + 1: OName(i) = "FIX": PL(i) = 10
+i = i + 1: OName(i) = "_SEC": PL(i) = 10
+i = i + 1: OName(i) = "_CSC": PL(i) = 10
+i = i + 1: OName(i) = "_COT": PL(i) = 10
+i = i + 1: OName(i) = "ASC": PL(i) = 10
+i = i + 1: OName(i) = "CHR$": PL(i) = 10
+i = i + 1: OName(i) = "C_RG": PL(i) = 10 '_RGB32 converted
+i = i + 1: OName(i) = "C_RA": PL(i) = 10 '_RGBA32 converted
+i = i + 1: OName(i) = "_RGB": PL(i) = 10
+i = i + 1: OName(i) = "_RGBA": PL(i) = 10
+i = i + 1: OName(i) = "C_RX": PL(i) = 10 '_RED32 converted
+i = i + 1: OName(i) = "C_GR": PL(i) = 10 ' _GREEN32 converted
+i = i + 1: OName(i) = "C_BL": PL(i) = 10 '_BLUE32 converted
+i = i + 1: OName(i) = "C_AL": PL(i) = 10 '_ALPHA32 converted
+i = i + 1: OName(i) = "_RED": PL(i) = 10
+i = i + 1: OName(i) = "_GREEN": PL(i) = 10
+i = i + 1: OName(i) = "_BLUE": PL(i) = 10
+i = i + 1: OName(i) = "_ALPHA": PL(i) = 10
+
 'Exponents with PL 20
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "^"
-REDIM _PRESERVE PL(i): PL(i) = 20
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "SQR"
-REDIM _PRESERVE PL(i): PL(i) = 20
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "ROOT"
-REDIM _PRESERVE PL(i): PL(i) = 20
+i = i + 1: OName(i) = "^": PL(i) = 20
+i = i + 1: OName(i) = "SQR": PL(i) = 20
+i = i + 1: OName(i) = "ROOT": PL(i) = 20
 'Multiplication and Division PL 30
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "*"
-REDIM _PRESERVE PL(i): PL(i) = 30
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "/"
-REDIM _PRESERVE PL(i): PL(i) = 30
+i = i + 1: OName(i) = "*": PL(i) = 30
+i = i + 1: OName(i) = "/": PL(i) = 30
 'Integer Division PL 40
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "\"
-REDIM _PRESERVE PL(i): PL(i) = 40
+i = i + 1: OName(i) = "\": PL(i) = 40
 'MOD PL 50
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "MOD"
-REDIM _PRESERVE PL(i): PL(i) = 50
+i = i + 1: OName(i) = "MOD": PL(i) = 50
 'Addition and Subtraction PL 60
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "+"
-REDIM _PRESERVE PL(i): PL(i) = 60
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "-"
-REDIM _PRESERVE PL(i): PL(i) = 60
+i = i + 1: OName(i) = "+": PL(i) = 60
+i = i + 1: OName(i) = "-": PL(i) = 60
 
 'Relational Operators =, >, <, <>, <=, >=   PL 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "<>"
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "><" 'These next three are just reversed symbols as an attempt to help process a common typo
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "<="
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = ">="
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "=<" 'I personally can never keep these things straight.  Is it < = or = <...
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "=>" 'Who knows, check both!
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = ">"
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "<"
-REDIM _PRESERVE PL(i): PL(i) = 70
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "="
-REDIM _PRESERVE PL(i): PL(i) = 70
+i = i + 1: OName(i) = "<>": PL(i) = 70 'These next three are just reversed symbols as an attempt to help process a common typo
+i = i + 1: OName(i) = "><": PL(i) = 70
+i = i + 1: OName(i) = "<=": PL(i) = 70
+i = i + 1: OName(i) = ">=": PL(i) = 70
+i = i + 1: OName(i) = "=<": PL(i) = 70 'I personally can never keep these things straight.  Is it < = or = <...
+i = i + 1: OName(i) = "=>": PL(i) = 70 'Who knows, check both!
+i = i + 1: OName(i) = ">": PL(i) = 70
+i = i + 1: OName(i) = "<": PL(i) = 70
+i = i + 1: OName(i) = "=": PL(i) = 70
 'Logical Operations PL 80+
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "NOT"
-REDIM _PRESERVE PL(i): PL(i) = 80
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "AND"
-REDIM _PRESERVE PL(i): PL(i) = 90
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "OR"
-REDIM _PRESERVE PL(i): PL(i) = 100
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "XOR"
-REDIM _PRESERVE PL(i): PL(i) = 110
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "EQV"
-REDIM _PRESERVE PL(i): PL(i) = 120
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "IMP"
-REDIM _PRESERVE PL(i): PL(i) = 130
+i = i + 1: OName(i) = "NOT": PL(i) = 80
+i = i + 1: OName(i) = "AND": PL(i) = 90
+i = i + 1: OName(i) = "OR": PL(i) = 100
+i = i + 1: OName(i) = "XOR": PL(i) = 110
+i = i + 1: OName(i) = "EQV": PL(i) = 120
+i = i + 1: OName(i) = "IMP": PL(i) = 130
+i = i + 1: OName(i) = ",": PL(i) = 1000
 
-
-'SPECIAL STRING Operators have PL 1000.  They shouldn't mix with lower value commands, as we handle them separate
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "DATE$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "TIME$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "COMMAND$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "WIKI"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "QB64"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "FORUMS"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "WEBCHAT"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2R$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "D2G$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2D$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "R2G$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2R$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "G2D$"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "RUN:"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-i = i + 1: REDIM _PRESERVE OName(i): OName(i) = "RETURN"
-REDIM _PRESERVE PL(i): PL(i) = 1000
-
+REDIM _PRESERVE OName(i) AS STRING, PL(i) AS INTEGER
 END SUB
 
 FUNCTION EvaluateNumbers$ (p, num() AS STRING)
 DIM n1 AS _FLOAT, n2 AS _FLOAT, n3 AS _FLOAT
-SELECT CASE OName(p) 'Depending on our operator..
-    CASE "PI"
-        n1 = 3.14159265358979323846264338327950288## 'Future compatable in case something ever stores extra digits for PI
-    CASE "%" 'Note percent is a special case and works with the number BEFORE the % command and not after
-        IF num(1) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get percent of NULL string": EXIT FUNCTION
-        n1 = (VAL(num(1))) / 100
-    CASE "ARCCOS"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOS of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOS from value >1, which is Invalid": EXIT FUNCTION
-        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOS from value <-1, which is Invalid": EXIT FUNCTION
-        IF n1 = 1 THEN EvaluateNumbers$ = "0": EXIT FUNCTION
-        n1 = (2 * ATN(1)) - ATN(n1 / SQR(1 - n1 * n1))
-    CASE "ARCSIN"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSIN of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSIN from value >1, which is Invalid": EXIT FUNCTION
-        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSIN from value <-1, which is Invalid": EXIT FUNCTION
-        n1 = ATN(n1 / SQR(1 - (n1 * n1)))
-    CASE "ARCSEC"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSEC of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSEC from value > 1, which is Invalid": EXIT FUNCTION
-        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCSEC from value < -1, which is Invalid": EXIT FUNCTION
-        n1 = ATN(n1 / SQR(1 - n1 * n1)) + (SGN(n1) - 1) * (2 * ATN(1))
-    CASE "ARCCSC"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCSC of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        IF n1 > 1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCSC from value >=1, which is Invalid": EXIT FUNCTION
-        IF n1 < -1 THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCSC from value <-1, which is Invalid": EXIT FUNCTION
-        n1 = ATN(1 / SQR(1 - n1 * n1)) + (SGN(n1) - 1) * (2 * ATN(1))
-    CASE "ARCCOT"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ARCCOT of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        n1 = (2 * ATN(1)) - ATN(n1)
-    CASE "SECH"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SECH of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        IF n1 > 88.02969 OR (EXP(n1) + EXP(-n1)) = 0 THEN EvaluateNumbers$ = "ERROR - Bad SECH command": EXIT FUNCTION
-        n1 = 2 / (EXP(n1) + EXP(-n1))
-    CASE "CSCH"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get CSCH of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        IF n1 > 88.02969 OR (EXP(n1) - EXP(-n1)) = 0 THEN EvaluateNumbers$ = "ERROR - Bad CSCH command": EXIT FUNCTION
-        n1 = 2 / (EXP(n1) - EXP(-n1))
-    CASE "COTH"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get COTH of NULL string": EXIT FUNCTION
-        n1 = VAL(num(2))
-        IF 2 * n1 > 88.02969 OR EXP(2 * n1) - 1 = 0 THEN EvaluateNumbers$ = "ERROR - Bad COTH command": EXIT FUNCTION
-        n1 = (EXP(2 * n1) + 1) / (EXP(2 * n1) - 1)
-    CASE "COS"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get COS of NULL string": EXIT FUNCTION
-        n1 = COS(VAL(num(2)))
-    CASE "SIN"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SIN of NULL string": EXIT FUNCTION
-        n1 = SIN(VAL(num(2)))
-    CASE "TAN"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get TAN of NULL string": EXIT FUNCTION
-        n1 = TAN(VAL(num(2)))
-    CASE "LOG"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get LOG of NULL string": EXIT FUNCTION
-        n1 = LOG(VAL(num(2)))
-    CASE "EXP"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get EXP of NULL string": EXIT FUNCTION
-        n1 = EXP(VAL(num(2)))
-    CASE "ATN"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ATN of NULL string": EXIT FUNCTION
-        n1 = ATN(VAL(num(2)))
-    CASE "D2R"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Radian of NULL Degree value": EXIT FUNCTION
-        n1 = 0.0174532925 * (VAL(num(2)))
-    CASE "D2G"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Grad of NULL Degree string": EXIT FUNCTION
-        n1 = 1.1111111111 * (VAL(num(2)))
-    CASE "R2D"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Degree of NULL Radian string": EXIT FUNCTION
-        n1 = 57.2957795 * (VAL(num(2)))
-    CASE "R2G"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Grad of NULL Radian string": EXIT FUNCTION
-        n1 = 0.015707963 * (VAL(num(2)))
-    CASE "G2D"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Degree of NULL Gradian string": EXIT FUNCTION
-        n1 = 0.9 * (VAL(num(2)))
-    CASE "G2R"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get Radian of NULL Grad string": EXIT FUNCTION
-        n1 = 63.661977237 * (VAL(num(2)))
-    CASE "ABS"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ABS of NULL string": EXIT FUNCTION
-        n1 = ABS(VAL(num(2)))
-    CASE "SGN"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SGN of NULL string": EXIT FUNCTION
-        n1 = SGN(VAL(num(2)))
-    CASE "INT"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get INT of NULL string": EXIT FUNCTION
-        n1 = INT(VAL(num(2)))
-    CASE "_ROUND"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to _ROUND a NULL string": EXIT FUNCTION
-        n1 = _ROUND(VAL(num(2)))
-    CASE "FIX"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to FIX a NULL string": EXIT FUNCTION
-        n1 = FIX(VAL(num(2)))
-    CASE "SEC"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SEC of NULL string": EXIT FUNCTION
-        n1 = COS(VAL(num(2)))
-        IF n1 = 0 THEN EvaluateNumbers$ = "ERROR - COS value is 0, thus SEC is 1/0 which is Invalid": EXIT FUNCTION
-        n1 = 1 / n1
-    CASE "CSC"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get CSC of NULL string": EXIT FUNCTION
-        n1 = SIN(VAL(num(2)))
-        IF n1 = 0 THEN EvaluateNumbers$ = "ERROR - SIN value is 0, thus CSC is 1/0 which is Invalid": EXIT FUNCTION
-        n1 = 1 / n1
-    CASE "COT"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get COT of NULL string": EXIT FUNCTION
-        n1 = COS(VAL(num(2)))
-        IF n1 = 0 THEN EvaluateNumbers$ = "ERROR - TAN value is 0, thus COT is 1/0 which is Invalid": EXIT FUNCTION
-        n1 = 1 / n1
-    CASE "^"
-        IF num(1) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to raise NULL string to exponent": EXIT FUNCTION
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to raise number to NULL exponent": EXIT FUNCTION
-        n1 = VAL(num(1)) ^ VAL(num(2))
-    CASE "SQR"
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get SQR of NULL string": EXIT FUNCTION
-        IF VAL(num(2)) < 0 THEN EvaluateNumbers$ = "ERROR - Cannot take take SQR of numbers < 0.  I'm a computer, I have a poor imagination.": EXIT FUNCTION
-        n1 = SQR(VAL(num(2)))
-    CASE "ROOT"
-        IF num(1) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get ROOT of a NULL string": EXIT FUNCTION
-        IF num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to get NULL ROOT of a string": EXIT FUNCTION
-        n1 = VAL(num(1)): n2 = VAL(num(2))
-        IF n2 = 1 THEN EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1))): EXIT FUNCTION
-        IF n2 = 0 THEN EvaluateNumbers$ = "ERROR - There is no such thing as a 0 ROOT of a number": EXIT FUNCTION
-        IF n1 < 0 AND n2 MOD 2 = 0 AND n2 > 1 THEN EvaluateNumbers$ = "ERROR - Cannot take take an EVEN ROOT of numbers < 0.  I'm a computer, I have a poor imagination.": EXIT FUNCTION
-        IF n1 < 0 AND n2 >= 1 THEN sign = -1: n1 = -n1 ELSE sign = 1
-        n3 = 1## / n2
-        IF n3 <> INT(n3) AND n2 < 1 THEN sign = SGN(n1): n1 = ABS(n1)
-        n1 = sign * (n1 ^ n3)
-    CASE "*"
-        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to multiply NULL string ": EXIT FUNCTION
-        n1 = VAL(num(1)) * VAL(num(2))
-    CASE "/":
-        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to divide NULL string ": EXIT FUNCTION
-        IF VAL(num(2)) = 0 THEN EvaluateNumbers$ = "ERROR - Division by 0": EXIT FUNCTION
-        n1 = VAL(num(1)) / VAL(num(2))
-    CASE "\"
-        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to divide NULL string ": EXIT FUNCTION
-        IF VAL(num(2)) = 0 THEN EvaluateNumbers$ = "ERROR - Division by 0": EXIT FUNCTION
-        n1 = VAL(num(1)) \ VAL(num(2))
-    CASE "MOD"
-        IF num(1) = "" OR num(2) = "" THEN EvaluateNumbers$ = "ERROR - Attemping to MOD with NULL string ": EXIT FUNCTION
-        IF VAL(num(2)) = 0 THEN EvaluateNumbers$ = "ERROR - Division by 0": EXIT FUNCTION
-        n1 = VAL(num(1)) MOD VAL(num(2))
-    CASE "+": n1 = VAL(num(1)) + VAL(num(2))
-    CASE "-": n1 = VAL(num(1)) - VAL(num(2))
-    CASE "=": n1 = VAL(num(1)) = VAL(num(2))
-    CASE ">": n1 = VAL(num(1)) > VAL(num(2))
-    CASE "<": n1 = VAL(num(1)) < VAL(num(2))
-    CASE "<>", "><": n1 = VAL(num(1)) <> VAL(num(2))
-    CASE "<=", "=<": n1 = VAL(num(1)) <= VAL(num(2))
-    CASE ">=", "=>": n1 = VAL(num(1)) >= VAL(num(2))
-    CASE "NOT": n1 = NOT VAL(num(2))
-    CASE "AND": n1 = VAL(num(1)) AND VAL(num(2))
-    CASE "OR": n1 = VAL(num(1)) OR VAL(num(2))
-    CASE "XOR": n1 = VAL(num(1)) XOR VAL(num(2))
-    CASE "EQV": n1 = VAL(num(1)) EQV VAL(num(2))
-    CASE "IMP": n1 = VAL(num(1)) IMP VAL(num(2))
-    CASE ELSE
-        EvaluateNumbers$ = "ERROR - Bad operation (We shouldn't see this)" 'Let's say we're bad...
+'PRINT "EVALNUM:"; OName(p), num(1), num(2)
+IF INSTR(num(1), ",") THEN
+    EvaluateNumbers$ = "ERROR - Invalid comma (" + num(1) + ")": EXIT FUNCTION
+END IF
+l2 = INSTR(num(2), ",")
+IF l2 THEN
+    SELECT CASE OName(p) 'only certain commands should pass a comma value
+        CASE "C_RG", "C_RA", "_RGB", "_RGBA", "_RED", "_GREEN", "C_BL", "_ALPHA"
+        CASE ELSE
+            C$ = MID$(num(2), l2)
+            num(2) = LEFT$(num(2), l2 - 1)
+    END SELECT
+END IF
+
+SELECT CASE PL(p) 'divide up the work so we want do as much case checking
+    CASE 5 'Type conversions
+        'Note, these are special cases and work with the number BEFORE the command and not after
+        SELECT CASE OName(p) 'Depending on our operator..
+            CASE "C_UOF": n1~%& = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1~%&)))
+            CASE "C_ULO": n1%& = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1%&)))
+            CASE "C_UBY": n1~%% = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1~%%)))
+            CASE "C_UIN": n1~% = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1~%)))
+            CASE "C_BY": n1%% = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1%%)))
+            CASE "C_IN": n1% = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1%)))
+            CASE "C_UIF": n1~&& = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1~&&)))
+            CASE "C_OF": n1~& = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1~&)))
+            CASE "C_IF": n1&& = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1&&)))
+            CASE "C_LO": n1& = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1&)))
+            CASE "C_UBI": n1~` = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1~`)))
+            CASE "C_BI": n1` = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1`)))
+            CASE "C_FL": n1## = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1##)))
+            CASE "C_DO": n1# = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1#)))
+            CASE "C_SI": n1! = VAL(num(1)): EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1!)))
+        END SELECT
+        EXIT FUNCTION
+    CASE 10 'functions
+        SELECT CASE OName(p) 'Depending on our operator..
+            CASE "_PI"
+                n1 = 3.14159265358979323846264338327950288## 'Future compatable in case something ever stores extra digits for PI
+                IF num(2) <> "" THEN n1 = n1 * VAL(num(2))
+            CASE "_ACOS": n1 = _ACOS(VAL(num(2)))
+            CASE "_ASIN": n1 = _ASIN(VAL(num(2)))
+            CASE "_ARCSEC": n1 = _ARCSEC(VAL(num(2)))
+            CASE "_ARCCSC": n1 = _ARCCSC(VAL(num(2)))
+            CASE "_ARCCOT": n1 = _ARCCOT(VAL(num(2)))
+            CASE "_SECH": n1 = _SECH(VAL(num(2)))
+            CASE "_CSCH": n1 = _CSCH(VAL(num(2)))
+            CASE "_COTH": n1 = _COTH(VAL(num(2)))
+            CASE "C_RG"
+                n$ = num(2)
+                IF n$ = "" THEN EvaluateNumbers$ = "ERROR - Invalid null _RGB32": EXIT FUNCTION
+                c1 = INSTR(n$, ",")
+                IF c1 THEN c2 = INSTR(c1 + 1, n$, ",")
+                IF c2 THEN c3 = INSTR(c2 + 1, n$, ",")
+                IF c3 THEN c4 = INSTR(c3 + 1, n$, ",")
+                IF c1 = 0 THEN 'there's no comma in the command to parse.  It's a grayscale value
+                    n = VAL(num(2))
+                    n1 = _RGB32(n, n, n)
+                ELSEIF c2 = 0 THEN 'there's one comma and not 2.  It's grayscale with alpha.
+                    n = VAL(LEFT$(num(2), c1))
+                    n2 = VAL(MID$(num(2), c1 + 1))
+                    n1 = _RGBA32(n, n, n, n2)
+                ELSEIF c3 = 0 THEN 'there's two commas.  It's _RGB values
+                    n = VAL(LEFT$(num(2), c1))
+                    n2 = VAL(MID$(num(2), c1 + 1))
+                    n3 = VAL(MID$(num(2), c2 + 1))
+                    n1 = _RGB32(n, n2, n3)
+                ELSEIF c4 = 0 THEN 'there's three commas.  It's _RGBA values
+                    n = VAL(LEFT$(num(2), c1))
+                    n2 = VAL(MID$(num(2), c1 + 1))
+                    n3 = VAL(MID$(num(2), c2 + 1))
+                    n4 = VAL(MID$(num(2), c3 + 1))
+                    n1 = _RGBA32(n, n2, n3, n4)
+                ELSE 'we have more than three commas.  I have no idea WTH type of values got passed here!
+                    EvaluateNumbers$ = "ERROR - Invalid comma count (" + num(2) + ")": EXIT FUNCTION
+                END IF
+            CASE "C_RA"
+                n$ = num(2)
+                IF n$ = "" THEN EvaluateNumbers$ = "ERROR - Invalid null _RGBA32": EXIT FUNCTION
+                c1 = INSTR(n$, ",")
+                IF c1 THEN c2 = INSTR(c1 + 1, n$, ",")
+                IF c2 THEN c3 = INSTR(c2 + 1, n$, ",")
+                IF c3 THEN c4 = INSTR(c3 + 1, n$, ",")
+                IF c3 = 0 OR c4 <> 0 THEN EvaluateNumbers$ = "ERROR - Invalid comma count (" + num(2) + ")": EXIT FUNCTION
+                'we have to have 3 commas; not more, not less.
+                n = VAL(LEFT$(num(2), c1))
+                n2 = VAL(MID$(num(2), c1 + 1))
+                n3 = VAL(MID$(num(2), c2 + 1))
+                n4 = VAL(MID$(num(2), c3 + 1))
+                n1 = _RGBA32(n, n2, n3, n4)
+            CASE "_RGB"
+                n$ = num(2)
+                IF n$ = "" THEN EvaluateNumbers$ = "ERROR - Invalid null _RGB": EXIT FUNCTION
+                c1 = INSTR(n$, ",")
+                IF c1 THEN c2 = INSTR(c1 + 1, n$, ",")
+                IF c2 THEN c3 = INSTR(c2 + 1, n$, ",")
+                IF c3 THEN c4 = INSTR(c3 + 1, n$, ",")
+                IF c3 = 0 OR c4 <> 0 THEN EvaluateNumbers$ = "ERROR - Invalid comma count (" + num(2) + "). _RGB requires 4 parameters for Red, Green, Blue, ScreenMode.": EXIT FUNCTION
+                'we have to have 3 commas; not more, not less.
+                n = VAL(LEFT$(num(2), c1))
+                n2 = VAL(MID$(num(2), c1 + 1))
+                n3 = VAL(MID$(num(2), c2 + 1))
+                n4 = VAL(MID$(num(2), c3 + 1))
+                SELECT CASE n4
+                    CASE 0 TO 2, 7 TO 13, 256, 32 'these are the good screen values
+                    CASE ELSE
+                        EvaluateNumbers$ = "ERROR - Invalid Screen Mode (" + STR$(n4) + ")": EXIT FUNCTION
+                END SELECT
+                t = _NEWIMAGE(1, 1, n4)
+                n1 = _RGB(n, n2, n3, t)
+                _FREEIMAGE t
+            CASE "_RGBA"
+                n$ = num(2)
+                IF n$ = "" THEN EvaluateNumbers$ = "ERROR - Invalid null _RGBA": EXIT FUNCTION
+                c1 = INSTR(n$, ",")
+                IF c1 THEN c2 = INSTR(c1 + 1, n$, ",")
+                IF c2 THEN c3 = INSTR(c2 + 1, n$, ",")
+                IF c3 THEN c4 = INSTR(c3 + 1, n$, ",")
+                IF c4 THEN c5 = INSTR(c4 + 1, n$, ",")
+                IF c4 = 0 OR c5 <> 0 THEN EvaluateNumbers$ = "ERROR - Invalid comma count (" + num(2) + "). _RGBA requires 5 parameters for Red, Green, Blue, Alpha, ScreenMode.": EXIT FUNCTION
+                'we have to have 4 commas; not more, not less.
+                n = VAL(LEFT$(num(2), c1))
+                n2 = VAL(MID$(num(2), c1 + 1))
+                n3 = VAL(MID$(num(2), c2 + 1))
+                n4 = VAL(MID$(num(2), c3 + 1))
+                n5 = VAL(MID$(num(2), c4 + 1))
+                SELECT CASE n5
+                    CASE 0 TO 2, 7 TO 13, 256, 32 'these are the good screen values
+                    CASE ELSE
+                        EvaluateNumbers$ = "ERROR - Invalid Screen Mode (" + STR$(n5) + ")": EXIT FUNCTION
+                END SELECT
+                t = _NEWIMAGE(1, 1, n5)
+                n1 = _RGBA(n, n2, n3, n4, t)
+                _FREEIMAGE t
+            CASE "_RED", "_GREEN", "_BLUE", "_ALPHA"
+                n$ = num(2)
+                IF n$ = "" THEN EvaluateNumbers$ = "ERROR - Invalid null " + OName(p): EXIT FUNCTION
+                c1 = INSTR(n$, ",")
+                IF c1 = 0 THEN EvaluateNumbers$ = "ERROR - " + OName(p) + " requires 2 parameters for Color, ScreenMode.": EXIT FUNCTION
+                IF c1 THEN c2 = INSTR(c1 + 1, n$, ",")
+                IF c2 THEN EvaluateNumbers$ = "ERROR - " + OName(p) + " requires 2 parameters for Color, ScreenMode.": EXIT FUNCTION
+                n = VAL(LEFT$(num(2), c1))
+                n2 = VAL(MID$(num(2), c1 + 1))
+                SELECT CASE n2
+                    CASE 0 TO 2, 7 TO 13, 256, 32 'these are the good screen values
+                    CASE ELSE
+                        EvaluateNumbers$ = "ERROR - Invalid Screen Mode (" + STR$(n2) + ")": EXIT FUNCTION
+                END SELECT
+                t = _NEWIMAGE(1, 1, n4)
+                SELECT CASE OName(p)
+                    CASE "_RED": n1 = _RED(n, t)
+                    CASE "_BLUE": n1 = _BLUE(n, t)
+                    CASE "_GREEN": n1 = _GREEN(n, t)
+                    CASE "_ALPHA": n1 = _ALPHA(n, t)
+                END SELECT
+                _FREEIMAGE t
+            CASE "C_RX", "C_GR", "C_BL", "C_AL"
+                n$ = num(2)
+                IF n$ = "" THEN EvaluateNumbers$ = "ERROR - Invalid null " + OName(p): EXIT FUNCTION
+                n = VAL(num(2))
+                SELECT CASE OName(p)
+                    CASE "C_RX": n1 = _RED32(n)
+                    CASE "C_BL": n1 = _BLUE32(n)
+                    CASE "C_GR": n1 = _GREEN32(n)
+                    CASE "C_AL": n1 = _ALPHA32(n)
+                END SELECT
+            CASE "COS": n1 = COS(VAL(num(2)))
+            CASE "SIN": n1 = SIN(VAL(num(2)))
+            CASE "TAN": n1 = TAN(VAL(num(2)))
+            CASE "LOG": n1 = LOG(VAL(num(2)))
+            CASE "EXP": n1 = EXP(VAL(num(2)))
+            CASE "ATN": n1 = ATN(VAL(num(2)))
+            CASE "_D2R": n1 = 0.0174532925 * (VAL(num(2)))
+            CASE "_D2G": n1 = 1.1111111111 * (VAL(num(2)))
+            CASE "_R2D": n1 = 57.2957795 * (VAL(num(2)))
+            CASE "_R2G": n1 = 0.015707963 * (VAL(num(2)))
+            CASE "_G2D": n1 = 0.9 * (VAL(num(2)))
+            CASE "_G2R": n1 = 63.661977237 * (VAL(num(2)))
+            CASE "ABS": n1 = ABS(VAL(num(2)))
+            CASE "SGN": n1 = SGN(VAL(num(2)))
+            CASE "INT": n1 = INT(VAL(num(2)))
+            CASE "_ROUND": n1 = _ROUND(VAL(num(2)))
+            CASE "_CEIL": n1 = _CEIL(VAL(num(2)))
+            CASE "FIX": n1 = FIX(VAL(num(2)))
+            CASE "_SEC": n1 = _SEC(VAL(num(2)))
+            CASE "_CSC": n1 = _CSC(VAL(num(2)))
+            CASE "_COT": n1 = _COT(VAL(num(2)))
+        END SELECT
+    CASE 20 TO 60 'Math Operators
+        SELECT CASE OName(p) 'Depending on our operator..
+            CASE "^": n1 = VAL(num(1)) ^ VAL(num(2))
+            CASE "SQR": n1 = SQR(VAL(num(2)))
+            CASE "ROOT"
+                n1 = VAL(num(1)): n2 = VAL(num(2))
+                IF n2 = 1 THEN EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1))): EXIT FUNCTION
+                IF n1 < 0 AND n2 >= 1 THEN sign = -1: n1 = -n1 ELSE sign = 1
+                n3 = 1## / n2
+                IF n3 <> INT(n3) AND n2 < 1 THEN sign = SGN(n1): n1 = ABS(n1)
+                n1 = sign * (n1 ^ n3)
+            CASE "*": n1 = VAL(num(1)) * VAL(num(2))
+            CASE "/": n1 = VAL(num(1)) / VAL(num(2))
+            CASE "\"
+                IF VAL(num(2)) <> 0 THEN
+                    n1 = VAL(num(1)) \ VAL(num(2))
+                ELSE
+                    EvaluateNumbers$ = "ERROR - Bad operation (We shouldn't see this)"
+                    EXIT FUNCTION
+                END IF
+            CASE "MOD": n1 = VAL(num(1)) MOD VAL(num(2))
+            CASE "+": n1 = VAL(num(1)) + VAL(num(2))
+            CASE "-":
+                n1 = VAL(num(1)) - VAL(num(2))
+        END SELECT
+    CASE 70 'Relational Operators =, >, <, <>, <=, >=
+        SELECT CASE OName(p) 'Depending on our operator..
+            CASE "=": n1 = VAL(num(1)) = VAL(num(2))
+            CASE ">": n1 = VAL(num(1)) > VAL(num(2))
+            CASE "<": n1 = VAL(num(1)) < VAL(num(2))
+            CASE "<>", "><": n1 = VAL(num(1)) <> VAL(num(2))
+            CASE "<=", "=<": n1 = VAL(num(1)) <= VAL(num(2))
+            CASE ">=", "=>": n1 = VAL(num(1)) >= VAL(num(2))
+        END SELECT
+    CASE ELSE 'a value we haven't processed elsewhere
+        SELECT CASE OName(p) 'Depending on our operator..
+            CASE "NOT": n1 = NOT VAL(num(2))
+            CASE "AND": n1 = VAL(num(1)) AND VAL(num(2))
+            CASE "OR": n1 = VAL(num(1)) OR VAL(num(2))
+            CASE "XOR": n1 = VAL(num(1)) XOR VAL(num(2))
+            CASE "EQV": n1 = VAL(num(1)) EQV VAL(num(2))
+            CASE "IMP": n1 = VAL(num(1)) IMP VAL(num(2))
+        END SELECT
 END SELECT
-EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1)))
+
+EvaluateNumbers$ = RTRIM$(LTRIM$(STR$(n1))) + C$
+
+'PRINT "AFTEREVN:"; EvaluateNumbers$
 END FUNCTION
 
 FUNCTION DWD$ (exp$) 'Deal With Duplicates
@@ -36664,27 +36861,52 @@ DO
         l = INSTR(t$, "--")
         IF l THEN t$ = LEFT$(t$, l - 1) + "+" + MID$(t$, l + 2): bad = -1
     LOOP UNTIL l = 0
+    'PRINT "FIXING: "; t$
 LOOP UNTIL NOT bad
 DWD$ = t$
-VerifyString t$
 END FUNCTION
 
 SUB PreParse (e$)
 DIM f AS _FLOAT
 
+IF PP_TypeMod(0) = "" THEN
+    REDIM PP_TypeMod(100) AS STRING, PP_ConvertedMod(100) AS STRING 'Large enough to hold all values to begin with
+    PP_TypeMod(0) = "Initialized" 'Set so we don't do this section over and over, as we keep the values in shared memory.
+    Set_OrderOfOperations 'Call this once to set up our proper order of operations and variable list
+    'and the below is a conversion list so symbols don't get cross confused.
+    i = i + 1: PP_TypeMod(i) = "~`": PP_ConvertedMod(i) = "C_UBI" 'unsigned bit
+    i = i + 1: PP_TypeMod(i) = "~%%": PP_ConvertedMod(i) = "C_UBY" 'unsigned byte
+    i = i + 1: PP_TypeMod(i) = "~%&": PP_ConvertedMod(i) = "C_UOF" 'unsigned offset
+    i = i + 1: PP_TypeMod(i) = "~%": PP_ConvertedMod(i) = "C_UIN" 'unsigned integer
+    i = i + 1: PP_TypeMod(i) = "~&&": PP_ConvertedMod(i) = "C_UIF" 'unsigned integer64
+    i = i + 1: PP_TypeMod(i) = "~&": PP_ConvertedMod(i) = "C_ULO" 'unsigned long
+    i = i + 1: PP_TypeMod(i) = "`": PP_ConvertedMod(i) = "C_BI" 'bit
+    i = i + 1: PP_TypeMod(i) = "%%": PP_ConvertedMod(i) = "C_BY" 'byte
+    i = i + 1: PP_TypeMod(i) = "%&": PP_ConvertedMod(i) = "C_OF" 'offset
+    i = i + 1: PP_TypeMod(i) = "%": PP_ConvertedMod(i) = "C_IN" 'integer
+    i = i + 1: PP_TypeMod(i) = "&&": PP_ConvertedMod(i) = "C_IF" 'integer64
+    i = i + 1: PP_TypeMod(i) = "&": PP_ConvertedMod(i) = "C_LO" 'long
+    i = i + 1: PP_TypeMod(i) = "!": PP_ConvertedMod(i) = "C_SI" 'single
+    i = i + 1: PP_TypeMod(i) = "##": PP_ConvertedMod(i) = "C_FL" 'float
+    i = i + 1: PP_TypeMod(i) = "#": PP_ConvertedMod(i) = "C_DO" 'double
+    i = i + 1: PP_TypeMod(i) = "_RGB32": PP_ConvertedMod(i) = "C_RG" 'rgb32
+    i = i + 1: PP_TypeMod(i) = "_RGBA32": PP_ConvertedMod(i) = "C_RA" 'rgba32
+    i = i + 1: PP_TypeMod(i) = "_RED32": PP_ConvertedMod(i) = "C_RX" 'red32
+    i = i + 1: PP_TypeMod(i) = "_GREEN32": PP_ConvertedMod(i) = "C_GR" 'green32
+    i = i + 1: PP_TypeMod(i) = "_BLUE32": PP_ConvertedMod(i) = "C_BL" 'blue32
+    i = i + 1: PP_TypeMod(i) = "_ALPHA32": PP_ConvertedMod(i) = "C_AL" 'alpha32
+    REDIM _PRESERVE PP_TypeMod(i) AS STRING, PP_ConvertedMod(i) AS STRING 'And then resized to just contain the necessary space in memory
+END IF
 t$ = e$
+
 'First strip all spaces
 t$ = ""
 FOR i = 1 TO LEN(e$)
     IF MID$(e$, i, 1) <> " " THEN t$ = t$ + MID$(e$, i, 1)
 NEXT
-IF t$ = "" THEN e$ = "ERROR -- NULL string; nothing to evaluate": EXIT SUB
+
 t$ = UCASE$(t$)
-
-
-
-
-
+IF t$ = "" THEN e$ = "ERROR -- NULL string; nothing to evaluate": EXIT SUB
 
 'ERROR CHECK by counting our brackets
 l = 0
@@ -36717,15 +36939,54 @@ DO
     END IF
 LOOP UNTIL l = 0
 
+FOR j = 1 TO UBOUND(PP_TypeMod)
+    l = 0
+    DO
+        l = INSTR(l + 1, t$, PP_TypeMod(j))
+        IF l = 0 THEN EXIT DO
+        i = 0: l1 = 0: l2 = 0: lo = LEN(PP_TypeMod(j))
+        DO
+            IF PL(i) > 10 THEN
+                l2 = _INSTRREV(l, t$, OName$(i))
+                IF l2 > 0 AND l2 > l1 THEN l1 = l2
+            END IF
+            i = i + lo
+        LOOP UNTIL i > UBOUND(PL)
+        'PRINT "L1:"; l1; "L"; l
+        l$ = LEFT$(t$, l1)
+        m$ = MID$(t$, l1 + 1, l - l1 - 1)
+        r$ = PP_ConvertedMod(j) + MID$(t$, l + lo)
+        'PRINT "Y$: "; TypeMod(j)
+        'PRINT "L$: "; l$
+        'PRINT "M$: "; m$
+        'PRINT "R$: "; r$
+        IF j > 15 THEN
+            t$ = l$ + m$ + r$ 'replacement routine for commands which might get confused with others, like _RGB and _RGB32
+        ELSE
+            'the first 15 commands need to properly place the parenthesis around the value we want to convert.
+            t$ = l$ + "(" + m$ + ")" + r$
+        END IF
+        'PRINT "T$: "; t$
+        l = l + 2 + LEN(PP_TypeMod(j)) 'move forward from the length of the symbol we checked + the new "(" and  ")"
+    LOOP
+NEXT
+'    PRINT "HERE: "; t$
+
+
+
 'Check for bad operators before a ( bracket
 l = 0
 DO
     l = INSTR(l + 1, t$, "(")
     IF l AND l > 2 THEN 'Don't check the starting bracket; there's nothing before it.
         good = 0
+        'PRINT "BEFORE: "; t$; l
         FOR i = 1 TO UBOUND(OName)
-            IF MID$(t$, l - LEN(OName(i)), LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
+            m$ = MID$(t$, l - LEN(OName(i)), LEN(OName(i)))
+            'IF OName(i) = "C_SI" THEN PRINT "CONVERT TO SINGLE", m$
+            IF m$ = OName(i) THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
         NEXT
+        'PRINT t$; l
         IF NOT good THEN e$ = "ERROR - Improper operations before (.": EXIT SUB
         l = l + 1
     END IF
@@ -36737,8 +36998,9 @@ DO
     l = INSTR(l + 1, t$, ")")
     IF l AND l < LEN(t$) THEN
         good = 0
-        FOR i = 1 TO UBOUND(OName)
-            IF MID$(t$, l + 1, LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
+        FOR i = 1 TO UBOUND(oname)
+            m$ = MID$(t$, l + 1, LEN(OName(i)))
+            IF m$ = OName(i) THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI
         NEXT
         IF MID$(t$, l + 1, 1) = ")" THEN good = -1
         IF NOT good THEN e$ = "ERROR - Improper operations after ).": EXIT SUB
@@ -36759,7 +37021,7 @@ DO
                 CASE "0" TO "9", "A" TO "F" 'All is good, our next digit is a number, continue to add to the hex$
                 CASE ELSE
                     good = 0
-                    FOR i = 1 TO UBOUND(OName)
+                    FOR i = 1 TO UBOUND(oname)
                         IF MID$(t$, E, LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
                     NEXT
                     IF NOT good THEN e$ = "ERROR - Improper &H value. (" + comp$ + ")": EXIT SUB
@@ -36784,7 +37046,7 @@ DO
                 CASE "0", "1" 'All is good, our next digit is a number, continue to add to the hex$
                 CASE ELSE
                     good = 0
-                    FOR i = 1 TO UBOUND(OName)
+                    FOR i = 1 TO UBOUND(oname)
                         IF MID$(t$, E, LEN(OName(i))) = OName(i) AND PL(i) > 1 AND PL(i) <= 250 THEN good = -1: EXIT FOR 'We found an operator after our ), and it's not a CONST (like PI)
                     NEXT
                     IF NOT good THEN e$ = "ERROR - Improper &B value. (" + comp$ + ")": EXIT SUB
@@ -36800,11 +37062,16 @@ DO
     END IF
 LOOP UNTIL l = 0
 
-t$ = N2S(t$)
-VerifyString t$
+'PRINT "ALMOST:"; t$
 
+t$ = N2S(t$)
+'PRINT "ALMOST2:"; t$
+VerifyString t$
+'PRINT "Out of PreParse: "; e$
 e$ = t$
 END SUB
+
+
 
 SUB VerifyString (t$)
 'ERROR CHECK for unrecognized operations
@@ -36812,7 +37079,7 @@ j = 1
 DO
     comp$ = MID$(t$, j, 1)
     SELECT CASE comp$
-        CASE "0" TO "9", ".", "(", ")": j = j + 1
+        CASE "0" TO "9", ".", "(", ")", ",": j = j + 1
         CASE ELSE
             good = 0
             FOR i = 1 TO UBOUND(OName)
@@ -36825,8 +37092,11 @@ LOOP UNTIL j > LEN(t$)
 END SUB
 
 FUNCTION N2S$ (exp$) 'scientific Notation to String
+
+'PRINT "Before notation:"; exp$
+
 t$ = LTRIM$(RTRIM$(exp$))
-IF LEFT$(t$, 1) = "-" THEN sign$ = "-": t$ = MID$(t$, 2)
+IF LEFT$(t$, 1) = "-" OR LEFT$(t$, 1) = "N" THEN sign$ = "-": t$ = MID$(t$, 2)
 
 dp = INSTR(t$, "D+"): dm = INSTR(t$, "D-")
 ep = INSTR(t$, "E+"): em = INSTR(t$, "E-")
@@ -36868,5 +37138,6 @@ SELECT CASE r&&
 END SELECT
 
 N2S$ = sign$ + l$
+'PRINT "After notation:"; N2S$
 END SUB
 
