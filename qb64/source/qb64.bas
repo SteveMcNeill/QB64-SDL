@@ -8,11 +8,7 @@ DEFLNG A-Z
 REDIM SHARED OName(1000) AS STRING 'Operation Name
 REDIM SHARED PL(1000) AS INTEGER 'Priority Level
 REDIM SHARED PP_TypeMod(0) AS STRING, PP_ConvertedMod(0) AS STRING 'Prepass Name Conversion variables.
-REDIM SHARED vars(26) AS STRING ' 0 is previous answer, 1 - 26 is A - Z
-DIM SHARED FileName AS STRING, DirName AS STRING
 DIM SHARED QuickReturn AS INTEGER
-DirName = "internal/MathEval/"
-FileName = "internal/MathEval/Math Evaluator User Variables.bin"
 
 Set_OrderOfOperations 'This will also make certain our directories are valid, and if not make them.
 
@@ -32473,6 +32469,27 @@ id.ret = LONGTYPE - ISPOINTER
 id.specialformat = "[?],?,?" 'checked!
 regid
 
+clearid
+id.n = "_AUTODISPLAY"
+id.subfunc = 1
+id.callname = "func__autodisplay"
+id.args = 0
+id.ret = LONGTYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_WINDOWHANDLE"
+id.subfunc = 1
+id.callname = "func__handle"
+id.ret = INTEGER64TYPE - ISPOINTER
+regid
+
+clearid
+id.n = "_WINDOWHASFOCUS"
+id.subfunc = 1
+id.callname = "func__hasfocus"
+id.ret = LONGTYPE - ISPOINTER
+regid
 
 
 reginternalsubfunc = 0
