@@ -308,6 +308,8 @@ extern int32 n_int64();
 extern int32 n_uint64();
 extern int32 n_inputnumberfromdata(uint8* data, ptrszint* data_offset, ptrszint data_size);
 extern int32 n_inputnumberfromfile(int32 fileno);
+extern void file_line_input_string_character(int32 filehandle, qbs *deststr);
+extern void file_line_input_string_binary(int32 fileno, qbs *deststr);
 extern void sub_file_line_input_string(int32 fileno, qbs* deststr);
 extern void sub_file_input_string(int32 fileno, qbs* deststr);
 extern int64 func_file_input_int64(int32 fileno);
