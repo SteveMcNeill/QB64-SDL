@@ -7672,61 +7672,105 @@ int32 qbs_notequal(qbs* str1, qbs* str2) {
 	if (memcmp(str1->chr, str2->chr, str1->len) == 0) return 0;
 	return -1;
 }
-int32 qbs_greaterthan(qbs* str1, qbs* str2) {
-	static int32 i;
-	if (str1->len <= str2->len) {
-		i = memcmp(str1->chr, str2->chr, str1->len);
-		if (i > 0) return -1;
-		return 0;
-	}
-	else {
-		i = memcmp(str1->chr, str2->chr, str2->len);
-		if (i < 0) return 0;
-		return -1;
-	}
+
+// --------------------------------------------------------------------
+// --- RHO:FIX (fixed string compare routines taken from QB64 v1.2) ---
+// --------------------------------------------------------------------
+int32 qbs_greaterthan(qbs *str2, qbs *str1)
+{
+    // same process as for lessthan; we just reverse the string order
+    int32 i, limit, l1, l2;
+    l1 = str1->len;
+    l2 = str2->len;
+    if (!l1)
+        if (l2)
+            return -1;
+        else
+            return 0;
+    if (l1 <= l2)
+        limit = l1;
+    else
+        limit = l2;
+    i = memcmp(str1->chr, str2->chr, limit);
+    if (i < 0)
+        return -1;
+    if (i > 0)
+        return 0;
+    if (l1 < l2)
+        return -1;
+    return 0;
 }
-int32 qbs_lessthan(qbs* str1, qbs* str2) {
-	static int32 i;
-	if (str1->len <= str2->len) {
-		if (!str1->len) if (str2->len) return -1; else return 0;
-		i = memcmp(str1->chr, str2->chr, str1->len);
-		if (i < 0) return -1;
-		return 0;
-	}
-	else {
-		i = memcmp(str1->chr, str2->chr, str2->len);
-		if (i >= 0) return 0;
-		return -1;
-	}
+int32 qbs_lessthan(qbs *str1, qbs *str2)
+{
+    int32 i, limit, l1, l2;
+    l1 = str1->len;
+    l2 = str2->len; // no need to get the length of these strings multiple times.
+    if (!l1)
+        if (l2)
+            return -1;
+        else
+            return 0; // if one is a null string we known the answer already.
+    if (l1 <= l2)
+        limit = l1;
+    else
+        limit = l2;                          // our limit is going to be the length of the smallest string.
+    i = memcmp(str1->chr, str2->chr, limit); // check only to the length of the shortest string
+    if (i < 0)
+        return -1; // if the number is smaller by this point, say so
+    if (i > 0)
+        return 0; // if it's larger by this point, say so
+    // if the number is the same at this point, compare length.
+    // if the length of the first one is smaller, then the string is smaller. Otherwise the second one is the same
+    // string, or longer.
+    if (l1 < l2)
+        return -1;
+    return 0;
 }
-int32 qbs_lessorequal(qbs* str1, qbs* str2) {
-	static int32 i;
-	if (str1->len <= str2->len) {
-		i = memcmp(str1->chr, str2->chr, str1->len);
-		if (i <= 0) return -1;
-		return 0;
-	}
-	else {
-		i = memcmp(str1->chr, str2->chr, str2->len);
-		if (i >= 0) return 0;
-		return -1;
-	}
+int32 qbs_lessorequal(qbs *str1, qbs *str2)
+{
+    // same process as lessthan, but we check to see if the lengths are equal here also.
+    int32 i, limit, l1, l2;
+    l1 = str1->len;
+    l2 = str2->len;
+    if (!l1)
+        return -1; // if the first string has no length then it HAS to be smaller or equal to the second
+    if (l1 <= l2)
+        limit = l1;
+    else
+        limit = l2;
+    i = memcmp(str1->chr, str2->chr, limit);
+    if (i < 0)
+        return -1;
+    if (i > 0)
+        return 0;
+    if (l1 <= l2)
+        return -1;
+    return 0;
 }
-int32 qbs_greaterorequal(qbs* str1, qbs* str2) {
-	static int32 i;
-	//greater?
-	if (str1->len <= str2->len) {
-		i = memcmp(str1->chr, str2->chr, str1->len);
-		if (i > 0) return -1;
-		if (i == 0) if (str1->len == str2->len) return -1;//equal?
-		return 0;
-	}
-	else {
-		i = memcmp(str1->chr, str2->chr, str2->len);
-		if (i < 0) return 0;
-		return -1;
-	}
+int32 qbs_greaterorequal(qbs *str2, qbs *str1)
+{
+    // same process as for lessorequal; we just reverse the string order
+    int32 i, limit, l1, l2;
+    l1 = str1->len;
+    l2 = str2->len;
+    if (!l1)
+        return -1;
+    if (l1 <= l2)
+        limit = l1;
+    else
+        limit = l2;
+    i = memcmp(str1->chr, str2->chr, limit);
+    if (i < 0)
+        return -1;
+    if (i > 0)
+        return 0;
+    if (l1 <= l2)
+        return -1;
+    return 0;
 }
+// --------------------------------------------------------------------
+// --- RHO:END (fixed string compare routines taken from QB64 v1.2) ---
+// --------------------------------------------------------------------
 
 int32 qbs_asc(qbs* str, uint32 i) {//uint32 speeds up checking for negative
 	i--;
@@ -12493,66 +12537,89 @@ error:
 
 
 //input helper functions:
+
+// input helper functions:
 uint64 hexoct2uint64_value;
-int32 hexoct2uint64(qbs* h) {
-	//returns 0=failed
-	//        1=HEX value (default if unspecified)
-	//        2=OCT value
-	static int32 i, i2;
-	static uint64 result;
-	result = 0;
-	static int32 type;
-	type = 0;
-	hexoct2uint64_value = 0;
-	if (!h->len) return 1;
-	if (h->chr[0] != 38) return 0;//not "&"
-	if (h->len == 1) return 1;//& received, but awaiting further input
-	i = h->chr[1];
-	if ((i == 72) || (i == 104)) type = 1;//"H"or"h"
-	if ((i == 79) || (i == 111)) type = 2;//"O"or"o"
-	if (!type) return 0;
-	if (h->len == 2) return type;
+int32 hexoct2uint64(qbs *h)
+{
+    // returns 0=failed
+    //        1=HEX value (default if unspecified)
+    //        2=OCT value
+    static int32 i, i2;
+    static uint64 result;
+    result = 0;
+    static int32 type;
+    type = 0;
+    hexoct2uint64_value = 0;
+    if (!h->len)
+        return 1;
+    if (h->chr[0] != 38)
+        return 0; // not "&"
+    if (h->len == 1)
+        return 1; //& received, but awaiting further input
+    i = h->chr[1];
+    if ((i == 72) || (i == 104))
+        type = 1; //"H"or"h"
+    if ((i == 79) || (i == 111))
+        type = 2; //"O"or"o"
+    if (!type)
+        return 0;
+    if (h->len == 2)
+        return type;
 
-	if (type == 1) {
-		if (h->len > 18) return 0;//larger than int64
-		for (i = 2; i < h->len; i++) {
-			result <<= 4;
-			i2 = h->chr[i];
-			//          0  -      9             A  -      F             a  -      f
-			if (((i2 >= 48) && (i2 <= 57)) || ((i2 >= 65) && (i2 <= 70)) || ((i2 >= 97) && (i2 <= 102))) {
-				if (i2 >= 97) i2 -= 32;
-				if (i2 >= 65) i2 -= 7;
-				i2 -= 48;
-				//i2 is now a values between 0 and 15
-				result += i2;
-			}
-			else return 0;//invalid character
-		}//i
-		hexoct2uint64_value = result;
-		return 1;
-	}//type==1
+    if (type == 1)
+    {
+        if (h->len > 18)
+            return 0; // larger than int64
+        for (i = 2; i < h->len; i++)
+        {
+            result <<= 4;
+            i2 = h->chr[i];
+            //          0  -      9             A  -      F             a  -      f
+            if (((i2 >= 48) && (i2 <= 57)) || ((i2 >= 65) && (i2 <= 70)) || ((i2 >= 97) && (i2 <= 102)))
+            {
+                if (i2 >= 97)
+                    i2 -= 32;
+                if (i2 >= 65)
+                    i2 -= 7;
+                i2 -= 48;
+                // i2 is now a values between 0 and 15
+                result += i2;
+            }
+            else
+                return 0; // invalid character
+        }                 // i
+        hexoct2uint64_value = result;
+        return 1;
+    } // type==1
 
-	if (type == 2) {
-		//unsigned _int64 max=18446744073709551615 (decimal, 20 chars)
-		//                   =1777777777777777777777 (octal, 22 chars)
-		//                   =FFFFFFFFFFFFFFFF (hex, 16 chars)
-		if (h->len > 24) return 0;//larger than int64
-		if (h->len == 24) {
-			if ((h->chr[2] != 48) && (h->chr[2] != 49)) return 0;//larger than int64
-		}
-		for (i = 2; i < h->len; i++) {
-			result <<= 3;
-			i2 = h->chr[i];
-			if ((i2 >= 48) && (i2 <= 55)) {//0-7
-				i2 -= 48;
-				result += i2;
-			}
-			else return 0;//invalid character
-		}//i
-		hexoct2uint64_value = result;
-		return 2;
-	}//type==2
-
+    if (type == 2)
+    {
+        // unsigned _int64 max=18446744073709551615 (decimal, 20 chars)
+        //                   =1777777777777777777777 (octal, 22 chars)
+        //                   =FFFFFFFFFFFFFFFF (hex, 16 chars)
+        if (h->len > 24)
+            return 0; // larger than int64
+        if (h->len == 24)
+        {
+            if ((h->chr[2] != 48) && (h->chr[2] != 49))
+                return 0; // larger than int64
+        }
+        for (i = 2; i < h->len; i++)
+        {
+            result <<= 3;
+            i2 = h->chr[i];
+            if ((i2 >= 48) && (i2 <= 55))
+            { // 0-7
+                i2 -= 48;
+                result += i2;
+            }
+            else
+                return 0; // invalid character
+        }                 // i
+        hexoct2uint64_value = result;
+        return 2;
+    } // type==2
 }
 
 
@@ -12726,7 +12793,7 @@ qbs_input_sep_arg_done:
 				max <<= i4;
 				max--;
 
-				//check for hex/oct
+				//check for hex/oct/bin
 				if (i3 = hexoct2uint64(qbs_input_arguements[argn])) {
 					hexvalue = hexoct2uint64_value;
 					if (hexvalue > max) { valid = 0; goto typechecked; }
@@ -12743,6 +12810,32 @@ qbs_input_sep_arg_done:
 						if (l == 1) completewith = 72;//"H"
 						if (l == 2) completewith = 48;//"0"
 					}
+                                        // ------------------------------
+                    // --- RHO:ADD (binary input) ---
+                    // ------------------------------
+                    if (i3 == 3)
+                    {
+                        value = max;
+                        i = 0;
+                        for (i2 = 1; i2 <= 64; i2++)
+                        {
+                            if (value & 0x1)
+                                i = i2;
+                            value >>= 1;
+                        }
+                        if (l > (2 + i))
+                        {
+                            valid = 0;
+                            goto typechecked;
+                        }
+                        if (l == 1)
+                            completewith = 66; //"B"
+                        if (l == 2)
+                            completewith = 48; //"0"
+                    }
+                    // ------------------------------
+                    // --- RHO:END (binary input) ---
+                    // ------------------------------
 					if (i3 == 2) {
 						value = max;
 						i = 0;
@@ -12751,7 +12844,7 @@ qbs_input_sep_arg_done:
 							value >>= 3;
 						}
 						if (l > (2 + i)) { valid = 0; goto typechecked; }
-						if (l == 1) completewith = 111;//"O"
+						if (l == 1) completewith = 79;//"O"
 						if (l == 2) completewith = 48;//"0"
 					}
 					finalvalue = hexvalue;
@@ -12827,13 +12920,14 @@ qbs_input_sep_arg_done:
 			if ((qbs_input_variabletypes[argn] & 511) == 64) {
 				if (l == 0) { completewith = 48; *(int64*)qbs_input_variableoffsets[argn] = 0; goto typechecked; }
 
-				//check for hex/oct
+				//check for hex/oct/bin
 				if (i3 = hexoct2uint64(qbs_input_arguements[argn])) {
 					hexvalue = hexoct2uint64_value;
 					if (hexvalue > max) { valid = 0; goto typechecked; }
 					//set completewith value (if necessary)
 					if (i3 == 1) if (l == 1) completewith = 72;//"H"
-					if (i3 == 2) if (l == 1) completewith = 111;//"O"
+					if (i3 == 2) if (l == 1) completewith = 79;//"O"
+                    if (i3 == 3) if (l == 1) completewith = 66; //"B" RHO:ADD (binary input)
 					if (l == 2) completewith = 48;//"0"
 					*(uint64*)qbs_input_variableoffsets[argn] = hexvalue;
 					goto typechecked;
@@ -12918,12 +13012,13 @@ qbs_input_sep_arg_done:
 		//begin with a generic assessment, regardless of whether it is single, double or float
 		if (l == 0) { completewith = 48; goto typechecked; }
 
-		//check for hex/oct
+		//check for hex/oct/bin
 		if (i3 = hexoct2uint64(qbs_input_arguements[argn])) {
 			hexvalue = hexoct2uint64_value;
 			//set completewith value (if necessary)
 			if (i3 == 1) if (l == 1) completewith = 72;//"H"
-			if (i3 == 2) if (l == 1) completewith = 111;//"O"
+			if (i3 == 2) if (l == 1) completewith = 79;//"O"
+            if (i3 == 3) if (l == 1) completewith = 66; //"B" RHO:ADD (binary input)
 			if (l == 2) completewith = 48;//"0"
 			//nb. because VC6 didn't support...
 			//error C2520: conversion from uint64 to double not implemented, use signed int64
@@ -13506,9 +13601,40 @@ finish:;
 #endif
 	return return_value;
 
-hex://hex/oct
+hex://hex/oct/bin
 	if (i >= (s->len - 2)) return 0;
 	c = s->chr[i + 1];
+    // ----------------------------------------
+    // --- RHO:ADD (support for VAL(&B...)) ---
+    // ----------------------------------------
+    if ((c == 66) || (c == 98))
+    { //"B"or"b"
+        hex_digits = 0;
+        hex_value = 0;
+        for (i = i + 2; i < s->len; i++)
+        {
+            c = s->chr[i];
+            if ((c >= 48) && (c <= 49))
+            { // 0-1
+                c -= 48;
+                hex_value <<= 1;
+                hex_value |= c;
+                if (hex_digits || c)
+                    hex_digits++;
+                if (hex_digits > 64)
+                {
+                    error(6);
+                    return 0;
+                }
+            }
+            else
+                break;
+        } // i
+        return hex_value;
+    }
+    // ----------------------------------------
+    // --- RHO:END (support for VAL(&B...)) ---
+    // ----------------------------------------
 	if ((c == 79) || (c == 111)) {//"O"or"o"
 		hex_digits = 0;
 		hex_value = 0;
@@ -14161,6 +14287,7 @@ int64 n_exp;//if 0, there is one digit in front of the decimal place
 uint8 n_neg;//if 1, the number is negative
 uint8 n_hex;//if 1, the digits are in hexidecimal and n_exp should be ignored
 					//if 2, the digits are in octal and n_exp should be ignored
+                    // if 3, the digits are in binary and n_exp should be ignored
 					//(consider revising variable name n_hex)
 
 int32 n_roundincrement() {
@@ -14212,6 +14339,25 @@ int32 n_float() {
 		n_float_value = value;
 		return 1;
 	}
+    // ------------------------------
+    // --- RHO:ADD (binary input) ---
+    // ------------------------------
+    if (n_hex == 3)
+    {
+        if (n_digits > 64)
+            return 0;
+        for (i = 0; i < n_digits; i++)
+        {
+            i2 = n_digit[i] - 48;
+            value <<= 1;
+            value |= i2;
+        }
+        n_float_value = value;
+        return 1;
+    }
+    // ------------------------------
+    // --- RHO:END (binary input) ---
+    // ------------------------------
 
 	//max range check (+-1.7976931348623157E308)
 	if (n_exp > 308)return 0;//overflow
@@ -14296,7 +14442,27 @@ int32 n_int64() {
 		}
 		n_int64_value = value;
 		return 1;
-	}
+    }
+    // ------------------------------
+    // --- RHO:ADD (binary input) ---
+    // ------------------------------
+    if (n_hex == 3)
+    {
+        if (n_digits > 64)
+            return 0;
+        for (i = 0; i < n_digits; i++)
+        {
+            i2 = n_digit[i] - 48;
+            value <<= 1;
+            value |= i2;
+        }
+        n_int64_value = value;
+        return 1;
+    }
+    // ------------------------------
+    // --- RHO:END (binary input) ---
+    // ------------------------------
+
 
 	//range check: int64 (-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807)
 	if (n_exp > 18)return 0;//overflow
@@ -14380,6 +14546,25 @@ int32 n_uint64() {
 		n_uint64_value = uvalue;
 		return 1;
 	}
+    // ------------------------------
+    // --- RHO:ADD (binary input) ---
+    // ------------------------------
+    if (n_hex == 3)
+    {
+        if (n_digits > 64)
+            return 0;
+        for (i = 0; i < n_digits; i++)
+        {
+            i2 = n_digit[i] - 48;
+            uvalue <<= 1;
+            uvalue |= i2;
+        }
+        n_uint64_value = uvalue;
+        return 1;
+    }
+    // ------------------------------
+    // --- RHO:END (binary input) ---
+    // ------------------------------
 
 	//negative?
 	if (n_neg) {
@@ -14446,8 +14631,8 @@ int32 n_inputnumberfromdata(uint8* data, ptrszint* data_offset, ptrszint data_si
 	//read character
 	c = data[*data_offset];
 
-	//hex/oct
-	if (c == 38) {//&
+	//hex/oct/bin
+	if (c == 38) {//"&"
 		(*data_offset)++; if (*data_offset >= data_size) goto gotnumber;
 		c = data[*data_offset];
 		if (c == 44) { (*data_offset)++; goto gotnumber; }
@@ -14479,8 +14664,37 @@ int32 n_inputnumberfromdata(uint8* data, ptrszint* data_offset, ptrszint data_si
 			}
 			return 3;//Syntax error
 		}
+        // ------------------------------
+        // --- RHO:ADD (binary input) ---
+        // ------------------------------
+        if ((c == 66) || (c == 98))
+        { // "B" or "b"
+        nexthexchr3:
+            (*data_offset)++;
+            if (*data_offset >= data_size)
+                goto gotnumber;
+            c = data[*data_offset];
+            if (c == 44)
+            {
+                (*data_offset)++;
+                goto gotnumber;
+            }
+            if ((c >= 48) && (c <= 49))
+            { // 0-1
+                if (n_digits == 256)
+                    return 1; // Overflow
+                n_digit[n_digits] = c;
+                n_digits++;
+                n_hex = 3;
+                goto nexthexchr3;
+            }
+            return 3; // Syntax error
+        }
+        // ------------------------------
+        // --- RHO:END (binary input) ---
+        // ------------------------------
 		return 3;//Syntax error
-	}//&
+	}//"&"
 
 readnextchr:
 	if (c == 44) { (*data_offset)++; goto gotnumber; }
@@ -14553,23 +14767,6 @@ gotnumber:;
 	if (n_digits == 0) { n_exp = 0; n_neg = 0; }//clarify number
 	return 0;//success
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -14690,8 +14887,8 @@ int32 n_inputnumberfromfile(int32 fileno) {
 		if (c == -1) { return_value = 2; goto error; }//input past end of file
 	} while (c == 32);
 
-	//hex/oct
-	if (c == 38) {//&
+	//hex/oct/bin
+	if (c == 38) {//"&"
 		c = file_input_chr(fileno); if (c == -2) return 3;
 		if (c == -1) goto gotnumber;
 		if ((c == 72) || (c == 104)) {//"H"or"h"
@@ -14718,8 +14915,31 @@ int32 n_inputnumberfromfile(int32 fileno) {
 			}
 			goto gotnumber;
 		}
+        // ------------------------------
+        // --- RHO:ADD (binary input) ---
+        // ------------------------------
+        if ((c == 66) || (c == 98))
+        { // "B" or "b"
+        nexthexchr3:
+            c = file_input_chr(fileno);
+            if (c == -2)
+                return 3;
+            if ((c >= 48) && (c <= 49))
+            { // 0-1
+                if (n_digits == 256)
+                    goto error; // overflow
+                n_digit[n_digits] = c;
+                n_digits++;
+                n_hex = 3;
+                goto nexthexchr3;
+            }
+            goto gotnumber;
+        }
+        // ------------------------------
+        // --- RHO:END (binary input) ---
+        // ------------------------------
 		goto gotnumber;
-	}//&
+	}//"&"
 
 readnextchr:
 	if (c == -1) goto gotnumber;
@@ -15147,7 +15367,7 @@ long double func_read_float(uint8* data, ptrszint* data_offset, ptrszint data_si
 		}
 		if ((value > maxval) || (value < minval)) goto overflow;
 
-		if (((typ & ISUNSIGNED) == 0) && n_hex) {//signed hex/oct/...  
+		if (((typ & ISUNSIGNED) == 0) && n_hex) {//signed hex/oct/bin...  
 			if ((((int64)1) << ((typ & 511) - 1)) & value) {//if top bit is set, set all bits above it to form a negative value
 				value = (maxval ^ ((int64)-1)) + value;
 			}
@@ -15254,7 +15474,7 @@ long double func_file_input_float(int32 fileno, int32 typ) {
 		}
 		if ((value > maxval) || (value < minval)) { error(6); return 0; }
 
-		if (((typ & ISUNSIGNED) == 0) && n_hex) {//signed hex/oct/...  
+		if (((typ & ISUNSIGNED) == 0) && n_hex) {//signed hex/oct/bin...  
 			if ((((int64)1) << ((typ & 511) - 1)) & value) {//if top bit is set, set all bits above it to form a negative value
 				value = (maxval ^ ((int64)-1)) + value;
 			}
@@ -18121,7 +18341,7 @@ int64 func_shell(qbs* str) {
 		//cmd.exe available?
 		if (cmd_available == -1) {
 			ZeroMemory(&si, sizeof(si)); si.cb = sizeof(si); ZeroMemory(&pi, sizeof(pi));
-			qbs_set(strz, qbs_new_txt("cmd.exe /c ver"));
+            qbs_set(strz, qbs_new_txt_len("cmd.exe /c ver\0", 15)); // RHO:FIX (use qbs_new_txt_len(), added \0 and ,15)
 			if (CreateProcess(
 				NULL,           // No module name (use command line)
 				(char*)&strz->chr[0], // Command line
@@ -18364,7 +18584,7 @@ int64 func__shellhide(qbs* str) { //func _SHELLHIDE(...
 	//cmd.exe available?
 	if (cmd_available == -1) {
 		ZeroMemory(&si, sizeof(si)); si.cb = sizeof(si); ZeroMemory(&pi, sizeof(pi));
-		qbs_set(strz, qbs_new_txt("cmd.exe /c ver"));
+        qbs_set(strz, qbs_new_txt_len("cmd.exe /c ver\0", 15)); // RHO:FIX (use qbs_new_txt_len(), added \0 and ,15)
 		if (CreateProcess(
 			NULL,           // No module name (use command line)
 			(char*)&strz->chr[0], // Command line
@@ -18667,7 +18887,7 @@ void sub_shell(qbs* str, int32 passed) {
 		//cmd.exe available?
 		if (cmd_available == -1) {
 			ZeroMemory(&si, sizeof(si)); si.cb = sizeof(si); ZeroMemory(&pi, sizeof(pi));
-			qbs_set(strz, qbs_new_txt("cmd.exe /c ver"));
+            qbs_set(strz, qbs_new_txt_len("cmd.exe /c ver\0", 15)); // RHO:FIX (use qbs_new_txt_len(), added \0 and ,15)
 			if (CreateProcess(
 				NULL,           // No module name (use command line)
 				(char*)&strz->chr[0], // Command line
@@ -18914,7 +19134,7 @@ void sub_shell2(qbs* str, int32 passed) { //HIDE
 	//cmd.exe available?
 	if (cmd_available == -1) {
 		ZeroMemory(&si, sizeof(si)); si.cb = sizeof(si); ZeroMemory(&pi, sizeof(pi));
-		qbs_set(strz, qbs_new_txt("cmd.exe /c ver"));
+        qbs_set(strz, qbs_new_txt_len("cmd.exe /c ver\0", 15)); // RHO:FIX (use qbs_new_txt_len(), added \0 and ,15)
 		if (CreateProcess(
 			NULL,           // No module name (use command line)
 			(char*)&strz->chr[0], // Command line
@@ -19137,7 +19357,7 @@ void sub_shell3(qbs* str, int32 passed) {//_DONTWAIT
 	//cmd.exe available?
 	if (cmd_available == -1) {
 		ZeroMemory(&si, sizeof(si)); si.cb = sizeof(si); ZeroMemory(&pi, sizeof(pi));
-		qbs_set(strz, qbs_new_txt("cmd.exe /c ver"));
+        qbs_set(strz, qbs_new_txt_len("cmd.exe /c ver\0", 15)); // RHO:FIX (use qbs_new_txt_len(), added \0 and ,15)
 		if (CreateProcess(
 			NULL,           // No module name (use command line)
 			(char*)&strz->chr[0], // Command line
@@ -19357,7 +19577,7 @@ void sub_shell4(qbs* str, int32 passed) {//_DONTWAIT & _HIDE
 	//cmd.exe available?
 	if (cmd_available == -1) {
 		ZeroMemory(&si, sizeof(si)); si.cb = sizeof(si); ZeroMemory(&pi, sizeof(pi));
-		qbs_set(strz, qbs_new_txt("cmd.exe /c ver"));
+        qbs_set(strz, qbs_new_txt_len("cmd.exe /c ver\0", 15)); // RHO:FIX (use qbs_new_txt_len(), added \0 and ,15)
 		if (CreateProcess(
 			NULL,           // No module name (use command line)
 			(char*)&strz->chr[0], // Command line
@@ -20461,6 +20681,14 @@ int32 func__copyimage(int32 i, int32 passed) {
 	i2 = newimg();
 	d = &img[i2];
 	memcpy(d, s, sizeof(img_struct));
+    // ----------------------------------------------------------------
+    // --- RHO:FIX (force _MEMIMAGE to get a new lock for the copy) ---
+    // ----------------------------------------------------------------
+    img[i2].lock_id = NULL;
+    img[i2].lock_offset = NULL;
+    // ----------------------------------------------------------------
+    // --- RHO:END (force _MEMIMAGE to get a new lock for the copy) ---
+    // ----------------------------------------------------------------
 	//duplicate pixel data
 	bytes = d->width * d->height * d->bytes_per_pixel;
 	d->offset = (uint8*)malloc(bytes);

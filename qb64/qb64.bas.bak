@@ -3895,17 +3895,7 @@ DO
 
                         IF LEN(headername$) THEN
                             IF os$ = "WIN" THEN
-                                '-----------------------------------------------------------
-                                '--- RHO:ADD (allow absolute full path for header files) ---
-                                '-----------------------------------------------------------
-                                IF MID$(headername$, 2, 1) = ":" OR LEFT$(headername$, 1) = "\" THEN
-                                    PRINT #17, "#include " + CHR$(34) + headername$ + CHR$(34)
-                                ELSE
-                                    PRINT #17, "#include " + CHR$(34) + "..\\..\\" + headername$ + CHR$(34)
-                                END IF
-                                '-----------------------------------------------------------
-                                '--- RHO:END (allow absolute full path for header files) ---
-                                '-----------------------------------------------------------
+                                PRINT #17, "#include " + CHR$(34) + "..\\..\\" + headername$ + CHR$(34)
                             END IF
                             IF os$ = "LNX" THEN
 
@@ -12290,31 +12280,11 @@ FUNCTION arrayreference$ (indexes$, typ)
             END IF
             IF e$ = "" THEN Give_Error "Array index missing": EXIT FUNCTION
             argi = (elements - curarg) * 4 + 4
-        IF curarg = 1 THEN
-            '--------------------------------------------------------------
-            '--- RHO:ADD (waive to array_check() in $CHECKING:OFF mode) ---
-            '--------------------------------------------------------------
-            IF NoChecks = 0 THEN
+            IF curarg = 1 THEN
                 r$ = r$ + "array_check((" + e$ + ")-" + n$ + "[" + str2(argi) + "]," + n$ + "[" + str2(argi + 1) + "])+"
             ELSE
-                r$ = r$ + "(" + e$ + ")+"
-            END IF
-            '--------------------------------------------------------------
-            '--- RHO:END (waive to array_check() in $CHECKING:OFF mode) ---
-            '--------------------------------------------------------------
-        ELSE
-            '--------------------------------------------------------------
-            '--- RHO:ADD (waive to array_check() in $CHECKING:OFF mode) ---
-            '--------------------------------------------------------------
-            IF NoChecks = 0 THEN
                 r$ = r$ + "array_check((" + e$ + ")-" + n$ + "[" + str2(argi) + "]," + n$ + "[" + str2(argi + 1) + "])*" + n$ + "[" + str2(argi + 2) + "]+"
-            ELSE
-                r$ = r$ + "(" + e$ + ")*" + n$ + "[" + str2(argi + 2) + "]+"
             END IF
-            '--------------------------------------------------------------
-            '--- RHO:END (waive to array_check() in $CHECKING:OFF mode) ---
-            '--------------------------------------------------------------
-        END IF
             firsti = i + 1
             curarg = curarg + 1
         END IF
