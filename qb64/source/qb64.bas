@@ -757,7 +757,17 @@ GET #150, , v&: IF v& < 10 OR v& > 2000 THEN v& = 100
 CLOSE #150
 
 '$INCLUDE:'IDESettings.bas'
-
+_PALETTECOLOR 1, IDEBackgroundColor, 0
+_PALETTECOLOR 2, _RGB32(84, 84, 84), 0 'dark gray - help system and interface details
+_PALETTECOLOR 5, IDEBracketHighlightColor, 0
+_PALETTECOLOR 6, IDEBackgroundColor2, 0
+_PALETTECOLOR 8, IDENumbersColor, 0
+_PALETTECOLOR 10, IDEMetaCommandColor, 0
+_PALETTECOLOR 11, IDECommentColor, 0
+_PALETTECOLOR 12, IDEKeywordColor, 0
+_PALETTECOLOR 13, IDETextColor, 0
+_PALETTECOLOR 14, IDEQuoteColor, 0
+IF IDE_AutoPosition THEN _SCREENMOVE IDE_TopPosition, IDE_LeftPosition
 
 'hash table data
 DIM SHARED HashFind_NextListItem AS LONG
@@ -21123,6 +21133,16 @@ IF idelaunched = 0 THEN
 
 END IF 'idelaunched
 
+IF IDE_AutoPosition THEN
+    IF IDE_TopPosition <> _SCREENY OR IDE_LeftPosition <> _SCREENX THEN
+        IF _SCREENY >= -_HEIGHT * _FONTHEIGHT AND _SCREENX >= -_WIDTH * _FONTWIDTH THEN 'Don't record the position if it's off the screen, past the point where we can drag it back into a different position.
+            WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_TopPosition", STR$(_SCREENY)
+            WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_LeftPosition", STR$(_SCREENX)
+            IDE_TopPosition = _SCREENY: IDE_LeftPosition = _SCREENX
+        END IF
+    END IF
+END IF
+
 IF c$ = CHR$(3) THEN
     skipdisplay = 1 'assume .../starting already displayed
     sendnextline = 1
@@ -26823,8 +26843,7 @@ DO 'main loop
         END IF
 
         idebackupsize = v&
-        PUT #150, , v&
-        CLOSE #150
+        WriteConfigSetting "'[GENERAL SETTINGS]", "BackupSize", STR$(v&) + " 'in MB"
         idebackupbox = 1
         EXIT FUNCTION
     END IF
@@ -27128,7 +27147,7 @@ i = 0
 p.x = (80 \ 2) - 60 \ 2
 p.y = (25 \ 2) - 16 \ 2
 p.w = 60
-p.h = 16
+p.h = 18
 p.nam = idenewtxt("Display")
 
 a2$ = str2$(idewx)
@@ -27152,6 +27171,13 @@ o(i).v1 = LEN(a2$)
 i = i + 1
 o(i).typ = 4 'check box
 o(i).y = 8
+o(i).nam = idenewtxt("Restore window #position at startup")
+IF IDE_AutoPosition THEN o(i).sel = 1
+
+
+i = i + 1
+o(i).typ = 4 'check box
+o(i).y = 10
 o(i).nam = idenewtxt("Custom #Font:")
 o(i).sel = idecustomfont
 
@@ -27159,7 +27185,7 @@ a2$ = idecustomfontfile$
 i = i + 1
 o(i).typ = 1
 o(i).x = 10
-o(i).y = 10
+o(i).y = 12
 o(i).nam = idenewtxt("File #Name")
 o(i).txt = idenewtxt(a2$)
 o(i).v1 = LEN(a2$)
@@ -27168,14 +27194,14 @@ a2$ = str2$(idecustomfontheight)
 i = i + 1
 o(i).typ = 1
 o(i).x = 10
-o(i).y = 13
+o(i).y = 15
 o(i).nam = idenewtxt("#Row Height (Pixels)")
 o(i).txt = idenewtxt(a2$)
 o(i).v1 = LEN(a2$)
 
 i = i + 1
 o(i).typ = 3
-o(i).y = 16
+o(i).y = 18
 o(i).txt = idenewtxt("OK" + sep + "#Cancel")
 o(i).dft = 1
 '-------- end of init --------
@@ -27282,39 +27308,39 @@ DO 'main loop
     END IF
     idetxt(o(2).txt) = a$
 
-    a$ = idetxt(o(4).txt)
-    IF LEN(a$) > 1024 THEN a$ = LEFT$(a$, 1024)
-    idetxt(o(4).txt) = a$
-
     a$ = idetxt(o(5).txt)
+    IF LEN(a$) > 1024 THEN a$ = LEFT$(a$, 1024)
+    idetxt(o(5).txt) = a$
+
+    a$ = idetxt(o(6).txt)
     IF LEN(a$) > 2 THEN a$ = LEFT$(a$, 2) '2 character limit
     FOR i = 1 TO LEN(a$)
         a = ASC(a$, i)
         IF a < 48 OR a > 57 THEN a$ = "": EXIT FOR
         IF i = 2 AND ASC(a$, 1) = 48 THEN a$ = "0": EXIT FOR
     NEXT
-    IF focus <> 5 THEN
+    IF focus <> 6 THEN
         IF LEN(a$) THEN a = VAL(a$) ELSE a = 0
         IF a < 8 THEN a$ = "8"
     END IF
-    idetxt(o(5).txt) = a$
+    idetxt(o(6).txt) = a$
 
 
 
-    IF K$ = CHR$(27) OR (focus = 7 AND info <> 0) THEN EXIT FUNCTION
-    IF K$ = CHR$(13) OR (focus = 6 AND info <> 0) THEN
+    IF K$ = CHR$(27) OR (focus = 8 AND info <> 0) THEN EXIT FUNCTION
+    IF K$ = CHR$(13) OR (focus = 7 AND info <> 0) THEN
 
         x = 0 'change to custom font
 
         'get size in v%
-        v$ = idetxt(o(5).txt): IF v$ = "" THEN v$ = "0"
+        v$ = idetxt(o(6).txt): IF v$ = "" THEN v$ = "0"
         v% = VAL(v$)
         IF v% < 8 THEN v% = 8
         IF v% > 99 THEN v% = 99
         IF v% <> idecustomfontheight THEN x = 1
 
-        IF o(3).sel <> idecustomfont THEN
-            IF o(3).sel = 0 THEN
+        IF o(4).sel <> idecustomfont THEN
+            IF o(4).sel = 0 THEN
                 _FONT 16
                 _FREEFONT idecustomfonthandle
             ELSE
@@ -27323,14 +27349,14 @@ DO 'main loop
         END IF
 
 
-        v$ = idetxt(o(4).txt): IF v$ <> idecustomfontfile$ THEN x = 1
+        v$ = idetxt(o(5).txt): IF v$ <> idecustomfontfile$ THEN x = 1
 
-        IF o(3).sel = 1 AND x = 1 THEN
+        IF o(4).sel = 1 AND x = 1 THEN
             oldhandle = idecustomfonthandle
             idecustomfonthandle = _LOADFONT(v$, v%, "MONOSPACE")
             IF idecustomfonthandle = -1 THEN
                 'failed! - revert to default settings
-                o(3).sel = 0: idetxt(o(4).txt) = "c:\windows\fonts\lucon.ttf": idetxt(o(5).txt) = "21": _FONT 16
+                o(4).sel = 0: idetxt(o(5).txt) = "c:\windows\fonts\lucon.ttf": idetxt(o(6).txt) = "21": _FONT 16
             ELSE
                 _FONT idecustomfonthandle
             END IF
@@ -27352,15 +27378,21 @@ DO 'main loop
         IF v% > 999 THEN v% = 999
         IF v% <> idewy THEN idedisplaybox = 1
         idewy = v% - idesubwindow
+
         v% = o(3).sel
+        IF v% <> 0 THEN v% = 1
+        IDE_AutoPosition = v%
+
+
+        v% = o(4).sel
         IF v% <> 0 THEN v% = 1
         idecustomfont = v%
 
-        v$ = idetxt(o(4).txt)
+        v$ = idetxt(o(5).txt)
         IF LEN(v$) > 1024 THEN v$ = LEFT$(v$, 1024)
         idecustomfontfile$ = v$
 
-        v$ = idetxt(o(5).txt): IF v$ = "" THEN v$ = "0"
+        v$ = idetxt(o(6).txt): IF v$ = "" THEN v$ = "0"
         v% = VAL(v$)
         IF v% < 8 THEN v% = 8
         IF v% > 99 THEN v% = 99
