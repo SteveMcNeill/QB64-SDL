@@ -14,6 +14,7 @@ DIM SHARED SaveExeWithSource AS _BYTE, EnableQuickNav AS _BYTE
 DIM SHARED IDEShowErrorsImmediately AS _BYTE
 DIM SHARED ShowLineNumbersSeparator AS _BYTE, ShowLineNumbersUseBG AS _BYTE
 DIM SHARED IgnoreWarnings AS _BYTE
+DIM SHARED IDEindentsubs AS _BYTE
 
 IF LoadedIDESettings = 0 THEN
     'We only want to load the file once when QB64 first starts
@@ -62,25 +63,6 @@ IF LoadedIDESettings = 0 THEN
         WriteConfigSetting "'[IDE COLOR SETTINGS]", "CommentColor", "_RGB32(85,255,255)"
     END IF
 
-    result = ReadConfigSetting("CustomKeywords$", value$)
-    IF result THEN
-        tempList$ = ""
-        listOfCustomKeywords$ = "@" + UCASE$(value$) + "@"
-        FOR i = 1 TO LEN (listOfCustomKeywords$)
-            checkChar = ASC(listOfCustomKeywords$, i)
-            IF checkChar = 64 THEN
-                IF RIGHT$(tempList$, 1) <> "@" THEN tempList$ = tempList$ + "@"
-            ELSE
-                tempList$ = tempList$ + CHR$(checkChar)
-            END IF
-        NEXT
-        listOfCustomKeywords$ = tempList$
-        customKeywordsLength = LEN(listOfCustomKeywords$)
-    ELSE
-        WriteConfigSetting "'[CUSTOM DICTIONARIES]", "CustomKeywordsSyntax$", "@custom@keywords@separated@by@the@at@sign@"
-        WriteConfigSetting "'[CUSTOM DICTIONARIES]", "CustomKeywords$", "@"
-    END IF
-
     result = ReadConfigSetting("MetaCommandColor", value$)
     IF result THEN
         IDEMetaCommandColor = VRGBS(value$, _RGB32(85, 255, 85))
@@ -89,29 +71,6 @@ IF LoadedIDESettings = 0 THEN
         WriteConfigSetting "'[IDE COLOR SETTINGS]", "MetaCommandColor", "_RGB32(85,255,85)"
     END IF
 
-    result = ReadConfigSetting("KeywordColor", value$)
-    IF result THEN
-        IDEKeywordColor = VRGBS(value$, _RGB32(147, 196, 235))
-    ELSE
-        IDEKeywordColor = _RGB32(147, 196, 235)
-        WriteConfigSetting "'[IDE COLOR SETTINGS]", "KeywordColor", "_RGB32(147,196,235)"
-    END IF
-
-    result = ReadConfigSetting("HighlightColor", value$)
-    IF result THEN
-        IDEBracketHighlightColor = VRGBS(value$, _RGB32(0, 147, 177))
-    ELSE
-        IDEBracketHighlightColor = _RGB32(0, 147, 177)
-        WriteConfigSetting "'[IDE COLOR SETTINGS]", "HighlightColor", "_RGB32(0,147,177)"
-    END IF
-
-    result = ReadConfigSetting("NumbersColor", value$)
-    IF result THEN
-        IDENumbersColor = VRGBS(value$, _RGB32(245, 128, 177))
-    ELSE
-        IDENumbersColor = _RGB32(245, 128, 177)
-        WriteConfigSetting "'[IDE COLOR SETTINGS]", "NumbersColor", "_RGB32(245,128,177)"
-    END IF
 
     result = ReadConfigSetting("QuoteColor", value$)
     IF result THEN
@@ -137,14 +96,6 @@ IF LoadedIDESettings = 0 THEN
         WriteConfigSetting "'[IDE COLOR SETTINGS]", "BackgroundColor", "_RGB32(0,0,170)"
     END IF
 
-    result = ReadConfigSetting("BackgroundColor2", value$)
-    IF result THEN
-        IDEBackGroundColor2 = VRGBS(value$, _RGB32(0, 108, 177))
-    ELSE
-        IDEBackGroundColor2 = _RGB32(0, 108, 177)
-        WriteConfigSetting "'[IDE COLOR SETTINGS]", "BackgroundColor2", "_RGB32(0,108,177)"
-    END IF
-
     result = ReadConfigSetting("SwapMouseButton", value$)
     if value$ = "TRUE" or val(value$) = -1 then
         MouseButtonSwapped = -1
@@ -154,148 +105,6 @@ IF LoadedIDESettings = 0 THEN
         WriteConfigSetting "'[MOUSE SETTINGS]", "SwapMouseButton", "FALSE"
     end if
 
-    result = ReadConfigSetting("PasteCursorAtEnd", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            PasteCursorAtEnd = -1
-        ELSE
-            PasteCursorAtEnd = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "PasteCursorAtEnd", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "PasteCursorAtEnd", "TRUE"
-        PasteCursorAtEnd = -1
-    END IF
-
-    result = ReadConfigSetting("SaveExeWithSource", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            SaveExeWithSource = -1
-        ELSE
-            SaveExeWithSource = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "SaveExeWithSource", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "SaveExeWithSource", "FALSE"
-        SaveExeWithSource = 0
-    END IF
-
-    result = ReadConfigSetting("EnableQuickNav", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            EnableQuickNav = -1
-        ELSE
-            EnableQuickNav = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "EnableQuickNav", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "EnableQuickNav", "TRUE"
-        EnableQuickNav = -1
-    END IF
-
-    result = ReadConfigSetting("IDE_SortSUBs", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            idesortsubs = -1
-        ELSE
-            idesortsubs = 0
-            WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_SortSUBs", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_SortSUBs", "FALSE"
-        idesortsubs = 0
-    END IF
-
-    result = ReadConfigSetting("ShowErrorsImmediately", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            IDEShowErrorsImmediately = -1
-        ELSE
-            IDEShowErrorsImmediately = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "ShowErrorsImmediately", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "ShowErrorsImmediately", "TRUE"
-        IDEShowErrorsImmediately = -1
-    END IF
-
-    result = ReadConfigSetting("ShowLineNumbers", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            ShowLineNumbers = -1
-        ELSE
-            ShowLineNumbers = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "ShowLineNumbers", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "ShowLineNumbers", "TRUE"
-        ShowLineNumbers = -1
-    END IF
-
-    result = ReadConfigSetting("ShowLineNumbersSeparator", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            ShowLineNumbersSeparator = -1
-        ELSE
-            ShowLineNumbersSeparator = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "ShowLineNumbersSeparator", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "ShowLineNumbersSeparator", "TRUE"
-        ShowLineNumbersSeparator = -1
-    END IF
-
-    result = ReadConfigSetting("ShowLineNumbersUseBG", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            ShowLineNumbersUseBG = -1
-        ELSE
-            ShowLineNumbersUseBG = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "ShowLineNumbersUseBG", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "ShowLineNumbersUseBG", "TRUE"
-        ShowLineNumbersUseBG = -1
-    END IF
-
-    result = ReadConfigSetting("BracketHighlight", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            brackethighlight = -1
-        ELSE
-            brackethighlight = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "BracketHighlight", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "BracketHighlight", "TRUE"
-        brackethighlight = -1
-    END IF
-
-    result = ReadConfigSetting("KeywordHighlight", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            keywordHighlight = -1
-        ELSE
-            keywordHighlight = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "KeywordHighlight", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "KeywordHighlight", "TRUE"
-        keywordHighlight = -1
-    END IF
-
-    result = ReadConfigSetting("MultiHighlight", value$)
-    IF result THEN
-        IF value$ = "TRUE" OR VAL(value$) = -1 THEN
-            multihighlight = -1
-        ELSE
-            multihighlight = 0
-            WriteConfigSetting "'[GENERAL SETTINGS]", "MultiHighlight", "FALSE"
-        END IF
-    ELSE
-        WriteConfigSetting "'[GENERAL SETTINGS]", "MultiHighlight", "TRUE"
-        multihighlight = -1
-    END IF
 
     IF INSTR(_OS$, "WIN") THEN
         result = ReadConfigSetting("IDE_AutoPosition", value$)
@@ -327,16 +136,6 @@ IF LoadedIDESettings = 0 THEN
             IDE_LeftPosition = 0
         END IF
 
-        result = ReadConfigSetting("IgnoreWarnings", value$)
-        IF result THEN
-            IF UCASE$(value$) = "TRUE" OR ABS(VAL(value$)) = 1 THEN
-                IgnoreWarnings = -1
-            ELSE
-                IgnoreWarnings = 0
-                WriteConfigSetting "'[GENERAL SETTINGS]", "IgnoreWarnings", "FALSE"
-            END IF
-        END IF
-
 
         'I was going to do some basic error checking for screen position to make certain that we appeared on the monitor,
         'but I decided not to.  Some people (like me) may have multiple monitors set up and may wish for QB64 to pop-up at
@@ -351,15 +150,7 @@ IF LoadedIDESettings = 0 THEN
         IDE_LeftPosition = 0
     END IF
 
-    result = ReadConfigSetting("IDE_NormalCursorStart", value$)
-    IDENormalCursorStart = VAL(value$)
-    IF IDENormalCursorStart < 0 OR IDENormalCursorStart > 31 OR result = 0 THEN IDENormalCursorStart = 8: WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_NormalCursorStart", "8"
-
-    result = ReadConfigSetting("IDE_NormalCursorEnd", value$)
-    IDENormalCursorEnd = VAL(value$)
-    IF IDENormalCursorEnd < 0 OR IDENormalCursorEnd > 31 OR result = 0 THEN IDENormalCursorEnd = 8: WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_NormalCursorEnd", "8"
-
-    result = ReadConfigSetting("IDE_Width", value$)
+result = ReadConfigSetting("IDE_Width", value$)
     idewx = VAL(value$)
     IF idewx < 80 OR idewx > 1000 THEN idewx = 80: WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_Width", "80"
 
@@ -459,7 +250,6 @@ IF LoadedIDESettings = 0 THEN
             IF INSTR(_OS$, "WIN") THEN WriteConfigSetting "'[GENERAL SETTINGS]", "AllowIndependentSettings", "FALSE"
             WriteConfigSetting "'[GENERAL SETTINGS]", "BackupSize", "100 'in MB"
             WriteConfigSetting "'[GENERAL SETTINGS]", "DebugInfo", "FALSE 'INTERNAL VARIABLE USE ONLY!! DO NOT MANUALLY CHANGE!"
-            WriteConfigSetting "'[IDE COLOR SETTINGS]", "SchemeID", "1"
             WriteConfigSetting "'[IDE COLOR SETTINGS]", "BackgroundColor", "_RGB32(0,0,170)"
             WriteConfigSetting "'[IDE COLOR SETTINGS]", "CommentColor", "_RGB32(85,255,255)"
             WriteConfigSetting "'[IDE COLOR SETTINGS]", "MetaCommandColor", "_RGB32(85,255,85)"
