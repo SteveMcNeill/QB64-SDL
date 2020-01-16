@@ -1,11 +1,11 @@
-{{KW|CASE ELSE}} is used in a {{KW|SELECT CASE}} procedure as an alternative if no other {{KW|CASE}} statements are true. 
+#REDIRECT [[SELECT CASE#allCASES]]
+
+[[CASE ELSE]] is used in a [[SELECT CASE]] procedure as an alternative if no other [[CASE]] statements are true. 
 
 
 {{PageDescription}}
-
-* CASE ELSE should be listed at the bottom of the case list as it will supercede any case statements after it.
-* Use it as a &quot;safety net&quot; or as an alternative for ALL values not covered in the {{KW|CASE}} statements.
-
+* [[CASE ELSE]] should be listed at the bottom of the case list as it will supersede any case statements after it.
+* Use it as a "safety net" or as an alternative for all values not covered in the [[CASE]] statements.
 
 
 {{PageExamples}}
@@ -14,11 +14,11 @@
 
 a = 100
 {{Cl|SELECT CASE}} a
-{{Cl|CASE}} {{Cl|IS}} &lt; 99: {{Cl|PRINT}} &quot;a is &lt; 99&quot;
-{{Cl|CASE}} 99: {{Cl|PRINT}} &quot;a is 99&quot;
-{{Cl|CASE}} {{Cl|IS}} &gt; 100: {{Cl|PRINT}} &quot;a is &gt; 100&quot;
+{{Cl|CASE}} {{Cl|IS}} &lt; 99: {{Cl|PRINT}} "a is &lt; 99"
+{{Cl|CASE}} 99: {{Cl|PRINT}} "a is 99"
+{{Cl|CASE}} {{Cl|IS}} > 100: {{Cl|PRINT}} "a is > 100"
 {{Cl|CASE ELSE}}
-{{Cl|PRINT}} &quot;a is 100&quot;
+{{Cl|PRINT}} "a is 100"
 {{Cl|END SELECT}}
 
 {{CodeEnd}}
@@ -29,15 +29,16 @@ a is 100
 
 {{OutputEnd}}
 
+
 ''Example 2:''
 {{CodeStart}}
 
 a = 100
 {{Cl|SELECT CASE}} a
-{{Cl|CASE}} 10: {{Cl|PRINT}} &quot;a is 10&quot;
-{{Cl|CASE}} 20: {{Cl|PRINT}} &quot;a is 20&quot;
-{{Cl|CASE}} 30: {{Cl|PRINT}} &quot;a is 30&quot;
-{{Cl|CASE ELSE}}: {{Cl|PRINT}} &quot;a is something other than 10, 20 and 30&quot;
+{{Cl|CASE}} 10: {{Cl|PRINT}} "a is 10"
+{{Cl|CASE}} 20: {{Cl|PRINT}} "a is 20"
+{{Cl|CASE}} 30: {{Cl|PRINT}} "a is 30"
+{{Cl|CASE ELSE}}: {{Cl|PRINT}} "a is something other than 10, 20 and 30"
 {{Cl|END SELECT}}
 
 {{CodeEnd}}
@@ -54,9 +55,8 @@ a is something other than 10, 20 and 30
 
 
 {{PageSeeAlso}}
-
-*{{KW|SELECT CASE}}
-*{{KW|IF...THEN}}, {{KW|ELSE}}
+*[[SELECT CASE]]
+*[[IF...THEN]], [[ELSE]]
 
 
 {{PageNavigation}}

@@ -2,14 +2,19 @@ The '''STEP''' keyword is used in [[FOR...NEXT]] loops to skip through the count
 
 
 {{PageSyntax}}
-:: FOR counter_variable = start_point TO stop_point STEP interval
+:: FOR counter_variable = start_point TO stop_point ['''STEP ''interval''''']
+
+:: CIRCLE '''STEP(0, 0)''', 10, 12
 
 
-* The FOR counter variable is used to designate and pass the current FOR value. 
-* The STEP value can be any literal or variable numerical type.
-* Start and stop point values can be any literal or variable type.
+* The FOR counter variable is used to designate and pass the current FOR incremented value. 
+* FOR loops without the optional STEP value increment by + 1 every loop.
+* The STEP increment value can be any literal or variable numerical type. It cannot be changed inside of the loop!
+* Start and stop point values can be any literal or variable type and they cannot be changed inside of the loop.
 * STEP interval designates the portion to add or subtract from the FOR variable value.
-* When the STEP interval is negative, then the start value should be greater than the stop value.
+:* When the STEP interval is positive, the start value should be less than the stop value ot the loop will be ignored.
+:* When the STEP interval is negative, the start value should be greater than the stop value or the loop will be ignored.
+* In graphics statements, STEP can be used before a pair of coordinate brackets to indicate that the coordinates are relative to the last graphics statement position. IE the position will be that number of pixels away from the last graphical object.
 
 
 ''Example:'' Stepping down 2 in a FOR counter loop.
@@ -45,7 +50,7 @@ The '''STEP''' keyword is used in [[FOR...NEXT]] loops to skip through the count
 ''See also:'' 
 * [[FOR...NEXT]]
 * [[DRAW]] (see the M relative move function)
-
+* [[LINE]], [[CIRCLE]], [[PSET]], [[PAINT]]
 
 
 {{PageNavigation}}

@@ -1,52 +1,30 @@
-The '''PRINT #, USING''' statement is used to [[PRINT]] formatted data to a file.
+The '''PRINT #, USING''' statement is used to [[PRINT]] formatted text data to a file.
 
 
 
 {{PageSyntax}}
-:: PRINT #filenumber%, [text${;|,}] USING template$; variable; list; ...etc[{,|;}]
+:: '''PRINT ''filenumber%,''''' [''text$''{;|,}] '''USING ''template$''; ''variable'''''[; ...][{;|,}]
 
 
-* ''Filenumber'' is the number in the file/port [[OPEN]] FOR [[OUTPUT]] or [[APPEND]]statement.
-* Preceding literal or variable ''text$'' can be placed between PRINT and USING or it can be included in the ''template''. 
-* ''Template'' is a [[STRING]] value or variable using the format characters. 
-* ''Variable'' list values MUST be separated using semicolons(;)!
-* PRINT #, USING can align data values to create a better looking text display of data in a file.
+{{Parameters}}
+* [[INTEGER]] ''filenumber'' refers to the file number [[OPEN]]ed previously followed by a [[comma]].
+* Literal or variable [[STRING]] ''text$'' can be placed between PRINT and USING or it can be included in the ''template''.
+* A [[semicolon]] or [[comma]] may follow the ''text'' to stop or tab the print cursor before the ''template'' [[PRINT]].
+* The literal or variable [[STRING]] ''template'' should use the template symbols to display each variable [[type]] in the list following it.
+* The list of data ''variables'' used in the ''template'' are '''separated by semicolons''' after the template string value. 
+* In '''QB64''' ONE [[semicolon]] or [[comma]] may follow the variable list to stop the print cursor for pending prints. QB only allowed a semicolon.
 
 
-::::Template is a literal or variable [[STRING|string]] using the following formatting characters:
-
-{| border=1]]
- |- 
- | '''&amp;''' || Prints an entire string value. Length should be limited as template width will vary.
- |- 
- | '''\''' || Denotes the start and end point of a fixed string area with spaces between(LEN = spaces + 2). 
- |-
- | '''!''' || Prints only the leading character of a string value.
- |- 
- | '''#''' || Denotes a numerical digit. An appropriate number of digits should be used for values received.
- |-
- | '''^^^^''' || Prints a numerical value in exponential format.
- |- 
- | '''.''' || Denotes a number's decimal point position. Also determines value accuracy.
- |-
- |  ''',''' || Prints a comma every 3 places left of the 0 decimal point value.
- |-
- |  '''+''' || Denotes position of the number's sign.
- |-
- | '''-''' || Placed after the number, displays the number's sign after the number (negative only).
- |- 
- | '''$$''' || Prints a dollar sign immediately before the highest digit of the numerical value.
- |-
- | '''**'''  || Prints an asterisk in any leading spaces of a string value.
- |- 
- |'''**$''' || Combines ** and $.
-|}
-
-
+''Usage:''
+* '''If the ''template'' string is omitted or symbols don't match the ''variable(s)'' an "Illegal Function Call" [[ERROR Codes|ERROR]] will occur!'''
 * The list of data variables used in the template are '''separated by semicolons''' after the template string value. 
 * The variables should be listed in the order that they are used in the template from left to right.
 * Normal text is allowed in the template also (see example).
 * '''NOTE:''' If the numerical value exceeds the template's integer digit range a % symbol will appear in the leftmost digit area.
+* '''WARNING: The numbers displayed are rounded so the actual values are never changed and are actually more accurate.'''
+
+
+{{PrintUsing}}
 
 
 ''See also:'' 

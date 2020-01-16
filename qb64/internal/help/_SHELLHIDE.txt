@@ -1,16 +1,36 @@
-The '''_SHELLHIDE''' function returns the [[INTEGER]] code value sent by [[END]] or [[SYSTEM]] when a program exits.
+{{DISPLAYTITLE:_SHELLHIDE}}
+The [[_SHELLHIDE]] function hides the console window and returns any [[INTEGER]] code sent by [[END]] or [[SYSTEM]] when a program exits.
 
 
 {{PageSyntax}}
-
-::: return_code = _SHELLHIDE
-
-
-* QB64 can now return codes sent by programs when a specified code is added after [[END]] code% or [[SYSTEM]] code%.
+: {{Parameter|returnCode%}} = [[_SHELLHIDE]]({{Parameter|externalCommand$}})
 
 
-''See also:''
-* [[_SHELL (function)]]
+{{Parameters}}
+* The literal or variable [[STRING]] {{Parameter|externalCommand$}} parameter can be any external [[DOS|command line]] or call to another program.
+
+
+{{PageDescription}}
+* QB64 can return codes sent by program modules when a specified code is added after [[END]] or [[SYSTEM]].
+* The code can be used to verify that a previous SHELL command was executed.
+
+
+{{PageExamples}}
+''Example:'' Shelling to another QB64 program will return the exit code when one is set in the  program that is run.
+{{CodeStart}} '' ''
+returncode% = {{Cl|_SHELLHIDE}}("DesktopSize") 'replace call with your program EXE
+
+{{Cl|PRINT}} returncode%
+
+{{Cl|END}} '' ''
+{{CodeEnd}}
+: ''Explanation:'' To set a program exit code use an [[INTEGER]] parameter value after [[END]] or [[SYSTEM]] in the called program. 
+
+
+{{PageSeeAlso}}
+* [[SHELL (function)]]
+* [[SHELL]], [[_HIDE]]
+* [[_CONSOLE]], [[$CONSOLE]]
 * [[SYSTEM]], [[END]]
 
 

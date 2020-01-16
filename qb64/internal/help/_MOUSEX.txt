@@ -1,26 +1,35 @@
-The '''_MOUSEX''' function returns the current horizontal(column) mouse cursor position.
+{{DISPLAYTITLE:_MOUSEX}}
+The [[_MOUSEX]] function returns the current horizontal (column) mouse cursor position when read after [[_MOUSEINPUT]].
 
 
 {{PageSyntax}}
-:{{Parameter|column%}} = {{KW|_MOUSEX}}
-
-* SCREEN 0 returns the text column position. Graphic screens return the pixel columns.
-* To calculate text columns in graphic modes divide the return by 8 or the [[_PRINTWIDTH]] of one [[_FONT]] character.
-* [[_MOUSEINPUT]] MUST be used to detect any changes in the mouse position and is '''required''' for any coordinate returns.
+: {{Parameter|pixelColumn%}} = [[_MOUSEX]]
 
 
-''Example:'' A simple mouse drawing board. 
+{{PageDescription}}
+* [[SCREEN]] 0 returns the [[INTEGER]] horizontal text column position (from build 20170817/62 onward); older versions return a [[SINGLE]] horizontal text column position. Use [[INTEGER]] variables to avoid floating decimal returns.
+* Graphic screen modes 1, 2 and 7 to 13 and [[_NEWIMAGE]] 32 bit return the [[INTEGER]] pixel columns.
+* To calculate text columns in graphic modes, divide the return by 8 or the [[_FONTWIDTH]] of [[_FONT]] characters.
+* [[_MOUSEINPUT]] must be used to detect any changes in the mouse position and is '''required''' for any coordinate returns.
+
+
+==QBasic/QuickBASIC==
+* In [[SCREEN]] 0, QBasic's [[ABSOLUTE]] returned graphic coordinates. QB64 mouse functions return the text coordinates. 
+
+
+{{PageExamples}}
+''Example:'' A simple mouse drawing board using [[_MOUSEX]] and [[_MOUSEY]] coordinate values. 
 {{CodeStart}} '' ''
 {{Cl|SCREEN (statement)|SCREEN}} 12
 {{Cl|LINE}} (99, 9)-(601, 401), 7, BF
 {{Cl|LINE}} (101, 11)-(599, 399), 8, BF
-tm$ = &quot; Column = ###  Row = ###  Button1 = ##  Button2 = ##  Button3 = ##&quot;
-{{Cl|LOCATE}} 29, 20: {{Cl|PRINT}} &quot;LeftButton = draw - RightButton = Erase&quot;;
+tm$ = " Column = ###  Row = ###  Button1 = ##  Button2 = ##  Button3 = ##"
+{{Cl|LOCATE}} 29, 20: {{Cl|PRINT}} "LeftButton = draw - RightButton = Erase";
 {{Cl|DO}}: K$ = {{Cl|INKEY$}}
   {{Cl|DO}} {{Cl|WHILE}} {{Cl|_MOUSEINPUT}}
     X = {{Cl|_MOUSEX}}: Y = {{Cl|_MOUSEY}}
-    {{Cl|IF}} X &gt; 100 {{Cl|AND (boolean)|AND}} X &lt; 600 {{Cl|AND (boolean)|AND}} PX &gt; 100 {{Cl|AND (boolean)|AND}} PX &lt; 600 {{Cl|THEN}}
-      {{Cl|IF}} Y &gt; 10 {{Cl|AND (boolean)|AND}} Y &lt; 400 {{Cl|AND (boolean)|AND}} PY &gt; 10 {{Cl|AND (boolean)|AND}} PY &lt; 400 {{Cl|THEN}}
+    {{Cl|IF}} X > 100 {{Cl|AND (boolean)|AND}} X &lt; 600 {{Cl|AND (boolean)|AND}} PX > 100 {{Cl|AND (boolean)|AND}} PX &lt; 600 {{Cl|THEN}}
+      {{Cl|IF}} Y > 10 {{Cl|AND (boolean)|AND}} Y &lt; 400 {{Cl|AND (boolean)|AND}} PY > 10 {{Cl|AND (boolean)|AND}} PY &lt; 400 {{Cl|THEN}}
         {{Cl|IF}} {{Cl|_MOUSEBUTTON}}(1) {{Cl|THEN}} {{Cl|LINE}} (PX, PY)-(X, Y), 15
         {{Cl|IF}} {{Cl|_MOUSEBUTTON}}(2) {{Cl|THEN}} {{Cl|LINE}} (101, 11)-(599, 399), 8, BF
       {{Cl|END IF}}
@@ -32,15 +41,14 @@ tm$ = &quot; Column = ###  Row = ###  Button1 = ##  Button2 = ##  Button3 = ##&q
 {{Cl|SYSTEM}} '' ''
 {{CodeEnd}}
 
-''Note:'' You have to use this function in conjunction with {{KW|_MOUSEINPUT}}.
-
-
 
 {{PageSeeAlso}}
-*{{KW|_MOUSEY}}, {{KW|_MOUSEBUTTON}}, {{KW|_MOUSEWHEEL}}
-*{{KW|_MOUSEINPUT}}, {{KW|_MOUSEMOVE}}
-*{{KW|_MOUSESHOW}}, {{KW|_MOUSEHIDE}}
-*{{KW|DECLARE LIBRARY|MouseMove}} (SDL Library Function)
+* [[_MOUSEY]]
+* [[_MOUSEBUTTON]], [[_MOUSEWHEEL]]
+* [[_MOUSEINPUT]], [[_MOUSEMOVE]]
+* [[_MOUSESHOW]], [[_MOUSEHIDE]]
+* [[_MOUSEMOVEMENTX]], [[_MOUSEMOVEMENTY]] {{text|(relative pointer moves)}} 
+* [[Controller Devices]]
 
 
 {{PageNavigation}}

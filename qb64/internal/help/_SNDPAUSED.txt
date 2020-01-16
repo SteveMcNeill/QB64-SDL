@@ -1,26 +1,24 @@
-The {{KW|_SNDPAUSED}} function checks if a sound is paused. Uses a handle parameter passed from {{KW|_SNDOPEN}}.
+{{DISPLAYTITLE:_SNDPAUSED}}
+The [[_SNDPAUSED]] function checks if a sound is paused. Uses a handle parameter passed from [[_SNDOPEN]].
 
 
 {{PageSyntax}}
-:{{Parameter|paused%}} = {{KW|_SNDPAUSED}} ({{Parameter|handle&amp;}})
+: {{Parameter|isPaused%%}} = [[_SNDPAUSED]]({{Parameter|handle&amp;}})
 
 
 {{PageDescription}}
-*Returns -1 if the sound is paused. 0 if not paused.
-*Sound files opened must have the &quot;PAUSE&quot; capability to use this function.
-
+*Returns true (-1) if the sound is paused. False (0) if not paused.
 
 
 {{PageExamples}}
-{{CodeStart}}
-
-{{Cl|PRINT}} {{Cl|_SNDPAUSED}}(h&amp;)
-
+{{CodeStart}} '' ''
+{{Cl|PRINT}} {{Cl|_SNDPAUSED}}(h&amp;) '' ''
 {{CodeEnd}}
 
 
 {{PageSeeAlso}}
-*{{KW|_SNDPAUSE}}, {{KW|_SNDPLAY}}, {{KW|_SNDSTOP}}
+* [[_SNDPAUSE]], [[_SNDPLAY]], 
+* [[_SNDSTOP]]
 
 
 {{PageNavigation}}

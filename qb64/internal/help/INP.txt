@@ -1,16 +1,18 @@
-'''INP''' returns a value from a computer register or port values at a specified physical address. '''QB64 currently has limited access!'''
+[[INP]] returns a value from a computer register or port values at a specified physical address.
 
 
 {{PageSyntax}}
-:: i = INP(address)
+: {{Parameter|i}} = [[INP]]({{Parameter|address}})
 
 
-* Address can be a Decimal or Hexadecimal [[INTEGER]] value.
-* INP reads directly from a register or port address.
+* '''QB64 has limited access to registers. VGA memory and registers are emulated.'''
+* Address can be a decimal or hexadecimal [[INTEGER]] value.
+* [[INP]] reads directly from a register or port address.
 * It does not require a [[DEF SEG]] memory segment address like [[PEEK]] or [[POKE]] do.
-* Reads color port intensity settings after ''[[OUT]] &amp;H3C7, attribute'' sets the starting attribute read mode.
+* Reads color port intensity settings after {{InlineCode}}[[OUT]] &amp;H3C7, attribute{{InlineCodeEnd}} sets the starting attribute read mode.
 
 
+{{PageExamples}}
 ''Example 1:'' Reading the current RGB color settings used in a bitmap to an array.
 {{CodeStart}} '' ''
  SCREEN 12
@@ -55,23 +57,23 @@ DO: {{Cl|_LIMIT}} 100 'adjust higher for faster
 {{Cl|IF...THEN|IF}} ScanKey%(72) {{Cl|THEN}} RTpos = RTpos - 1
 {{Cl|IF...THEN|IF}} ScanKey%(80) {{Cl|THEN}} RTpos = RTpos + 1
 
-{{Cl|PRINT}} &quot;Player 1 : &quot;; ponescore; &quot; Player 2 : &quot;; ptwoscore
+{{Cl|PRINT}} "Player 1 : "; ponescore; " Player 2 : "; ptwoscore
 
-{{Cl|IF...THEN|IF}} x &gt; xmax - 15 {{Cl|AND (boolean)|AND}} y &gt;= RTpos {{Cl|AND (boolean)|AND}} y &lt;= RTpos + 100 {{Cl|THEN}}
+{{Cl|IF...THEN|IF}} x > xmax - 15 {{Cl|AND (boolean)|AND}} y >= RTpos {{Cl|AND (boolean)|AND}} y &lt;= RTpos + 100 {{Cl|THEN}}
 dx = -1
-{{Cl|ELSEIF}} x &gt; xmax {{Cl|THEN}}
+{{Cl|ELSEIF}} x > xmax {{Cl|THEN}}
 ponescore = ponescore + 1
 {{Cl|GOSUB}} begin
 {{Cl|END IF}}
 
-{{Cl|IF...THEN|IF}} x &lt; xmin + 15 {{Cl|AND (boolean)|AND}} y &gt;= LTpos {{Cl|AND (boolean)|AND}} y &lt;= LTpos + 100 {{Cl|THEN}}
+{{Cl|IF...THEN|IF}} x &lt; xmin + 15 {{Cl|AND (boolean)|AND}} y >= LTpos {{Cl|AND (boolean)|AND}} y &lt;= LTpos + 100 {{Cl|THEN}}
 dx = 1
 {{Cl|ELSEIF}} x &lt; xmin {{Cl|THEN}}
 ptwoscore = ptwoscore + 1
 {{Cl|GOSUB}} begin
 {{Cl|END IF}}
 
-{{Cl|IF...THEN|IF}} y &gt; ymax - 5 {{Cl|THEN}} dy = -1
+{{Cl|IF...THEN|IF}} y > ymax - 5 {{Cl|THEN}} dy = -1
 {{Cl|IF...THEN|IF}} y &lt; ymin + 5 {{Cl|THEN}} dy = 1
 ' Display the sprite elsewhere on the screen
 
@@ -100,13 +102,17 @@ K$ = {{Cl|INKEY$}}
 ScanKey% = keyflags%(scancode%)
 {{Cl|END FUNCTION}} '' ''
 {{CodeEnd}}
+: ''Note:'' [[_KEYDOWN]] can be used to read multiple keys simultaneously and is the '''recommended practice'''.
 
 
-''See also:'' 
+{{PageSeeAlso}} 
 * [[OUT]] {{text|(write to register)}},  [[PEEK]] {{text|(read memory)}}
 * [[INKEY$]], [[_KEYHIT]], [[_KEYDOWN]]
 * [[Bitmaps]], [[Scancodes]] {{text|(keyboard)}}
 * [[Port Access Libraries]] {{text|(COM or LPT registers)}}
+
+
+===External Links===
 * [http://en.wikipedia.org/wiki/Input/output_base_address#Common_I.2FO_base_address_device_assignments_in_IBM_PC_compatible_computers PC I/O base address device assignments]
 
 

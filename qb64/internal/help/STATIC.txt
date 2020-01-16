@@ -5,51 +5,42 @@ The {{KW|STATIC}} keyword is used in declaration statements to control where var
 :{{KW|STATIC}} {{Parameter|variableName}}[()] [{{KW|AS}} {{Parameter|dataType}}][, ...]
 
 {{PageSyntax}}
-:&lt;code&gt;{{{KW|SUB}}|{{KW|FUNCTION}}} {{Parameter|procedureName}} [({{Parameter|parameterList}})] {{KW|STATIC}}&lt;/code&gt;
+:{[[SUB]]|[[FUNCTION]]} {{Parameter|procedureName}} [({{Parameter|parameterList}})] STATIC
 
 
 {{PageDescription}}
-* In the first syntax, the {{KW|STATIC}} statement is used in {{KW|SUB}} and {{KW|FUNCTION}} procedures to declare one or more variables or arrays with static storage.
-** Variables and arrays with static storage will retain their values in between procedure calls.
-** {{Parameter|variableName}} is the name of the variable.
-*** {{Parameter|variableName}} may include a type suffix to specify a type other than the default type.
-*** If {{Parameter|variableName}} does not include a type suffix, {{Parameter|dataType}} can be used to specify a type other than the default type:
-**** Any numeric or string type, such as {{KW|INTEGER}} or {{KW|STRING|STRING * 5}}.
-**** A custom type. See the {{KW|TYPE}} statement for more information about custom types.
-*** See [[Data types]] for more information about the available types and type suffixes.
-** Arrays with static storage are declared by specifying empty parenthesis following {{Parameter|variableName}}.
-*** Static arrays declared in a {{KW|STATIC}} statement are always variable-length.
-*** They are initially empty (contain no elements), and must be resized using {{KW|REDIM}}.
-*** See [[Arrays]] for more information about declaring and using arrays.
-
-* In the second syntax, {{KW|STATIC}} is used at the end of a {{KW|SUB}} or {{KW|FUNCTION}} statement to force static storage of all variables and arrays within the procedure.
-** All variables and arrays declared within the procedure have static storage, even if they are not declared in a {{KW|STATIC}} statement.
-** See the {{KW|SUB}} and {{KW|FUNCTION}} statements for more information about declaring procedures.
+* A STATIC list can be used in [[SUB]] and [[FUNCTION]] procedures to designate one or more variables to retain their values. 
+* Variables and arrays with static storage will retain their values in between procedure calls. The values may also be used recursively.
+:* {{Parameter|variableName}} may include a type suffix or use [[AS]] to specify a type other than the default [[SINGLE]] type.
+:* Arrays with static storage are declared by specifying empty parenthesis following the array name. See [[Arrays]]
+* STATIC can be used after the name of a [[SUB]] or [[FUNCTION]] in the procedure to force all variables to retain their values.
+* '''Recursive procedures may be required to be STATIC to avoid a Stack Overflow! QB64 programs may just close!'''
+* [[$STATIC]] defined program [[arrays]] cannot be [[REDIM|re-sized]] or use [[_PRESERVE]].
 
 
-{{PageExamples}}
+''Example 1: Finding the binary bit settings from a 32 bit [[LONG]] register return using recursion.
+{{CodeStart}} '' ''
+{{Cl|INPUT}} "Enter a numerical value to see binary value: ", num&amp;
+{{Cl|PRINT}} Bin$(num&amp;)
 
-''Example 1: Finding the binary bit settings from an [[INTEGER]] register return using recursion.
-{{CodeStart}}
+{{Cl|END}}
 
-FUNCTION Bin$ (n&amp;) {{Cl|STATIC}}
-  DIM p%, s$
-  IF 2 ^ p% &gt; n&amp; THEN
-    p% = 0
-  ELSE
-    IF n&amp; AND 2 ^ p% THEN s$ = &quot;1&quot; + s$ ELSE s$ = &quot;0&quot; + s$
-    IF n&amp; &gt; 2 ^ p% THEN
-       p% = p% + 1
-       s$ = Bin$(n&amp;)    'recursive call to itself
-    ELSE : p% = 0
-    END IF
-  END IF
-  IF p% = 0 THEN s$ = &quot;&quot;
-  IF s$ = &quot;&quot; THEN Bin$ = &quot;0&quot; ELSE Bin$ = s$
-END FUNCTION
-
+{{Cl|FUNCTION}} Bin$ (n&amp;) {{Cl|STATIC}} 'comment out STATIC to see what happens!
+{{Cl|DIM}} p%, s$
+{{Cl|IF...THEN|IF}} 2 ^ p% > n&amp; {{Cl|THEN}}
+  p% = 0
+{{Cl|ELSE}}
+  {{Cl|IF...THEN|IF}} n&amp; {{Cl|AND (boolean)|AND}} 2 ^ p% {{Cl|THEN}} s$ = "1" + s$ {{Cl|ELSE}} s$ = "0" + s$
+  {{Cl|IF...THEN|IF}} n&amp; > 2 ^ p% {{Cl|THEN}}
+    p% = p% + 1
+    s$ = Bin$(n&amp;) 'recursive call to itself
+  {{Cl|ELSE}}: p% = 0
+  {{Cl|END IF}}
+{{Cl|END IF}}
+{{Cl|IF...THEN|IF}} s$ = "" {{Cl|THEN}} Bin$ = "0" {{Cl|ELSE}} Bin$ = s$
+{{Cl|END FUNCTION}} '' ''
 {{CodeEnd}}
-: ''Explanation:'' The [[FUNCTION]] above returns a [[STRING]] value representing the bits ON in an [[INTEGER]] value. The string can be printed to the screen to see what is happening in a port register. '''STATIC''' keeps the function from overloading the memory &quot;Stack&quot; and is normally REQUIRED to use recursion with QBasic or '''QB64'''!
+: ''Explanation:'' The [[FUNCTION]] above returns a [[STRING]] value representing the bits ON in an [[INTEGER]] value. The string can be printed to the screen to see what is happening in a port register. '''STATIC''' keeps the function from overloading the memory "Stack" and is normally REQUIRED when recursive calls are used in Qbasic! '''QB64 procedures will close without warning or error!'''
 
 
 ''Example 2:'' Using a static array to cache factorials, speeding up repeated calculations:
@@ -77,7 +68,7 @@ END FUNCTION
     
     ' See if we have the result cached. If so, we're done.
     {{Cl|IF...THEN|IF}} n &lt;= maxNToCache {{Cl|IF...THEN|THEN}}
-        {{Cl|IF...THEN|IF}} resultCache(n) &lt;&gt; 0 {{Cl|IF...THEN|THEN}}
+        {{Cl|IF...THEN|IF}} resultCache(n) &lt;> 0 {{Cl|IF...THEN|THEN}}
             Factorial = resultCache(n)
             {{Cl|EXIT FUNCTION}}
         {{Cl|IF...THEN|END IF}}
@@ -97,9 +88,10 @@ END FUNCTION
 
 
 {{PageSeeAlso}}
-* {{KW|DIM}}, {{KW|REDIM}}, {{KW|COMMON}}
-* {{KW|SUB}}, {{KW|FUNCTION}}
-* {{KW|TYPE}}, {{KW|Arrays}}, {{KW|$STATIC}}
+* [[DIM]], [[REDIM]], [[COMMON]]
+* [[SUB]], [[FUNCTION]]
+* [[TYPE]], [[Arrays]]
+* [[$STATIC]], [[$DYNAMIC]] {{text|([[Metacommand]]s)}}
 * [[Data types]]
 
 

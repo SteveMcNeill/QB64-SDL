@@ -1,16 +1,23 @@
-The {{KW|_BLEND}} statement turns on alpha blending for the current image or a specific one.
+{{DISPLAYTITLE:_BLEND}}
+The [[_BLEND]] statement turns on 32 bit alpha blending for an image or screen mode and is on by default.
 
 
 {{PageSyntax}}
-:{{KW|_BLEND}} [{{Parameter|imageHandle&amp;}}]
+: [[_BLEND]] [{{Parameter|imageHandle&amp;}}]
+
+===Parameters===
+* {{Parameter|imageHandle&amp;}} refers to an image in memory. If not specified, the current destination page (See [[_DEST]]) is affected.
 
 
 {{PageDescription}}
 * Alpha blending is on by default when loading a .PNG image to a 32-bit surface.
-* Normally it is used to turn blending on after a previous {{KW|_DONTBLEND}} call.
-* {{KW|_BLEND}} can only be used on 32-bit surfaces, otherwise it will produce the error [[ERROR Codes|Illegal Function Call]].
+* Normally it is used to turn blending on after a previous [[_DONTBLEND]] call.
+* [[_BLEND]] can only be used on 32-bit surfaces, otherwise it will produce the error [[ERROR Codes|Illegal Function Call]].
+* '''Note: [[_DONTBLEND]] is faster than the default [[_BLEND]] unless you really need to use it in 32 bit.'''
+* '''32 bit screen surface backgrounds (black) have zero [[_ALPHA]] so that they are transparent when placed over other surfaces.'''
 
 
+{{PageExamples}}
 ''Example:''
 {{CodeStart}}
 {{Cl|SCREEN (statement)|SCREEN}} {{Cl|_NEWIMAGE}}(640, 480, 32)
@@ -47,87 +54,87 @@ m&amp; = {{Cl|POINT}}(303, 302)
 
  mso-yfti-tbllook:480;mso-padding-alt:0cm 5.4pt 0cm 5.4pt;mso-border-insideh:
 
- .5pt solid windowtext;mso-border-insidev:.5pt solid windowtext'&gt;
+ .5pt solid windowtext;mso-border-insidev:.5pt solid windowtext'>
 
- &lt;tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes'&gt;
+ &lt;tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes'>
 
   &lt;td width=118 valign=top style='width:88.55pt;border:solid windowtext 1.0pt;
 
-  mso-border-alt:solid windowtext .5pt;background:#FF8000;padding:0cm 5.4pt 0cm 5.4pt'&gt;
+  mso-border-alt:solid windowtext .5pt;background:#FF8000;padding:0cm 5.4pt 0cm 5.4pt'>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;&amp;nbsp;&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>&amp;nbsp;&lt;/span>&lt;/p>
 
-  &lt;/td&gt;
+  &lt;/td>
 
   &lt;td width=181 valign=top style='width:136.05pt;border:solid windowtext 1.0pt;
 
   border-left:none;mso-border-left-alt:solid windowtext .5pt;mso-border-alt:
 
-  solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt'&gt;
+  solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt'>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;_RGBA(255,128,0,128)&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>_RGBA(255,128,0,128)&lt;/span>&lt;/p>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;   onto&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>   onto&lt;/span>&lt;/p>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;     _RGBA(0,0,255,64)&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>     _RGBA(0,0,255,64)&lt;/span>&lt;/p>
 
-  &lt;/td&gt;
+  &lt;/td>
 
   &lt;td width=120 valign=top style='width:90.0pt;border:solid windowtext 1.0pt;
 
   border-left:none;mso-border-left-alt:solid windowtext .5pt;mso-border-alt:
 
-  solid windowtext .5pt;background:blue;padding:0cm 5.4pt 0cm 5.4pt'&gt;
+  solid windowtext .5pt;background:blue;padding:0cm 5.4pt 0cm 5.4pt'>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;&amp;nbsp;&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>&amp;nbsp;&lt;/span>&lt;/p>
 
-  &lt;/td&gt;
+  &lt;/td>
 
   &lt;td width=180 valign=top style='width:135.0pt;border:solid windowtext 1.0pt;
 
   border-left:none;mso-border-left-alt:solid windowtext .5pt;mso-border-alt:
 
-  solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt'&gt;
+  solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt'>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;results in&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>results in&lt;/span>&lt;/p>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;  _RGBA(95,48,64,128)&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>  _RGBA(95,48,64,128)&lt;/span>&lt;/p>
 
-  &lt;/td&gt;
+  &lt;/td>
 
   &lt;td width=120 valign=top style='width:90.0pt;border:solid windowtext 1.0pt;
 
   border-left:none;mso-border-left-alt:solid windowtext .5pt;mso-border-alt:
 
-  solid windowtext .5pt;background:#603080;padding:0cm 5.4pt 0cm 5.4pt'&gt;
+  solid windowtext .5pt;background:#603080;padding:0cm 5.4pt 0cm 5.4pt'>
 
-  &lt;p class=MsoNormal&gt;&lt;span lang=EN-AU style='font-size:10.0pt;font-family:&quot;Courier New&quot;;
+  &lt;p class=MsoNormal>&lt;span lang=EN-AU style='font-size:10.0pt;font-family:"Courier New";
 
-  mso-fareast-font-family:&quot;Times New Roman&quot;'&gt;&amp;nbsp;&lt;/span&gt;&lt;/p&gt;
+  mso-fareast-font-family:"Times New Roman"'>&amp;nbsp;&lt;/span>&lt;/p>
 
-  &lt;/td&gt;
+  &lt;/td>
 
- &lt;/tr&gt;
+ &lt;/tr>
 
-&lt;/table&gt;
+&lt;/table>
 
 
 {{PageSeeAlso}}
-* {{KW|_DONTBLEND}}, {{KW|_BLEND (function)}}
+* [[_DONTBLEND]], [[_BLEND (function)]]
 * [[Images]]
 
 

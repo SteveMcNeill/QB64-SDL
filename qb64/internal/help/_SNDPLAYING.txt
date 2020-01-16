@@ -1,26 +1,25 @@
-The {{KW|_SNDPLAYING}} function returns whether a sound is being played. Uses a handle from the {{KW|_SNDOPEN}} or {{KW|_SNDCOPY}} functions.
+{{DISPLAYTITLE:_SNDPLAYING}}
+The [[_SNDPLAYING]] function returns whether a sound is being played. Uses a handle from the [[_SNDOPEN]] or [[_SNDCOPY]] functions.
 
 
 {{PageSyntax}}
-:{{Parameter|playing%}} = {{KW|_SNDPLAYING}} ({{Parameter|handle&amp;}})
+:{{Parameter|isPlaying%}} = [[_SNDPLAYING]]({{Parameter|handle&amp;}})
 
 
 {{PageDescription}}
-*Returns 0 if a sound is not playing or -1 if it is.
-*If a sound is paused, {{KW|_SNDPLAYING}} will return 0.
+*Returns false (0) if a sound is not playing or true (-1) if it is.
+*If a sound is paused, [[_SNDPLAYING]] returns 0.
 
 
 {{PageExamples}}
-{{CodeStart}}
-
-{{Cl|PRINT}} {{Cl|_SNDPLAYING}}(h&amp;)
-
+{{CodeStart}} '' ''
+{{Cl|PRINT}} {{Cl|_SNDPLAYING}}(h&amp;) '' ''
 {{CodeEnd}}
 
 
 {{PageSeeAlso}}
-*{{KW|_SNDPLAY}}, {{KW|_SNDPAUSE}}, {{KW|_SNDSTOP}}
-*{{KW|_SNDPAUSED}}
+* [[_SNDPLAY]], [[_SNDPAUSE]], [[_SNDSTOP]]
+* [[_SNDPAUSED]]
 
 
 {{PageNavigation}}

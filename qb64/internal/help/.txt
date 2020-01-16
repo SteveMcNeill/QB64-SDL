@@ -2,14 +2,15 @@ The '''\''' mathematical operator performs [[INTEGER]] division on a numerical v
 
 
 
-''Syntax:'' return_value = number \ divisor
+{{PageSyntax}} 
+::: return_value = number '''\''' divisor
 
 
 
 {{PageDescription}}
 
 * Number value can be any literal or variable numerical type.
-* '''Divisor (second value) must not be a  value of 0 to .5'''. This will create a [[ERROR Codes|&quot;Division by zero&quot; error!]] due to [[CINT]] rounding.
+* '''Divisor (second value) must not be a  value of 0 to .5'''. This will create a [[ERROR Codes|"Division by zero" error!]] due to [[CINT]] rounding.
 * Return values will be [[INTEGER]] or [[LONG]] value types only.
 * Rounding is done to the closest EVEN [[INTEGER|integer]] or [[LONG|long integer]] value.
 * Use the [[/]] integer division operator for [[SINGLE]] or [[DOUBLE]] floating decimal point return values.
@@ -35,8 +36,9 @@ The '''\''' mathematical operator performs [[INTEGER]] division on a numerical v
 
 
 ''See also:''
-* [[MOD]], [[/]] (decimal point division operator) 
-* [[INT]], [[FIX]], [[_ROUND]]
+* [[MOD|MOD (remainder division operator)]] 
+* [[/|/ (normal division operator)]]
+* [[INT]], [[CINT]], [[FIX]], [[_ROUND]]
 * [[Mathematical Operations]]
 
 
