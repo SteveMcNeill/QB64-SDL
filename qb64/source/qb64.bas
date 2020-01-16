@@ -16,7 +16,7 @@ Set_OrderOfOperations 'This will also make certain our directories are valid, an
 
 _TITLE "QB64 SDL (Steve Update 01/12/2020)"
 DIM SHARED version AS STRING
-version$ = "0.954 - SU:01/12/2020"
+version$ = "0.954 - SU:01/16/2020"
 
 CONST ASC_BACKSLASH = 92
 CONST ASC_FORWARDSLASH = 47
@@ -671,85 +671,6 @@ DIM SHARED iderunmode
 'update settings
 DIM SHARED ideupdatecheck, ideupdatedaily, ideupdateauto, ideupdatelast
 DIM SHARED ideupdatetimerval AS SINGLE
-
-'ref: options.bin
-'SEEK 1
-'[2]   ideautolayout(=1)
-'[2]   ideautoindent(=1)
-'[2]   ideautoindentsize(=4)
-'SEEK 7
-'[2]   idewx(=80)
-'[2]   idewy(=25)
-'[2]   idecustomfont(=0)
-'[1024]idecustomfontfile(=c:\windows\fonts\lucon.ttf)
-'[2]   idecustomfontheight(=21)
-'SEEK 1039
-'[2]   ideupdatecheck(=1)
-'[2]   ideupdatedaily(=1)
-'[2]   ideupdateauto(=0)
-'[4]   ideupdatelast(=0)
-'SEEK 1049
-'[2]   codepage(=0)
-'SEEK 1051
-'[4]   backupsize(=100)
-'total bytes: 1054
-
-OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-
-'remake options with defaults?
-IF LOF(150) < 1048 THEN
-    CLOSE #150
-    OPEN ".\internal\temp\options.bin" FOR OUTPUT AS #150: CLOSE #150
-    OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-    v% = 1: PUT #150, , v% 'layout
-    v% = 1: PUT #150, , v% 'indent
-    v% = 4: PUT #150, , v% 'indentsize
-    v% = 80: PUT #150, , v% 'w
-    v% = 25: PUT #150, , v% 'h
-    v% = 0: PUT #150, , v% 'use custom font?
-    v$ = SPACE$(1024): MID$(v$, 1) = "c:\windows\fonts\lucon.ttf": PUT #150, , v$
-    v% = 21: PUT #150, , v% 'custom font height
-    v% = 1: PUT #150, , v% 'update-check
-    v% = 1: PUT #150, , v% 'update-daily
-    v% = 0: PUT #150, , v% 'update-autoapply
-    ideupdatelast& = 0: PUT #150, , ideupdatelast& 'update-datestamp(last)
-END IF
-IF LOF(150) < 1050 THEN
-    SEEK #150, 1049
-    v% = 0: PUT #150, , v% 'codepage
-END IF
-IF LOF(150) < 1054 THEN
-    SEEK #150, 1051
-    v& = 100: PUT #150, , v& 'backup-size(mb)
-END IF
-
-'load options
-SEEK #150, 1
-'layout:
-GET #150, , v%: IF v% <> 0 THEN v% = 1
-GET #150, , v%: IF v% <> 0 THEN v% = 1
-GET #150, , v%: IF v% < 0 OR v% > 64 THEN v% = 4
-'display:
-GET #150, , v%: IF v% < 80 OR v% > 1000 THEN v% = 80
-GET #150, , v%: IF v% < 25 OR v% > 1000 THEN v% = 25
-GET #150, , v%: IF v% <> 0 THEN v% = 1
-v$ = SPACE$(1024): GET #150, , v$: idecustomfontfile$ = RTRIM$(v$)
-GET #150, , v%: IF v% < 8 OR v% > 100 THEN v% = 21
-
-GET #150, , v%: IF v% < 0 OR v% > 1 THEN v% = 1
-ideupdatecheck = v%
-GET #150, , v%: IF v% < 0 OR v% > 1 THEN v% = 1
-ideupdatedaily = v%
-GET #150, , v%: IF v% < 0 OR v% > 1 THEN v% = 1
-ideupdateauto = v%
-GET #150, , v&
-ideupdatelast = v&
-GET #150, , v%: IF v% < 0 OR v% > idecpnum THEN v% = 0
-idecpindex = v%
-GET #150, , v&: IF v& < 10 OR v& > 2000 THEN v& = 100
-
-
-CLOSE #150
 
 '$INCLUDE:'IDESettings.bas'
 _PALETTECOLOR 1, IDEBackgroundColor, 0
@@ -26242,11 +26163,8 @@ FUNCTION idelanguagebox
             'total bytes: 1050
 
             'save changes
-            OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-            SEEK #150, 1049
-            v% = y: PUT #150, , v%: idecpindex = v%
-            CLOSE #150
-
+            v% = y: idecpindex = v%
+            WriteConfigSetting "'[IDE DISPLAY SETTINGS]", "IDE_CodePage", STR$(idecpindex)
             EXIT FUNCTION
         END IF
 
@@ -26918,8 +26836,6 @@ FUNCTION idebackupbox
 
         IF K$ = CHR$(13) OR (focus = 2 AND info <> 0) THEN
             'save changes
-            OPEN ".\internal\temp\options.bin" FOR BINARY AS #150
-            SEEK #150, 1051
             v$ = idetxt(o(1).txt) 'idebackupsize
             v& = VAL(v$)
             IF v& < 10 THEN v& = 10
