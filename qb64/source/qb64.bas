@@ -1173,7 +1173,6 @@ IF c = 9 THEN 'run
                 GOTO nextexeindex
             END IF
         END IF
-
         'inform IDE of name change if necessary (IDE will respond with message 9 and corrected name)
         IF i <> 1 THEN
             sendc$ = CHR$(12) + file$
@@ -20793,7 +20792,7 @@ FUNCTION ide2 (ignore)
         menu$(m, i) = "Run": i = i + 1
         menu$(m, i) = "#Start  F5": i = i + 1
         menu$(m, i) = "-": i = i + 1
-        menu$(m, i) = "Start (#Detached)  Ctrl+F5": i = i + 1
+        menu$(m, i) = "Start (#Locked)  Ctrl+F5": i = i + 1
         IF os$ = "LNX" THEN
             menu$(m, i) = "Make E#xecutable Only  F11": i = i + 1
         ELSE
@@ -21640,8 +21639,8 @@ FUNCTION ide2 (ignore)
         END IF
 
         IF KB = KEY_F5 AND KCTRL THEN 'run detached
-            idemdetached:
-            iderunmode = 1
+            idemlocked:
+            iderunmode = 0
             GOTO idemrunspecial
         END IF
 
@@ -21653,7 +21652,7 @@ FUNCTION ide2 (ignore)
 
         IF KB = KEY_F5 THEN 'Note: F5 or SHIFT+F5 accepted
             idemrun:
-            iderunmode = 0 'standard run
+            iderunmode = 1 'standard run
             idemrunspecial:
 
             'run program
@@ -24158,9 +24157,9 @@ FUNCTION ide2 (ignore)
                 GOTO idemrun
             END IF
 
-            IF menu$(m, s) = "Start (#Detached)  Ctrl+F5" THEN
+            IF menu$(m, s) = "Start (#Locked)  Ctrl+F5" THEN
                 PCOPY 3, 0: SCREEN , , 3, 0: idewait4mous: idewait4alt
-                GOTO idemdetached
+                GOTO idemlocked
             END IF
 
             IF menu$(m, s) = "Make E#XE Only  F11" OR menu$(m, s) = "Make E#xecutable Only  F11" THEN
@@ -31605,6 +31604,33 @@ id.arg = MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATT
     id.subfunc = 1
     id.callname = "func__hasfocus"
     id.ret = LONGTYPE - ISPOINTER
+    regid
+
+    'Get Current Working Directory
+    clearid
+    id.n = "_CWD"
+    id.musthave = "$"
+    id.subfunc = 1
+    id.callname = "func__cwd"
+    id.ret = STRINGTYPE - ISPOINTER
+    regid
+
+    'Get the directory the program was started from (before the currenct directory is automatically changed to the executables directory)
+    clearid
+    id.n = "_STARTDIR"
+    id.musthave = "$"
+    id.subfunc = 1
+    id.callname = "func__startdir"
+    id.ret = STRINGTYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_KEYCLEAR"
+    id.subfunc = 2
+    id.args = 1
+    id.arg = MKL$(LONGTYPE - ISPOINTER)
+    id.specialformat = "[?]"
+    id.callname = "sub__keyclear"
     regid
 
 
