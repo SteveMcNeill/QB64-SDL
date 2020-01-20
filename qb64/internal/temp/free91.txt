@@ -1,0 +1,4 @@
+if(oldstr17666){
+if(oldstr17666->fixed)qbs_set(oldstr17666,_FUNC_RIPPATH_STRING_A);
+qbs_free(_FUNC_RIPPATH_STRING_A);
+}

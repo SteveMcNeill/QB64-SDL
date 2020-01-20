@@ -1,0 +1,46 @@
+
+LPOS
+
+ide6
+
+file$
+
+= ide
+
+= ide2
+
+ide2 = 9
+
+ide2(
+
+ideautorun
+
+_CONSOLE
+
+IF idemode THEN p$
+
+idepath$
+
+KEY_F5
+
+ideopen
+
+#Open
+
+idezgetroot$
+
+idepath$ =
+
+mCLICK
+
+#Start
+
+idemdetached
+
+#Detached
+
+idemrun
+
+#Run
+
+F5

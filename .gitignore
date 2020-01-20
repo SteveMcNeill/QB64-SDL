@@ -1,5 +1,4 @@
 qb64/internal/c/c_compiler
-qb64/internal/tem*
 *.o
 *.a
 *.exe

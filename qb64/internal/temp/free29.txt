@@ -1,0 +1,4 @@
+if(oldstr16517){
+if(oldstr16517->fixed)qbs_set(oldstr16517,_FUNC_SYMBOLTYPE_STRING_S);
+qbs_free(_FUNC_SYMBOLTYPE_STRING_S);
+}

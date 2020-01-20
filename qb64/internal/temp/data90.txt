@@ -1,0 +1,50 @@
+int32 *_FUNC_BEGINDOWNLOAD_LONG_BEGINDOWNLOAD=NULL;
+if(_FUNC_BEGINDOWNLOAD_LONG_BEGINDOWNLOAD==NULL){
+_FUNC_BEGINDOWNLOAD_LONG_BEGINDOWNLOAD=(int32*)mem_static_malloc(4);
+*_FUNC_BEGINDOWNLOAD_LONG_BEGINDOWNLOAD=0;
+}
+qbs*oldstr17660=NULL;
+if(_FUNC_BEGINDOWNLOAD_STRING_URL->tmp||_FUNC_BEGINDOWNLOAD_STRING_URL->fixed||_FUNC_BEGINDOWNLOAD_STRING_URL->readonly){
+oldstr17660=_FUNC_BEGINDOWNLOAD_STRING_URL;
+if (oldstr17660->cmem_descriptor){
+_FUNC_BEGINDOWNLOAD_STRING_URL=qbs_new_cmem(oldstr17660->len,0);
+}else{
+_FUNC_BEGINDOWNLOAD_STRING_URL=qbs_new(oldstr17660->len,0);
+}
+memcpy(_FUNC_BEGINDOWNLOAD_STRING_URL->chr,oldstr17660->chr,oldstr17660->len);
+}
+int32 *_FUNC_BEGINDOWNLOAD_LONG_I=NULL;
+if(_FUNC_BEGINDOWNLOAD_LONG_I==NULL){
+_FUNC_BEGINDOWNLOAD_LONG_I=(int32*)mem_static_malloc(4);
+*_FUNC_BEGINDOWNLOAD_LONG_I=0;
+}
+int64 fornext_value17662;
+int64 fornext_finalvalue17662;
+int64 fornext_step17662;
+uint8 fornext_step_negative17662;
+qbs *_FUNC_BEGINDOWNLOAD_STRING_URL2=NULL;
+if (!_FUNC_BEGINDOWNLOAD_STRING_URL2)_FUNC_BEGINDOWNLOAD_STRING_URL2=qbs_new(0,0);
+int32 *_FUNC_BEGINDOWNLOAD_LONG_X=NULL;
+if(_FUNC_BEGINDOWNLOAD_LONG_X==NULL){
+_FUNC_BEGINDOWNLOAD_LONG_X=(int32*)mem_static_malloc(4);
+*_FUNC_BEGINDOWNLOAD_LONG_X=0;
+}
+int32 *_FUNC_BEGINDOWNLOAD_LONG_H=NULL;
+if(_FUNC_BEGINDOWNLOAD_LONG_H==NULL){
+_FUNC_BEGINDOWNLOAD_LONG_H=(int32*)mem_static_malloc(4);
+*_FUNC_BEGINDOWNLOAD_LONG_H=0;
+}
+qbs *_FUNC_BEGINDOWNLOAD_STRING_E=NULL;
+if (!_FUNC_BEGINDOWNLOAD_STRING_E)_FUNC_BEGINDOWNLOAD_STRING_E=qbs_new(0,0);
+qbs *_FUNC_BEGINDOWNLOAD_STRING_URL3=NULL;
+if (!_FUNC_BEGINDOWNLOAD_STRING_URL3)_FUNC_BEGINDOWNLOAD_STRING_URL3=qbs_new(0,0);
+byte_element_struct *byte_element_17664=NULL;
+if (!byte_element_17664){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17664=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17664=(byte_element_struct*)mem_static_malloc(12);
+}
+qbs *_FUNC_BEGINDOWNLOAD_STRING_X=NULL;
+if (!_FUNC_BEGINDOWNLOAD_STRING_X)_FUNC_BEGINDOWNLOAD_STRING_X=qbs_new(0,0);
+byte_element_struct *byte_element_17665=NULL;
+if (!byte_element_17665){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17665=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17665=(byte_element_struct*)mem_static_malloc(12);
+}

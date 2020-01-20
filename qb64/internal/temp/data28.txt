@@ -1,0 +1,70 @@
+qbs *_FUNC_REFER_STRING_REFER=NULL;
+if (!_FUNC_REFER_STRING_REFER)_FUNC_REFER_STRING_REFER=qbs_new(0,0);
+qbs*oldstr16509=NULL;
+if(_FUNC_REFER_STRING_A2->tmp||_FUNC_REFER_STRING_A2->fixed||_FUNC_REFER_STRING_A2->readonly){
+oldstr16509=_FUNC_REFER_STRING_A2;
+if (oldstr16509->cmem_descriptor){
+_FUNC_REFER_STRING_A2=qbs_new_cmem(oldstr16509->len,0);
+}else{
+_FUNC_REFER_STRING_A2=qbs_new(oldstr16509->len,0);
+}
+memcpy(_FUNC_REFER_STRING_A2->chr,oldstr16509->chr,oldstr16509->len);
+}
+int32 *_FUNC_REFER_LONG_TYPBAK=NULL;
+if(_FUNC_REFER_LONG_TYPBAK==NULL){
+_FUNC_REFER_LONG_TYPBAK=(int32*)mem_static_malloc(4);
+*_FUNC_REFER_LONG_TYPBAK=0;
+}
+qbs *_FUNC_REFER_STRING_A=NULL;
+if (!_FUNC_REFER_STRING_A)_FUNC_REFER_STRING_A=qbs_new(0,0);
+int32 *_FUNC_REFER_LONG_I=NULL;
+if(_FUNC_REFER_LONG_I==NULL){
+_FUNC_REFER_LONG_I=(int32*)mem_static_malloc(4);
+*_FUNC_REFER_LONG_I=0;
+}
+int32 *_FUNC_REFER_LONG_IDNUMBER=NULL;
+if(_FUNC_REFER_LONG_IDNUMBER==NULL){
+_FUNC_REFER_LONG_IDNUMBER=(int32*)mem_static_malloc(4);
+*_FUNC_REFER_LONG_IDNUMBER=0;
+}
+byte_element_struct *byte_element_16510=NULL;
+if (!byte_element_16510){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_16510=(byte_element_struct*)(mem_static_pointer-12); else byte_element_16510=(byte_element_struct*)mem_static_malloc(12);
+}
+qbs *_FUNC_REFER_STRING_N=NULL;
+if (!_FUNC_REFER_STRING_N)_FUNC_REFER_STRING_N=qbs_new(0,0);
+int32 *_FUNC_REFER_LONG_U=NULL;
+if(_FUNC_REFER_LONG_U==NULL){
+_FUNC_REFER_LONG_U=(int32*)mem_static_malloc(4);
+*_FUNC_REFER_LONG_U=0;
+}
+byte_element_struct *byte_element_16511=NULL;
+if (!byte_element_16511){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_16511=(byte_element_struct*)(mem_static_pointer-12); else byte_element_16511=(byte_element_struct*)mem_static_malloc(12);
+}
+qbs *_FUNC_REFER_STRING_O=NULL;
+if (!_FUNC_REFER_STRING_O)_FUNC_REFER_STRING_O=qbs_new(0,0);
+byte_element_struct *byte_element_16512=NULL;
+if (!byte_element_16512){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_16512=(byte_element_struct*)(mem_static_pointer-12); else byte_element_16512=(byte_element_struct*)mem_static_malloc(12);
+}
+qbs *_FUNC_REFER_STRING_O2=NULL;
+if (!_FUNC_REFER_STRING_O2)_FUNC_REFER_STRING_O2=qbs_new(0,0);
+qbs *_FUNC_REFER_STRING_R=NULL;
+if (!_FUNC_REFER_STRING_R)_FUNC_REFER_STRING_R=qbs_new(0,0);
+qbs *_FUNC_REFER_STRING_T=NULL;
+if (!_FUNC_REFER_STRING_T)_FUNC_REFER_STRING_T=qbs_new(0,0);
+qbs *_FUNC_REFER_STRING_OFFSET=NULL;
+if (!_FUNC_REFER_STRING_OFFSET)_FUNC_REFER_STRING_OFFSET=qbs_new(0,0);
+int32 pass16513;
+int32 *_FUNC_REFER_LONG_T=NULL;
+if(_FUNC_REFER_LONG_T==NULL){
+_FUNC_REFER_LONG_T=(int32*)mem_static_malloc(4);
+*_FUNC_REFER_LONG_T=0;
+}
+int32 pass16514;
+int32 pass16515;
+byte_element_struct *byte_element_16516=NULL;
+if (!byte_element_16516){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_16516=(byte_element_struct*)(mem_static_pointer-12); else byte_element_16516=(byte_element_struct*)mem_static_malloc(12);
+}
