@@ -1,4 +1,4 @@
-if(oldstr18007){
-if(oldstr18007->fixed)qbs_set(oldstr18007,_SUB_LINEINPUT3LOAD_STRING_F);
+if(oldstr67649){
+if(oldstr67649->fixed)qbs_set(oldstr67649,_SUB_LINEINPUT3LOAD_STRING_F);
 qbs_free(_SUB_LINEINPUT3LOAD_STRING_F);
 }

@@ -23,6 +23,24 @@ extern void *malloc2(int x);
 int QBMAIN(void*);
 
 //extern functions
+
+//windows only functions for scroll lock, num lock, caps lock
+extern int func__capslock();
+extern int func__scrolllock();
+extern int func__numlock();
+extern void sub__capslock(int32 options);
+extern void sub__scrolllock(int32 options);
+extern void sub__numlock(int32 options);
+//end if windows only functions
+//cobalt (Dave)'s bit functions:
+uint64 func__shr(uint64 a1, int b1);
+uint64 func__shl(uint64 a1, int b1);
+int64 func__readbit(uint64 a1, int b1);
+uint64 func__setbit(uint64 a1, int b1);
+uint64 func__resetbit(uint64 a1, int b1);
+uint64 func__togglebit(uint64 a1, int b1);
+//end of Cobalt's bit functions.
+
 extern double func_deg2rad(double value);
 extern double func_rad2deg(double value);
 extern double func_deg2grad(double value);
@@ -224,6 +242,7 @@ extern void sub_mid(qbs* dest, int32 start, int32 l, qbs* src, int32 passed);
 extern qbs* func_mid(qbs* str, int32 start, int32 l, int32 passed);
 extern qbs* qbs_ltrim(qbs* str);
 extern qbs* qbs_rtrim(qbs* str);
+extern qbs *qbs__trim(qbs *str);
 extern qbs* qbs_inkey();
 extern qbs* qbs_str(int64 value);
 extern qbs* qbs_str(int32 value);
@@ -815,6 +834,26 @@ inline int32 func_sgn(long double v) {
 	if (v) if (v > 0) return 1; else return -1;
 	return 0;
 }
+
+
+//bit-shifting
+inline uint64 func__shl(uint64 a1,int b1) 
+{return a1<<b1;}
+
+inline uint64 func__shr(uint64 a1,int b1) 
+{return a1>>b1;}
+
+inline int64 func__readbit(uint64 a1, int b1)
+{if (a1 & 1ull<<b1) return -1; else return 0;}
+
+inline uint64 func__setbit(uint64 a1, int b1)
+{return a1 | 1ull<<b1;}
+
+inline uint64 func__resetbit(uint64 a1, int b1)
+{return a1 & ~(1ull<<b1);}
+
+inline uint64 func__togglebit(uint64 a1, int b1)
+{return a1 ^ 1ull<<b1;}
 
 //Working with 32bit colors:
 inline uint32 func__rgb32(int32 r, int32 g, int32 b) {

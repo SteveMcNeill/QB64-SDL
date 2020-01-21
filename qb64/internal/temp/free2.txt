@@ -1,4 +1,4 @@
-if(oldstr15730){
-if(oldstr15730->fixed)qbs_set(oldstr15730,_FUNC_REMOVEFILEEXTENSION_STRING_F);
+if(oldstr65372){
+if(oldstr65372->fixed)qbs_set(oldstr65372,_FUNC_REMOVEFILEEXTENSION_STRING_F);
 qbs_free(_FUNC_REMOVEFILEEXTENSION_STRING_F);
 }

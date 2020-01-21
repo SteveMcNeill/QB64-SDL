@@ -1,5 +1,5 @@
-if(oldstr17860){
-if(oldstr17860->fixed)qbs_set(oldstr17860,_SUB_XFILEWRITE_STRING_CA);
+if(oldstr67502){
+if(oldstr67502->fixed)qbs_set(oldstr67502,_SUB_XFILEWRITE_STRING_CA);
 qbs_free(_SUB_XFILEWRITE_STRING_CA);
 }
 qbs_free(_SUB_XFILEWRITE_STRING_L);

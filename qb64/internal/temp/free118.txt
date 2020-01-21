@@ -1,9 +1,9 @@
-if(oldstr17890){
-if(oldstr17890->fixed)qbs_set(oldstr17890,_SUB_XONGOTOGOSUB_STRING_A);
+if(oldstr67532){
+if(oldstr67532->fixed)qbs_set(oldstr67532,_SUB_XONGOTOGOSUB_STRING_A);
 qbs_free(_SUB_XONGOTOGOSUB_STRING_A);
 }
-if(oldstr17891){
-if(oldstr17891->fixed)qbs_set(oldstr17891,_SUB_XONGOTOGOSUB_STRING_CA);
+if(oldstr67533){
+if(oldstr67533->fixed)qbs_set(oldstr67533,_SUB_XONGOTOGOSUB_STRING_CA);
 qbs_free(_SUB_XONGOTOGOSUB_STRING_CA);
 }
 qbs_free(_SUB_XONGOTOGOSUB_STRING_L);

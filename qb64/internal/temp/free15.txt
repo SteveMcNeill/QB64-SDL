@@ -1,5 +1,5 @@
-if(oldstr16230){
-if(oldstr16230->fixed)qbs_set(oldstr16230,_FUNC_FINDID_STRING_N2);
+if(oldstr65872){
+if(oldstr65872->fixed)qbs_set(oldstr65872,_FUNC_FINDID_STRING_N2);
 qbs_free(_FUNC_FINDID_STRING_N2);
 }
 qbs_free(_FUNC_FINDID_STRING_N);

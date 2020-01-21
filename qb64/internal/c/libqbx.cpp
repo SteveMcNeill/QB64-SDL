@@ -7428,6 +7428,10 @@ qbs_rtrim_nextchar2: if (str->chr[i - 1] == 32) { i--; if (i) goto qbs_rtrim_nex
 	return tqbs;
 }
 
+qbs *qbs__trim(qbs *str){
+    return qbs_rtrim(qbs_ltrim(str));
+}
+
 qbs* qbs_inkey() {
 	if (new_error) return qbs_new(0, 1);
 	qbs* tqbs;
@@ -32357,3 +32361,82 @@ int32 func__hasfocus() {
         }
         return;
     }
+
+int32 func__capslock(){
+    #ifdef QB64_WINDOWS
+    return -GetKeyState(VK_CAPITAL);
+    #endif
+    return 0;
+}
+
+int32 func__scrolllock(){
+    #ifdef QB64_WINDOWS
+    return -GetKeyState(VK_SCROLL);
+    #endif
+    return 0;
+}
+
+int32 func__numlock(){
+    #ifdef QB64_WINDOWS
+    return -GetKeyState(VK_NUMLOCK);
+    #endif
+    return 0;
+}
+
+void toggle_lock_key(int32 key_code){
+    #ifdef QB64_WINDOWS
+    keybd_event (key_code, 0x45, 1, 0);
+    keybd_event (key_code, 0x45, 3, 0);
+    #endif
+}
+
+void sub__capslock(int32 options){
+    #ifdef QB64_WINDOWS
+    //VK_CAPITAL
+    int32 currentState = func__capslock();
+    switch(options){
+        case 1: //ON
+            if (currentState==-1) return;
+            break;
+        case 2: //OFF
+            if (currentState==0) return;
+            break;
+    }
+    // _TOGGLE:
+    toggle_lock_key(VK_CAPITAL);
+    #endif
+}
+
+void sub__scrolllock(int32 options){
+    #ifdef QB64_WINDOWS
+    //VK_SCROLL
+    int32 currentState = func__scrolllock();
+    switch(options){
+        case 1: //ON
+            if (currentState==-1) return;
+            break;
+        case 2: //OFF
+            if (currentState==0) return;
+            break;
+    }
+    // _TOGGLE:
+    toggle_lock_key(VK_SCROLL);
+    #endif
+}
+
+void sub__numlock(int32 options){
+    #ifdef QB64_WINDOWS
+    //VK_NUMLOCK
+    int32 currentState = func__numlock();
+    switch(options){
+        case 1: //ON
+            if (currentState==-1) return;
+            break;
+        case 2: //OFF
+            if (currentState==0) return;
+            break;
+    }
+    // _TOGGLE:
+    toggle_lock_key(VK_NUMLOCK);
+    #endif
+}

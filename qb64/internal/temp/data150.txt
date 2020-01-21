@@ -10,10 +10,10 @@ if(_SUB_HASHDUMP_LONG_X==NULL){
 _SUB_HASHDUMP_LONG_X=(int32*)mem_static_malloc(4);
 *_SUB_HASHDUMP_LONG_X=0;
 }
-int64 fornext_value18260;
-int64 fornext_finalvalue18260;
-int64 fornext_step18260;
-uint8 fornext_step_negative18260;
+int64 fornext_value67902;
+int64 fornext_finalvalue67902;
+int64 fornext_step67902;
+uint8 fornext_step_negative67902;
 int32 *_SUB_HASHDUMP_LONG_I=NULL;
 if(_SUB_HASHDUMP_LONG_I==NULL){
 _SUB_HASHDUMP_LONG_I=(int32*)mem_static_malloc(4);
@@ -36,10 +36,10 @@ if(_SUB_HASHDUMP_LONG_Z==NULL){
 _SUB_HASHDUMP_LONG_Z=(int32*)mem_static_malloc(4);
 *_SUB_HASHDUMP_LONG_Z=0;
 }
-int64 fornext_value18264;
-int64 fornext_finalvalue18264;
-int64 fornext_step18264;
-uint8 fornext_step_negative18264;
+int64 fornext_value67906;
+int64 fornext_finalvalue67906;
+int64 fornext_step67906;
+uint8 fornext_step_negative67906;
 int32 *_SUB_HASHDUMP_LONG_I1=NULL;
 if(_SUB_HASHDUMP_LONG_I1==NULL){
 _SUB_HASHDUMP_LONG_I1=(int32*)mem_static_malloc(4);

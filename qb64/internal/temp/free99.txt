@@ -1,5 +1,5 @@
-if(oldstr17707){
-if(oldstr17707->fixed)qbs_set(oldstr17707,_SUB_IDEIMPORTBOOKMARKS_STRING_F2);
+if(oldstr67349){
+if(oldstr67349->fixed)qbs_set(oldstr67349,_SUB_IDEIMPORTBOOKMARKS_STRING_F2);
 qbs_free(_SUB_IDEIMPORTBOOKMARKS_STRING_F2);
 }
 qbs_free(_SUB_IDEIMPORTBOOKMARKS_STRING_F);

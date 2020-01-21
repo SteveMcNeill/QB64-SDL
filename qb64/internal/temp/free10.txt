@@ -1,9 +1,9 @@
-if(oldstr16022){
-if(oldstr16022->fixed)qbs_set(oldstr16022,_FUNC_UDTREFERENCE_STRING_O);
+if(oldstr65664){
+if(oldstr65664->fixed)qbs_set(oldstr65664,_FUNC_UDTREFERENCE_STRING_O);
 qbs_free(_FUNC_UDTREFERENCE_STRING_O);
 }
-if(oldstr16023){
-if(oldstr16023->fixed)qbs_set(oldstr16023,_FUNC_UDTREFERENCE_STRING_A);
+if(oldstr65665){
+if(oldstr65665->fixed)qbs_set(oldstr65665,_FUNC_UDTREFERENCE_STRING_A);
 qbs_free(_FUNC_UDTREFERENCE_STRING_A);
 }
 qbs_free(_FUNC_UDTREFERENCE_STRING_OBAK);

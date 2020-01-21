@@ -1,5 +1,5 @@
-if(oldstr17462){
-if(oldstr17462->fixed)qbs_set(oldstr17462,_FUNC_IDEZTAKEPATH_STRING_F);
+if(oldstr67104){
+if(oldstr67104->fixed)qbs_set(oldstr67104,_FUNC_IDEZTAKEPATH_STRING_F);
 qbs_free(_FUNC_IDEZTAKEPATH_STRING_F);
 }
 qbs_free(_FUNC_IDEZTAKEPATH_STRING_P);

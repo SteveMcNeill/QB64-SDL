@@ -29,8 +29,8 @@ if(_FUNC_VARIABLESIZE_LONG_I2==NULL){
 _FUNC_VARIABLESIZE_LONG_I2=(int32*)mem_static_malloc(4);
 *_FUNC_VARIABLESIZE_LONG_I2=0;
 }
-int64 fornext_value16181;
-int64 fornext_finalvalue16181;
-int64 fornext_step16181;
-uint8 fornext_step_negative16181;
-int32 pass16182;
+int64 fornext_value65823;
+int64 fornext_finalvalue65823;
+int64 fornext_step65823;
+uint8 fornext_step_negative65823;
+int32 pass65824;

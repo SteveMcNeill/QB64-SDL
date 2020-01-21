@@ -1,9 +1,9 @@
-if(oldstr17421){
-if(oldstr17421->fixed)qbs_set(oldstr17421,_FUNC_IDEZCHANGEPATH_STRING_PATH);
+if(oldstr67063){
+if(oldstr67063->fixed)qbs_set(oldstr67063,_FUNC_IDEZCHANGEPATH_STRING_PATH);
 qbs_free(_FUNC_IDEZCHANGEPATH_STRING_PATH);
 }
-if(oldstr17422){
-if(oldstr17422->fixed)qbs_set(oldstr17422,_FUNC_IDEZCHANGEPATH_STRING_NEWPATH);
+if(oldstr67064){
+if(oldstr67064->fixed)qbs_set(oldstr67064,_FUNC_IDEZCHANGEPATH_STRING_NEWPATH);
 qbs_free(_FUNC_IDEZCHANGEPATH_STRING_NEWPATH);
 }
 qbs_free(_FUNC_IDEZCHANGEPATH_STRING_A);

@@ -5,10 +5,10 @@ if(_SUB_CONTINUEDOWNLOADS_LONG_D==NULL){
 _SUB_CONTINUEDOWNLOADS_LONG_D=(int32*)mem_static_malloc(4);
 *_SUB_CONTINUEDOWNLOADS_LONG_D=0;
 }
-int64 fornext_value18269;
-int64 fornext_finalvalue18269;
-int64 fornext_step18269;
-uint8 fornext_step_negative18269;
+int64 fornext_value67911;
+int64 fornext_finalvalue67911;
+int64 fornext_step67911;
+uint8 fornext_step_negative67911;
 int32 *_SUB_CONTINUEDOWNLOADS_LONG_S=NULL;
 if(_SUB_CONTINUEDOWNLOADS_LONG_S==NULL){
 _SUB_CONTINUEDOWNLOADS_LONG_S=(int32*)mem_static_malloc(4);
@@ -38,7 +38,7 @@ if(_SUB_CONTINUEDOWNLOADS_LONG_I3==NULL){
 _SUB_CONTINUEDOWNLOADS_LONG_I3=(int32*)mem_static_malloc(4);
 *_SUB_CONTINUEDOWNLOADS_LONG_I3=0;
 }
-byte_element_struct *byte_element_18271=NULL;
-if (!byte_element_18271){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_18271=(byte_element_struct*)(mem_static_pointer-12); else byte_element_18271=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_67913=NULL;
+if (!byte_element_67913){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67913=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67913=(byte_element_struct*)mem_static_malloc(12);
 }

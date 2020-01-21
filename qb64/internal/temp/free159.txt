@@ -1,5 +1,5 @@
-if(oldstr18377){
-if(oldstr18377->fixed)qbs_set(oldstr18377,_FUNC_EVALUATE_EXPRESSION_STRING_E);
+if(oldstr68019){
+if(oldstr68019->fixed)qbs_set(oldstr68019,_FUNC_EVALUATE_EXPRESSION_STRING_E);
 qbs_free(_FUNC_EVALUATE_EXPRESSION_STRING_E);
 }
 qbs_free(_FUNC_EVALUATE_EXPRESSION_STRING_T);

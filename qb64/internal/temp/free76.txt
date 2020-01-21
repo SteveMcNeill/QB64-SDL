@@ -1,9 +1,9 @@
-if(oldstr17526){
-if(oldstr17526->fixed)qbs_set(oldstr17526,_FUNC_IDEYESNOBOX_STRING_TITLESTR);
+if(oldstr67168){
+if(oldstr67168->fixed)qbs_set(oldstr67168,_FUNC_IDEYESNOBOX_STRING_TITLESTR);
 qbs_free(_FUNC_IDEYESNOBOX_STRING_TITLESTR);
 }
-if(oldstr17527){
-if(oldstr17527->fixed)qbs_set(oldstr17527,_FUNC_IDEYESNOBOX_STRING_MESSAGESTR);
+if(oldstr67169){
+if(oldstr67169->fixed)qbs_set(oldstr67169,_FUNC_IDEYESNOBOX_STRING_MESSAGESTR);
 qbs_free(_FUNC_IDEYESNOBOX_STRING_MESSAGESTR);
 }
 if (_FUNC_IDEYESNOBOX_ARRAY_UDT_O[2]&1){

@@ -3,25 +3,25 @@ if(_FUNC_DOWNLOAD_LONG_DOWNLOAD==NULL){
 _FUNC_DOWNLOAD_LONG_DOWNLOAD=(int32*)mem_static_malloc(4);
 *_FUNC_DOWNLOAD_LONG_DOWNLOAD=0;
 }
-qbs*oldstr17634=NULL;
+qbs*oldstr67276=NULL;
 if(_FUNC_DOWNLOAD_STRING_URL->tmp||_FUNC_DOWNLOAD_STRING_URL->fixed||_FUNC_DOWNLOAD_STRING_URL->readonly){
-oldstr17634=_FUNC_DOWNLOAD_STRING_URL;
-if (oldstr17634->cmem_descriptor){
-_FUNC_DOWNLOAD_STRING_URL=qbs_new_cmem(oldstr17634->len,0);
+oldstr67276=_FUNC_DOWNLOAD_STRING_URL;
+if (oldstr67276->cmem_descriptor){
+_FUNC_DOWNLOAD_STRING_URL=qbs_new_cmem(oldstr67276->len,0);
 }else{
-_FUNC_DOWNLOAD_STRING_URL=qbs_new(oldstr17634->len,0);
+_FUNC_DOWNLOAD_STRING_URL=qbs_new(oldstr67276->len,0);
 }
-memcpy(_FUNC_DOWNLOAD_STRING_URL->chr,oldstr17634->chr,oldstr17634->len);
+memcpy(_FUNC_DOWNLOAD_STRING_URL->chr,oldstr67276->chr,oldstr67276->len);
 }
-qbs*oldstr17635=NULL;
+qbs*oldstr67277=NULL;
 if(_FUNC_DOWNLOAD_STRING_FILE->tmp||_FUNC_DOWNLOAD_STRING_FILE->fixed||_FUNC_DOWNLOAD_STRING_FILE->readonly){
-oldstr17635=_FUNC_DOWNLOAD_STRING_FILE;
-if (oldstr17635->cmem_descriptor){
-_FUNC_DOWNLOAD_STRING_FILE=qbs_new_cmem(oldstr17635->len,0);
+oldstr67277=_FUNC_DOWNLOAD_STRING_FILE;
+if (oldstr67277->cmem_descriptor){
+_FUNC_DOWNLOAD_STRING_FILE=qbs_new_cmem(oldstr67277->len,0);
 }else{
-_FUNC_DOWNLOAD_STRING_FILE=qbs_new(oldstr17635->len,0);
+_FUNC_DOWNLOAD_STRING_FILE=qbs_new(oldstr67277->len,0);
 }
-memcpy(_FUNC_DOWNLOAD_STRING_FILE->chr,oldstr17635->chr,oldstr17635->len);
+memcpy(_FUNC_DOWNLOAD_STRING_FILE->chr,oldstr67277->chr,oldstr67277->len);
 }
 int32 *_FUNC_DOWNLOAD_LONG_RETRY=NULL;
 if(_FUNC_DOWNLOAD_LONG_RETRY==NULL){
@@ -44,15 +44,15 @@ qbs *_FUNC_DOWNLOAD_STRING_E=NULL;
 if (!_FUNC_DOWNLOAD_STRING_E)_FUNC_DOWNLOAD_STRING_E=qbs_new(0,0);
 qbs *_FUNC_DOWNLOAD_STRING_URL3=NULL;
 if (!_FUNC_DOWNLOAD_STRING_URL3)_FUNC_DOWNLOAD_STRING_URL3=qbs_new(0,0);
-byte_element_struct *byte_element_17638=NULL;
-if (!byte_element_17638){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17638=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17638=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_67280=NULL;
+if (!byte_element_67280){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67280=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67280=(byte_element_struct*)mem_static_malloc(12);
 }
 qbs *_FUNC_DOWNLOAD_STRING_X=NULL;
 if (!_FUNC_DOWNLOAD_STRING_X)_FUNC_DOWNLOAD_STRING_X=qbs_new(0,0);
-byte_element_struct *byte_element_17639=NULL;
-if (!byte_element_17639){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17639=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17639=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_67281=NULL;
+if (!byte_element_67281){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67281=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67281=(byte_element_struct*)mem_static_malloc(12);
 }
 double *_FUNC_DOWNLOAD_DOUBLE_LASTTIME=NULL;
 if(_FUNC_DOWNLOAD_DOUBLE_LASTTIME==NULL){
@@ -83,9 +83,9 @@ _FUNC_DOWNLOAD_LONG_L=(int32*)mem_static_malloc(4);
 }
 qbs *_FUNC_DOWNLOAD_STRING_A2=NULL;
 if (!_FUNC_DOWNLOAD_STRING_A2)_FUNC_DOWNLOAD_STRING_A2=qbs_new(0,0);
-byte_element_struct *byte_element_17641=NULL;
-if (!byte_element_17641){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17641=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17641=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_67283=NULL;
+if (!byte_element_67283){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67283=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67283=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_DOWNLOAD_LONG_CL=NULL;
 if(_FUNC_DOWNLOAD_LONG_CL==NULL){
@@ -102,9 +102,9 @@ if(_FUNC_DOWNLOAD_LONG_I3==NULL){
 _FUNC_DOWNLOAD_LONG_I3=(int32*)mem_static_malloc(4);
 *_FUNC_DOWNLOAD_LONG_I3=0;
 }
-byte_element_struct *byte_element_17647=NULL;
-if (!byte_element_17647){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17647=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17647=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_67289=NULL;
+if (!byte_element_67289){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67289=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67289=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_DOWNLOAD_LONG_I=NULL;
 if(_FUNC_DOWNLOAD_LONG_I==NULL){
@@ -116,16 +116,16 @@ if(_FUNC_DOWNLOAD_LONG_I2==NULL){
 _FUNC_DOWNLOAD_LONG_I2=(int32*)mem_static_malloc(4);
 *_FUNC_DOWNLOAD_LONG_I2=0;
 }
-byte_element_struct *byte_element_17650=NULL;
-if (!byte_element_17650){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17650=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17650=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_67292=NULL;
+if (!byte_element_67292){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67292=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67292=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_DOWNLOAD_LONG_FH=NULL;
 if(_FUNC_DOWNLOAD_LONG_FH==NULL){
 _FUNC_DOWNLOAD_LONG_FH=(int32*)mem_static_malloc(4);
 *_FUNC_DOWNLOAD_LONG_FH=0;
 }
-byte_element_struct *byte_element_17651=NULL;
-if (!byte_element_17651){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_17651=(byte_element_struct*)(mem_static_pointer-12); else byte_element_17651=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_67293=NULL;
+if (!byte_element_67293){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67293=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67293=(byte_element_struct*)mem_static_malloc(12);
 }

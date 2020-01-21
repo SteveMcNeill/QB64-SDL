@@ -18,6 +18,9 @@ _TITLE "QB64 SDL (Steve Update 01/12/2020)"
 DIM SHARED version AS STRING
 version$ = "0.954 - SU:01/16/2020"
 
+'if someone has deleted the internal temp folder, create a new one to stop IDE errors from occurring.
+'This folder is essential to run properly.
+IF _DIREXISTS("internal\temp\") = 0 THEN MKDIR "internal\temp\"
 CONST ASC_BACKSLASH = 92
 CONST ASC_FORWARDSLASH = 47
 CONST ASC_LEFTBRACKET = 40
@@ -31631,6 +31634,121 @@ id.arg = MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATT
     id.arg = MKL$(LONGTYPE - ISPOINTER)
     id.specialformat = "[?]"
     id.callname = "sub__keyclear"
+    regid
+
+    clearid
+    id.n = "_CAPSLOCK"
+    id.subfunc = 1
+    id.callname = "func__capslock"
+    id.args = 0
+    id.ret = LONGTYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_SCROLLLOCK"
+    id.subfunc = 1
+    id.callname = "func__scrolllock"
+    id.args = 0
+    id.ret = LONGTYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_NUMLOCK"
+    id.subfunc = 1
+    id.callname = "func__numlock"
+    id.args = 0
+    id.ret = LONGTYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_CAPSLOCK"
+    id.subfunc = 2
+    id.callname = "sub__capslock"
+    id.arg = MKL$(LONGTYPE - ISPOINTER)
+    id.args = 1
+    id.specialformat = "{ON|OFF|_TOGGLE}"
+    regid
+
+    clearid
+    id.n = "_SCROLLLOCK"
+    id.subfunc = 2
+    id.callname = "sub__scrolllock"
+    id.arg = MKL$(LONGTYPE - ISPOINTER)
+    id.args = 1
+    id.specialformat = "{ON|OFF|_TOGGLE}"
+    regid
+
+    clearid
+    id.n = "_NUMLOCK"
+    id.subfunc = 2
+    id.callname = "sub__numlock"
+    id.arg = MKL$(LONGTYPE - ISPOINTER)
+    id.args = 1
+    id.specialformat = "{ON|OFF|_TOGGLE}"
+    regid
+
+    clearid
+    id.n = "_READBIT"
+    id.subfunc = 1
+    id.callname = "func__readbit"
+    id.args = 2
+    id.arg = MKL$(UINTEGER64TYPE - ISPOINTER) + MKL$(LONGTYPE - ISPOINTER)
+    id.ret = INTEGER64TYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_SETBIT"
+    id.subfunc = 1
+    id.callname = "func__setbit"
+    id.args = 2
+    id.arg = MKL$(UINTEGER64TYPE - ISPOINTER) + MKL$(LONGTYPE - ISPOINTER)
+    id.ret = UINTEGER64TYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_RESETBIT"
+    id.subfunc = 1
+    id.callname = "func__resetbit"
+    id.args = 2
+    id.arg = MKL$(UINTEGER64TYPE - ISPOINTER) + MKL$(LONGTYPE - ISPOINTER)
+    id.ret = UINTEGER64TYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_TOGGLEBIT"
+    id.subfunc = 1
+    id.callname = "func__togglebit"
+    id.args = 2
+    id.arg = MKL$(UINTEGER64TYPE - ISPOINTER) + MKL$(LONGTYPE - ISPOINTER)
+    id.ret = UINTEGER64TYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_SHR"
+    id.subfunc = 1
+    id.callname = "func__shr"
+    id.args = 2
+    id.arg = MKL$(UINTEGER64TYPE - ISPOINTER) + MKL$(LONGTYPE - ISPOINTER)
+    id.ret = UINTEGER64TYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_SHL"
+    id.subfunc = 1
+    id.callname = "func__shl"
+    id.args = 2
+    id.arg = MKL$(UINTEGER64TYPE - ISPOINTER) + MKL$(LONGTYPE - ISPOINTER)
+    id.ret = UINTEGER64TYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_TRIM"
+    id.musthave = "$"
+    id.subfunc = 1
+    id.callname = "qbs__trim"
+    id.args = 1
+    id.arg = MKL$(STRINGTYPE - ISPOINTER)
+    id.ret = STRINGTYPE - ISPOINTER
     regid
 
 

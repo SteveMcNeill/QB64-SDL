@@ -1,0 +1,2 @@
+IDEsettings.bas
+QB64.bas
