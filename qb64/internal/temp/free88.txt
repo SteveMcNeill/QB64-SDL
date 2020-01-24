@@ -1,9 +1,9 @@
-if(oldstr67276){
-if(oldstr67276->fixed)qbs_set(oldstr67276,_FUNC_DOWNLOAD_STRING_URL);
+if(oldstr28341){
+if(oldstr28341->fixed)qbs_set(oldstr28341,_FUNC_DOWNLOAD_STRING_URL);
 qbs_free(_FUNC_DOWNLOAD_STRING_URL);
 }
-if(oldstr67277){
-if(oldstr67277->fixed)qbs_set(oldstr67277,_FUNC_DOWNLOAD_STRING_FILE);
+if(oldstr28342){
+if(oldstr28342->fixed)qbs_set(oldstr28342,_FUNC_DOWNLOAD_STRING_FILE);
 qbs_free(_FUNC_DOWNLOAD_STRING_FILE);
 }
 qbs_free(_FUNC_DOWNLOAD_STRING_URL2);

@@ -31751,6 +31751,21 @@ id.arg = MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATTYPE - ISPOINTER) + MKL$(FLOATT
     id.ret = STRINGTYPE - ISPOINTER
     regid
 
+    clearid
+    id.n = "_DESKTOPWIDTH"
+    id.subfunc = 1
+    id.callname = "func_screenwidth"
+    id.args = 0
+    id.ret = LONGTYPE - ISPOINTER
+    regid
+
+    clearid
+    id.n = "_DESKTOPHEIGHT"
+    id.subfunc = 1
+    id.callname = "func_screenheight"
+    id.args = 0
+    id.ret = LONGTYPE - ISPOINTER
+    regid
 
     reginternalsubfunc = 0
 END SUB

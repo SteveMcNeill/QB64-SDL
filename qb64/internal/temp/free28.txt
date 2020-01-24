@@ -1,5 +1,5 @@
-if(oldstr66151){
-if(oldstr66151->fixed)qbs_set(oldstr66151,_FUNC_REFER_STRING_A2);
+if(oldstr27216){
+if(oldstr27216->fixed)qbs_set(oldstr27216,_FUNC_REFER_STRING_A2);
 qbs_free(_FUNC_REFER_STRING_A2);
 }
 qbs_free(_FUNC_REFER_STRING_A);

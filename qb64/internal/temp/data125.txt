@@ -3,24 +3,24 @@ if(_SUB_IDEBOXSHADOW_LONG_Y2==NULL){
 _SUB_IDEBOXSHADOW_LONG_Y2=(int32*)mem_static_malloc(4);
 *_SUB_IDEBOXSHADOW_LONG_Y2=0;
 }
-int64 fornext_value67660;
-int64 fornext_finalvalue67660;
-int64 fornext_step67660;
-uint8 fornext_step_negative67660;
-int64 fornext_value67664;
-int64 fornext_finalvalue67664;
-int64 fornext_step67664;
-uint8 fornext_step_negative67664;
+int64 fornext_value28725;
+int64 fornext_finalvalue28725;
+int64 fornext_step28725;
+uint8 fornext_step_negative28725;
+int64 fornext_value28729;
+int64 fornext_finalvalue28729;
+int64 fornext_step28729;
+uint8 fornext_step_negative28729;
 int32 *_SUB_IDEBOXSHADOW_LONG_X2=NULL;
 if(_SUB_IDEBOXSHADOW_LONG_X2==NULL){
 _SUB_IDEBOXSHADOW_LONG_X2=(int32*)mem_static_malloc(4);
 *_SUB_IDEBOXSHADOW_LONG_X2=0;
 }
-int64 fornext_value67666;
-int64 fornext_finalvalue67666;
-int64 fornext_step67666;
-uint8 fornext_step_negative67666;
-int64 fornext_value67669;
-int64 fornext_finalvalue67669;
-int64 fornext_step67669;
-uint8 fornext_step_negative67669;
+int64 fornext_value28731;
+int64 fornext_finalvalue28731;
+int64 fornext_step28731;
+uint8 fornext_step_negative28731;
+int64 fornext_value28734;
+int64 fornext_finalvalue28734;
+int64 fornext_step28734;
+uint8 fornext_step_negative28734;

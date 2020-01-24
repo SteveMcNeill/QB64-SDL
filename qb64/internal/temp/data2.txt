@@ -1,27 +1,27 @@
 qbs *_FUNC_REMOVEFILEEXTENSION_STRING_REMOVEFILEEXTENSION=NULL;
 if (!_FUNC_REMOVEFILEEXTENSION_STRING_REMOVEFILEEXTENSION)_FUNC_REMOVEFILEEXTENSION_STRING_REMOVEFILEEXTENSION=qbs_new(0,0);
-qbs*oldstr65372=NULL;
+qbs*oldstr26437=NULL;
 if(_FUNC_REMOVEFILEEXTENSION_STRING_F->tmp||_FUNC_REMOVEFILEEXTENSION_STRING_F->fixed||_FUNC_REMOVEFILEEXTENSION_STRING_F->readonly){
-oldstr65372=_FUNC_REMOVEFILEEXTENSION_STRING_F;
-if (oldstr65372->cmem_descriptor){
-_FUNC_REMOVEFILEEXTENSION_STRING_F=qbs_new_cmem(oldstr65372->len,0);
+oldstr26437=_FUNC_REMOVEFILEEXTENSION_STRING_F;
+if (oldstr26437->cmem_descriptor){
+_FUNC_REMOVEFILEEXTENSION_STRING_F=qbs_new_cmem(oldstr26437->len,0);
 }else{
-_FUNC_REMOVEFILEEXTENSION_STRING_F=qbs_new(oldstr65372->len,0);
+_FUNC_REMOVEFILEEXTENSION_STRING_F=qbs_new(oldstr26437->len,0);
 }
-memcpy(_FUNC_REMOVEFILEEXTENSION_STRING_F->chr,oldstr65372->chr,oldstr65372->len);
+memcpy(_FUNC_REMOVEFILEEXTENSION_STRING_F->chr,oldstr26437->chr,oldstr26437->len);
 }
 int32 *_FUNC_REMOVEFILEEXTENSION_LONG_I=NULL;
 if(_FUNC_REMOVEFILEEXTENSION_LONG_I==NULL){
 _FUNC_REMOVEFILEEXTENSION_LONG_I=(int32*)mem_static_malloc(4);
 *_FUNC_REMOVEFILEEXTENSION_LONG_I=0;
 }
-int64 fornext_value65374;
-int64 fornext_finalvalue65374;
-int64 fornext_step65374;
-uint8 fornext_step_negative65374;
-byte_element_struct *byte_element_65375=NULL;
-if (!byte_element_65375){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_65375=(byte_element_struct*)(mem_static_pointer-12); else byte_element_65375=(byte_element_struct*)mem_static_malloc(12);
+int64 fornext_value26439;
+int64 fornext_finalvalue26439;
+int64 fornext_step26439;
+uint8 fornext_step_negative26439;
+byte_element_struct *byte_element_26440=NULL;
+if (!byte_element_26440){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_26440=(byte_element_struct*)(mem_static_pointer-12); else byte_element_26440=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_REMOVEFILEEXTENSION_LONG_A=NULL;
 if(_FUNC_REMOVEFILEEXTENSION_LONG_A==NULL){

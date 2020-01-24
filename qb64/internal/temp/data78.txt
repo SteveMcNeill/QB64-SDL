@@ -3,24 +3,24 @@ if(_FUNC_HASHVALUE_LONG_HASHVALUE==NULL){
 _FUNC_HASHVALUE_LONG_HASHVALUE=(int32*)mem_static_malloc(4);
 *_FUNC_HASHVALUE_LONG_HASHVALUE=0;
 }
-qbs*oldstr67216=NULL;
+qbs*oldstr28281=NULL;
 if(_FUNC_HASHVALUE_STRING_A->tmp||_FUNC_HASHVALUE_STRING_A->fixed||_FUNC_HASHVALUE_STRING_A->readonly){
-oldstr67216=_FUNC_HASHVALUE_STRING_A;
-if (oldstr67216->cmem_descriptor){
-_FUNC_HASHVALUE_STRING_A=qbs_new_cmem(oldstr67216->len,0);
+oldstr28281=_FUNC_HASHVALUE_STRING_A;
+if (oldstr28281->cmem_descriptor){
+_FUNC_HASHVALUE_STRING_A=qbs_new_cmem(oldstr28281->len,0);
 }else{
-_FUNC_HASHVALUE_STRING_A=qbs_new(oldstr67216->len,0);
+_FUNC_HASHVALUE_STRING_A=qbs_new(oldstr28281->len,0);
 }
-memcpy(_FUNC_HASHVALUE_STRING_A->chr,oldstr67216->chr,oldstr67216->len);
+memcpy(_FUNC_HASHVALUE_STRING_A->chr,oldstr28281->chr,oldstr28281->len);
 }
 int32 *_FUNC_HASHVALUE_LONG_L=NULL;
 if(_FUNC_HASHVALUE_LONG_L==NULL){
 _FUNC_HASHVALUE_LONG_L=(int32*)mem_static_malloc(4);
 *_FUNC_HASHVALUE_LONG_L=0;
 }
-byte_element_struct *byte_element_67217=NULL;
-if (!byte_element_67217){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67217=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67217=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_28282=NULL;
+if (!byte_element_28282){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_28282=(byte_element_struct*)(mem_static_pointer-12); else byte_element_28282=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_HASHVALUE_LONG_A=NULL;
 if(_FUNC_HASHVALUE_LONG_A==NULL){

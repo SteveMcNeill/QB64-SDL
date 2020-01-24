@@ -40,18 +40,18 @@ if(_FUNC_IDEGOTOBOX_LONG_I==NULL){
 _FUNC_IDEGOTOBOX_LONG_I=(int32*)mem_static_malloc(4);
 *_FUNC_IDEGOTOBOX_LONG_I=0;
 }
-int32 pass67152;
-int32 pass67153;
+int32 pass28217;
+int32 pass28218;
 qbs *_FUNC_IDEGOTOBOX_STRING_A2=NULL;
 if (!_FUNC_IDEGOTOBOX_STRING_A2)_FUNC_IDEGOTOBOX_STRING_A2=qbs_new(0,0);
-byte_element_struct *byte_element_67154=NULL;
-if (!byte_element_67154){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67154=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67154=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_28219=NULL;
+if (!byte_element_28219){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_28219=(byte_element_struct*)(mem_static_pointer-12); else byte_element_28219=(byte_element_struct*)mem_static_malloc(12);
 }
-int64 fornext_value67156;
-int64 fornext_finalvalue67156;
-int64 fornext_step67156;
-uint8 fornext_step_negative67156;
+int64 fornext_value28221;
+int64 fornext_finalvalue28221;
+int64 fornext_step28221;
+uint8 fornext_step_negative28221;
 int32 *_FUNC_IDEGOTOBOX_LONG_F=NULL;
 if(_FUNC_IDEGOTOBOX_LONG_F==NULL){
 _FUNC_IDEGOTOBOX_LONG_F=(int32*)mem_static_malloc(4);
@@ -67,10 +67,10 @@ if(_FUNC_IDEGOTOBOX_LONG_CY==NULL){
 _FUNC_IDEGOTOBOX_LONG_CY=(int32*)mem_static_malloc(4);
 *_FUNC_IDEGOTOBOX_LONG_CY=0;
 }
-int64 fornext_value67159;
-int64 fornext_finalvalue67159;
-int64 fornext_step67159;
-uint8 fornext_step_negative67159;
+int64 fornext_value28224;
+int64 fornext_finalvalue28224;
+int64 fornext_step28224;
+uint8 fornext_step_negative28224;
 int32 *_FUNC_IDEGOTOBOX_LONG_LASTFOCUS=NULL;
 if(_FUNC_IDEGOTOBOX_LONG_LASTFOCUS==NULL){
 _FUNC_IDEGOTOBOX_LONG_LASTFOCUS=(int32*)mem_static_malloc(4);
@@ -103,9 +103,9 @@ _FUNC_IDEGOTOBOX_LONG_OLDALT=(int32*)mem_static_malloc(4);
 }
 qbs *_FUNC_IDEGOTOBOX_STRING_ALTLETTER=NULL;
 if (!_FUNC_IDEGOTOBOX_STRING_ALTLETTER)_FUNC_IDEGOTOBOX_STRING_ALTLETTER=qbs_new(0,0);
-byte_element_struct *byte_element_67161=NULL;
-if (!byte_element_67161){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67161=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67161=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_28226=NULL;
+if (!byte_element_28226){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_28226=(byte_element_struct*)(mem_static_pointer-12); else byte_element_28226=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_IDEGOTOBOX_LONG_K=NULL;
 if(_FUNC_IDEGOTOBOX_LONG_K==NULL){
@@ -117,10 +117,10 @@ if(_FUNC_IDEGOTOBOX_LONG_INFO==NULL){
 _FUNC_IDEGOTOBOX_LONG_INFO=(int32*)mem_static_malloc(4);
 *_FUNC_IDEGOTOBOX_LONG_INFO=0;
 }
-int64 fornext_value67163;
-int64 fornext_finalvalue67163;
-int64 fornext_step67163;
-uint8 fornext_step_negative67163;
+int64 fornext_value28228;
+int64 fornext_finalvalue28228;
+int64 fornext_step28228;
+uint8 fornext_step_negative28228;
 int32 *_FUNC_IDEGOTOBOX_LONG_T=NULL;
 if(_FUNC_IDEGOTOBOX_LONG_T==NULL){
 _FUNC_IDEGOTOBOX_LONG_T=(int32*)mem_static_malloc(4);
@@ -133,17 +133,17 @@ _FUNC_IDEGOTOBOX_LONG_FOCUSOFFSET=(int32*)mem_static_malloc(4);
 }
 qbs *_FUNC_IDEGOTOBOX_STRING_A=NULL;
 if (!_FUNC_IDEGOTOBOX_STRING_A)_FUNC_IDEGOTOBOX_STRING_A=qbs_new(0,0);
-byte_element_struct *byte_element_67164=NULL;
-if (!byte_element_67164){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67164=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67164=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_28229=NULL;
+if (!byte_element_28229){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_28229=(byte_element_struct*)(mem_static_pointer-12); else byte_element_28229=(byte_element_struct*)mem_static_malloc(12);
 }
-int64 fornext_value67166;
-int64 fornext_finalvalue67166;
-int64 fornext_step67166;
-uint8 fornext_step_negative67166;
-byte_element_struct *byte_element_67167=NULL;
-if (!byte_element_67167){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67167=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67167=(byte_element_struct*)mem_static_malloc(12);
+int64 fornext_value28231;
+int64 fornext_finalvalue28231;
+int64 fornext_step28231;
+uint8 fornext_step_negative28231;
+byte_element_struct *byte_element_28232=NULL;
+if (!byte_element_28232){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_28232=(byte_element_struct*)(mem_static_pointer-12); else byte_element_28232=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_IDEGOTOBOX_LONG_A=NULL;
 if(_FUNC_IDEGOTOBOX_LONG_A==NULL){

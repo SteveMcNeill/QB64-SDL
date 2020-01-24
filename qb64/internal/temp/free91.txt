@@ -1,4 +1,4 @@
-if(oldstr67308){
-if(oldstr67308->fixed)qbs_set(oldstr67308,_FUNC_RIPPATH_STRING_A);
+if(oldstr28373){
+if(oldstr28373->fixed)qbs_set(oldstr28373,_FUNC_RIPPATH_STRING_A);
 qbs_free(_FUNC_RIPPATH_STRING_A);
 }

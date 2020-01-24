@@ -1,9 +1,9 @@
-if(oldstr67389){
-if(oldstr67389->fixed)qbs_set(oldstr67389,_SUB_INSERTELEMENTS_STRING_A);
+if(oldstr28454){
+if(oldstr28454->fixed)qbs_set(oldstr28454,_SUB_INSERTELEMENTS_STRING_A);
 qbs_free(_SUB_INSERTELEMENTS_STRING_A);
 }
-if(oldstr67390){
-if(oldstr67390->fixed)qbs_set(oldstr67390,_SUB_INSERTELEMENTS_STRING_ELEMENTS);
+if(oldstr28455){
+if(oldstr28455->fixed)qbs_set(oldstr28455,_SUB_INSERTELEMENTS_STRING_ELEMENTS);
 qbs_free(_SUB_INSERTELEMENTS_STRING_ELEMENTS);
 }
 qbs_free(_SUB_INSERTELEMENTS_STRING_A2);

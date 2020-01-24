@@ -1,5 +1,5 @@
-if(oldstr65825){
-if(oldstr65825->fixed)qbs_set(oldstr65825,_FUNC_EVALUATETOTYP_STRING_A2);
+if(oldstr26890){
+if(oldstr26890->fixed)qbs_set(oldstr26890,_FUNC_EVALUATETOTYP_STRING_A2);
 qbs_free(_FUNC_EVALUATETOTYP_STRING_A2);
 }
 qbs_free(_FUNC_EVALUATETOTYP_STRING_A);

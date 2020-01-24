@@ -32440,3 +32440,13 @@ void sub__numlock(int32 options){
     toggle_lock_key(VK_NUMLOCK);
     #endif
 }
+
+int32 func_screenheight () {
+    const SDL_VideoInfo* info = SDL_GetVideoInfo();
+    return info->current_h;
+}
+
+int32 func_screenwidth () {
+    const SDL_VideoInfo* info = SDL_GetVideoInfo();
+    return info->current_w;
+}

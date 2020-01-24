@@ -1,9 +1,9 @@
-if(oldstr67445){
-if(oldstr67445->fixed)qbs_set(oldstr67445,_SUB_XFILEPRINT_STRING_A);
+if(oldstr28510){
+if(oldstr28510->fixed)qbs_set(oldstr28510,_SUB_XFILEPRINT_STRING_A);
 qbs_free(_SUB_XFILEPRINT_STRING_A);
 }
-if(oldstr67446){
-if(oldstr67446->fixed)qbs_set(oldstr67446,_SUB_XFILEPRINT_STRING_CA);
+if(oldstr28511){
+if(oldstr28511->fixed)qbs_set(oldstr28511,_SUB_XFILEPRINT_STRING_CA);
 qbs_free(_SUB_XFILEPRINT_STRING_CA);
 }
 qbs_free(_SUB_XFILEPRINT_STRING_U);

@@ -1,4 +1,4 @@
-if(oldstr67759){
-if(oldstr67759->fixed)qbs_set(oldstr67759,_SUB_IDEINSLINE_STRING_TEXT);
+if(oldstr28824){
+if(oldstr28824->fixed)qbs_set(oldstr28824,_SUB_IDEINSLINE_STRING_TEXT);
 qbs_free(_SUB_IDEINSLINE_STRING_TEXT);
 }

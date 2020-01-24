@@ -64,6 +64,8 @@ extern int32 func__hasfocus();
 extern qbs *func__cwd();
 extern qbs *func__startdir();
 extern void sub__keyclear(int32 buf, int32 passed);
+extern int32 func_screenheight();
+extern int32 func_screenwidth();
 
 extern void sub__memfill(mem_block* dblk, ptrszint doff, ptrszint dbytes, ptrszint soff, ptrszint sbytes);
 extern void sub__memfill_nochecks(ptrszint doff, ptrszint dbytes, ptrszint soff, ptrszint sbytes);

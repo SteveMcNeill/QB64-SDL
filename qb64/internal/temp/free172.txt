@@ -1,5 +1,5 @@
-if(oldstr68162){
-if(oldstr68162->fixed)qbs_set(oldstr68162,_SUB_HELP_ADDTXT_STRING_T);
+if(oldstr29227){
+if(oldstr29227->fixed)qbs_set(oldstr29227,_SUB_HELP_ADDTXT_STRING_T);
 qbs_free(_SUB_HELP_ADDTXT_STRING_T);
 }
 qbs_free(_SUB_HELP_ADDTXT_STRING_B);

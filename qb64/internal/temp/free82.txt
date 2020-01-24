@@ -1,5 +1,5 @@
-if(oldstr67224){
-if(oldstr67224->fixed)qbs_set(oldstr67224,_FUNC_DECOMPRESS_2_HUFF_STRING_A);
+if(oldstr28289){
+if(oldstr28289->fixed)qbs_set(oldstr28289,_FUNC_DECOMPRESS_2_HUFF_STRING_A);
 qbs_free(_FUNC_DECOMPRESS_2_HUFF_STRING_A);
 }
 qbs_free(_FUNC_DECOMPRESS_2_HUFF_STRING_B);

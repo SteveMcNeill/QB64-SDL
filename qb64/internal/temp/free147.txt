@@ -1,9 +1,9 @@
-if(oldstr67885){
-if(oldstr67885->fixed)qbs_set(oldstr67885,_SUB_IDEMESSAGEBOX_STRING_TITLESTR);
+if(oldstr28950){
+if(oldstr28950->fixed)qbs_set(oldstr28950,_SUB_IDEMESSAGEBOX_STRING_TITLESTR);
 qbs_free(_SUB_IDEMESSAGEBOX_STRING_TITLESTR);
 }
-if(oldstr67886){
-if(oldstr67886->fixed)qbs_set(oldstr67886,_SUB_IDEMESSAGEBOX_STRING_MESSAGESTR);
+if(oldstr28951){
+if(oldstr28951->fixed)qbs_set(oldstr28951,_SUB_IDEMESSAGEBOX_STRING_MESSAGESTR);
 qbs_free(_SUB_IDEMESSAGEBOX_STRING_MESSAGESTR);
 }
 if (_SUB_IDEMESSAGEBOX_ARRAY_UDT_O[2]&1){

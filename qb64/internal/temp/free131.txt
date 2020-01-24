@@ -1,5 +1,5 @@
-if(oldstr67718){
-if(oldstr67718->fixed)qbs_set(oldstr67718,_SUB_IDEERRORMESSAGE_STRING_MESS);
+if(oldstr28783){
+if(oldstr28783->fixed)qbs_set(oldstr28783,_SUB_IDEERRORMESSAGE_STRING_MESS);
 qbs_free(_SUB_IDEERRORMESSAGE_STRING_MESS);
 }
 if (_SUB_IDEERRORMESSAGE_ARRAY_UDT_O[2]&1){

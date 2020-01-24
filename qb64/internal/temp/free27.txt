@@ -1,8 +1,8 @@
-if(oldstr66147){
-if(oldstr66147->fixed)qbs_set(oldstr66147,_FUNC_OPERATORUSAGE_STRING_OPERATOR);
+if(oldstr27212){
+if(oldstr27212->fixed)qbs_set(oldstr27212,_FUNC_OPERATORUSAGE_STRING_OPERATOR);
 qbs_free(_FUNC_OPERATORUSAGE_STRING_OPERATOR);
 }
-if(oldstr66148){
-if(oldstr66148->fixed)qbs_set(oldstr66148,_FUNC_OPERATORUSAGE_STRING_INFO);
+if(oldstr27213){
+if(oldstr27213->fixed)qbs_set(oldstr27213,_FUNC_OPERATORUSAGE_STRING_INFO);
 qbs_free(_FUNC_OPERATORUSAGE_STRING_INFO);
 }

@@ -1,14 +1,14 @@
 qbs *_FUNC_TYP2CTYP_STRING_TYP2CTYP=NULL;
 if (!_FUNC_TYP2CTYP_STRING_TYP2CTYP)_FUNC_TYP2CTYP_STRING_TYP2CTYP=qbs_new(0,0);
-qbs*oldstr66259=NULL;
+qbs*oldstr27324=NULL;
 if(_FUNC_TYP2CTYP_STRING_TSTR->tmp||_FUNC_TYP2CTYP_STRING_TSTR->fixed||_FUNC_TYP2CTYP_STRING_TSTR->readonly){
-oldstr66259=_FUNC_TYP2CTYP_STRING_TSTR;
-if (oldstr66259->cmem_descriptor){
-_FUNC_TYP2CTYP_STRING_TSTR=qbs_new_cmem(oldstr66259->len,0);
+oldstr27324=_FUNC_TYP2CTYP_STRING_TSTR;
+if (oldstr27324->cmem_descriptor){
+_FUNC_TYP2CTYP_STRING_TSTR=qbs_new_cmem(oldstr27324->len,0);
 }else{
-_FUNC_TYP2CTYP_STRING_TSTR=qbs_new(oldstr66259->len,0);
+_FUNC_TYP2CTYP_STRING_TSTR=qbs_new(oldstr27324->len,0);
 }
-memcpy(_FUNC_TYP2CTYP_STRING_TSTR->chr,oldstr66259->chr,oldstr66259->len);
+memcpy(_FUNC_TYP2CTYP_STRING_TSTR->chr,oldstr27324->chr,oldstr27324->len);
 }
 qbs *_FUNC_TYP2CTYP_STRING_CTYP=NULL;
 if (!_FUNC_TYP2CTYP_STRING_CTYP)_FUNC_TYP2CTYP_STRING_CTYP=qbs_new(0,0);
@@ -29,20 +29,20 @@ if(_FUNC_TYP2CTYP_LONG_UNSGN==NULL){
 _FUNC_TYP2CTYP_LONG_UNSGN=(int32*)mem_static_malloc(4);
 *_FUNC_TYP2CTYP_LONG_UNSGN=0;
 }
-byte_element_struct *byte_element_66260=NULL;
-if (!byte_element_66260){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_66260=(byte_element_struct*)(mem_static_pointer-12); else byte_element_66260=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_27325=NULL;
+if (!byte_element_27325){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_27325=(byte_element_struct*)(mem_static_pointer-12); else byte_element_27325=(byte_element_struct*)mem_static_malloc(12);
 }
 qbs *_FUNC_TYP2CTYP_STRING_N=NULL;
 if (!_FUNC_TYP2CTYP_STRING_N)_FUNC_TYP2CTYP_STRING_N=qbs_new(0,0);
-byte_element_struct *byte_element_66261=NULL;
-if (!byte_element_66261){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_66261=(byte_element_struct*)(mem_static_pointer-12); else byte_element_66261=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_27326=NULL;
+if (!byte_element_27326){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_27326=(byte_element_struct*)(mem_static_pointer-12); else byte_element_27326=(byte_element_struct*)mem_static_malloc(12);
 }
 qbs *_FUNC_TYP2CTYP_STRING_S=NULL;
 if (!_FUNC_TYP2CTYP_STRING_S)_FUNC_TYP2CTYP_STRING_S=qbs_new(0,0);
-byte_element_struct *byte_element_66262=NULL;
-if (!byte_element_66262){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_66262=(byte_element_struct*)(mem_static_pointer-12); else byte_element_66262=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_27327=NULL;
+if (!byte_element_27327){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_27327=(byte_element_struct*)(mem_static_pointer-12); else byte_element_27327=(byte_element_struct*)mem_static_malloc(12);
 }
-int32 pass66263;
+int32 pass27328;

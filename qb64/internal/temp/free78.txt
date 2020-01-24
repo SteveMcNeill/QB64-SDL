@@ -1,4 +1,4 @@
-if(oldstr67216){
-if(oldstr67216->fixed)qbs_set(oldstr67216,_FUNC_HASHVALUE_STRING_A);
+if(oldstr28281){
+if(oldstr28281->fixed)qbs_set(oldstr28281,_FUNC_HASHVALUE_STRING_A);
 qbs_free(_FUNC_HASHVALUE_STRING_A);
 }

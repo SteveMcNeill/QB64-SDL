@@ -1,5 +1,5 @@
-if(oldstr68105){
-if(oldstr68105->fixed)qbs_set(oldstr68105,_SUB_VERIFYSTRING_STRING_T);
+if(oldstr29170){
+if(oldstr29170->fixed)qbs_set(oldstr29170,_SUB_VERIFYSTRING_STRING_T);
 qbs_free(_SUB_VERIFYSTRING_STRING_T);
 }
 qbs_free(_SUB_VERIFYSTRING_STRING_COMP);

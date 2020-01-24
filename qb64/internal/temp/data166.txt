@@ -1,14 +1,14 @@
 qbs *_FUNC_N2S_STRING_N2S=NULL;
 if (!_FUNC_N2S_STRING_N2S)_FUNC_N2S_STRING_N2S=qbs_new(0,0);
-qbs*oldstr68113=NULL;
+qbs*oldstr29178=NULL;
 if(_FUNC_N2S_STRING_EXP->tmp||_FUNC_N2S_STRING_EXP->fixed||_FUNC_N2S_STRING_EXP->readonly){
-oldstr68113=_FUNC_N2S_STRING_EXP;
-if (oldstr68113->cmem_descriptor){
-_FUNC_N2S_STRING_EXP=qbs_new_cmem(oldstr68113->len,0);
+oldstr29178=_FUNC_N2S_STRING_EXP;
+if (oldstr29178->cmem_descriptor){
+_FUNC_N2S_STRING_EXP=qbs_new_cmem(oldstr29178->len,0);
 }else{
-_FUNC_N2S_STRING_EXP=qbs_new(oldstr68113->len,0);
+_FUNC_N2S_STRING_EXP=qbs_new(oldstr29178->len,0);
 }
-memcpy(_FUNC_N2S_STRING_EXP->chr,oldstr68113->chr,oldstr68113->len);
+memcpy(_FUNC_N2S_STRING_EXP->chr,oldstr29178->chr,oldstr29178->len);
 }
 qbs *_FUNC_N2S_STRING_T=NULL;
 if (!_FUNC_N2S_STRING_T)_FUNC_N2S_STRING_T=qbs_new(0,0);
@@ -53,20 +53,20 @@ if(_FUNC_N2S_INTEGER64_R==NULL){
 _FUNC_N2S_INTEGER64_R=(int64*)mem_static_malloc(8);
 *_FUNC_N2S_INTEGER64_R=0;
 }
-byte_element_struct *byte_element_68115=NULL;
-if (!byte_element_68115){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_68115=(byte_element_struct*)(mem_static_pointer-12); else byte_element_68115=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_29180=NULL;
+if (!byte_element_29180){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_29180=(byte_element_struct*)(mem_static_pointer-12); else byte_element_29180=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_N2S_LONG_I=NULL;
 if(_FUNC_N2S_LONG_I==NULL){
 _FUNC_N2S_LONG_I=(int32*)mem_static_malloc(4);
 *_FUNC_N2S_LONG_I=0;
 }
-int64 fornext_value68118;
-int64 fornext_finalvalue68118;
-int64 fornext_step68118;
-uint8 fornext_step_negative68118;
-int64 fornext_value68120;
-int64 fornext_finalvalue68120;
-int64 fornext_step68120;
-uint8 fornext_step_negative68120;
+int64 fornext_value29183;
+int64 fornext_finalvalue29183;
+int64 fornext_step29183;
+uint8 fornext_step_negative29183;
+int64 fornext_value29185;
+int64 fornext_finalvalue29185;
+int64 fornext_step29185;
+uint8 fornext_step_negative29185;

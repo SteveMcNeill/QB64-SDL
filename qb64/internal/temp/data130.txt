@@ -1,11 +1,11 @@
-int32 pass67714;
-int32 pass67715;
+int32 pass28779;
+int32 pass28780;
 int32 *_SUB_IDEDRAWPAR_LONG_X=NULL;
 if(_SUB_IDEDRAWPAR_LONG_X==NULL){
 _SUB_IDEDRAWPAR_LONG_X=(int32*)mem_static_malloc(4);
 *_SUB_IDEDRAWPAR_LONG_X=0;
 }
-byte_element_struct *byte_element_67716=NULL;
-if (!byte_element_67716){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67716=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67716=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_28781=NULL;
+if (!byte_element_28781){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_28781=(byte_element_struct*)(mem_static_pointer-12); else byte_element_28781=(byte_element_struct*)mem_static_malloc(12);
 }

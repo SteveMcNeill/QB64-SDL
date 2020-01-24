@@ -1,24 +1,24 @@
 qbs *_FUNC_UDTREFERENCE_STRING_UDTREFERENCE=NULL;
 if (!_FUNC_UDTREFERENCE_STRING_UDTREFERENCE)_FUNC_UDTREFERENCE_STRING_UDTREFERENCE=qbs_new(0,0);
-qbs*oldstr65664=NULL;
+qbs*oldstr26729=NULL;
 if(_FUNC_UDTREFERENCE_STRING_O->tmp||_FUNC_UDTREFERENCE_STRING_O->fixed||_FUNC_UDTREFERENCE_STRING_O->readonly){
-oldstr65664=_FUNC_UDTREFERENCE_STRING_O;
-if (oldstr65664->cmem_descriptor){
-_FUNC_UDTREFERENCE_STRING_O=qbs_new_cmem(oldstr65664->len,0);
+oldstr26729=_FUNC_UDTREFERENCE_STRING_O;
+if (oldstr26729->cmem_descriptor){
+_FUNC_UDTREFERENCE_STRING_O=qbs_new_cmem(oldstr26729->len,0);
 }else{
-_FUNC_UDTREFERENCE_STRING_O=qbs_new(oldstr65664->len,0);
+_FUNC_UDTREFERENCE_STRING_O=qbs_new(oldstr26729->len,0);
 }
-memcpy(_FUNC_UDTREFERENCE_STRING_O->chr,oldstr65664->chr,oldstr65664->len);
+memcpy(_FUNC_UDTREFERENCE_STRING_O->chr,oldstr26729->chr,oldstr26729->len);
 }
-qbs*oldstr65665=NULL;
+qbs*oldstr26730=NULL;
 if(_FUNC_UDTREFERENCE_STRING_A->tmp||_FUNC_UDTREFERENCE_STRING_A->fixed||_FUNC_UDTREFERENCE_STRING_A->readonly){
-oldstr65665=_FUNC_UDTREFERENCE_STRING_A;
-if (oldstr65665->cmem_descriptor){
-_FUNC_UDTREFERENCE_STRING_A=qbs_new_cmem(oldstr65665->len,0);
+oldstr26730=_FUNC_UDTREFERENCE_STRING_A;
+if (oldstr26730->cmem_descriptor){
+_FUNC_UDTREFERENCE_STRING_A=qbs_new_cmem(oldstr26730->len,0);
 }else{
-_FUNC_UDTREFERENCE_STRING_A=qbs_new(oldstr65665->len,0);
+_FUNC_UDTREFERENCE_STRING_A=qbs_new(oldstr26730->len,0);
 }
-memcpy(_FUNC_UDTREFERENCE_STRING_A->chr,oldstr65665->chr,oldstr65665->len);
+memcpy(_FUNC_UDTREFERENCE_STRING_A->chr,oldstr26730->chr,oldstr26730->len);
 }
 qbs *_FUNC_UDTREFERENCE_STRING_OBAK=NULL;
 if (!_FUNC_UDTREFERENCE_STRING_OBAK)_FUNC_UDTREFERENCE_STRING_OBAK=qbs_new(0,0);
@@ -53,9 +53,9 @@ qbs *_FUNC_UDTREFERENCE_STRING_N=NULL;
 if (!_FUNC_UDTREFERENCE_STRING_N)_FUNC_UDTREFERENCE_STRING_N=qbs_new(0,0);
 qbs *_FUNC_UDTREFERENCE_STRING_NSYM=NULL;
 if (!_FUNC_UDTREFERENCE_STRING_NSYM)_FUNC_UDTREFERENCE_STRING_NSYM=qbs_new(0,0);
-byte_element_struct *byte_element_65666=NULL;
-if (!byte_element_65666){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_65666=(byte_element_struct*)(mem_static_pointer-12); else byte_element_65666=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_26731=NULL;
+if (!byte_element_26731){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_26731=(byte_element_struct*)(mem_static_pointer-12); else byte_element_26731=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_FUNC_UDTREFERENCE_LONG_NTYP=NULL;
 if(_FUNC_UDTREFERENCE_LONG_NTYP==NULL){
@@ -69,7 +69,7 @@ _FUNC_UDTREFERENCE_LONG_NTYPSIZE=(int32*)mem_static_malloc(4);
 }
 qbs *_FUNC_UDTREFERENCE_STRING_N2=NULL;
 if (!_FUNC_UDTREFERENCE_STRING_N2)_FUNC_UDTREFERENCE_STRING_N2=qbs_new(0,0);
-byte_element_struct *byte_element_65667=NULL;
-if (!byte_element_65667){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_65667=(byte_element_struct*)(mem_static_pointer-12); else byte_element_65667=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_26732=NULL;
+if (!byte_element_26732){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_26732=(byte_element_struct*)(mem_static_pointer-12); else byte_element_26732=(byte_element_struct*)mem_static_malloc(12);
 }

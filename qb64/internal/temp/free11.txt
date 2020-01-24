@@ -1,5 +1,5 @@
-if(oldstr65668){
-if(oldstr65668->fixed)qbs_set(oldstr65668,_FUNC_EVALUATE_STRING_A2);
+if(oldstr26733){
+if(oldstr26733->fixed)qbs_set(oldstr26733,_FUNC_EVALUATE_STRING_A2);
 qbs_free(_FUNC_EVALUATE_STRING_A2);
 }
 if (_FUNC_EVALUATE_ARRAY_STRING_BLOCK[2]&1){

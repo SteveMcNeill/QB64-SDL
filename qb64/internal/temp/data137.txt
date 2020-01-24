@@ -35,12 +35,12 @@ if(_SUB_IDENOMATCH_LONG_I==NULL){
 _SUB_IDENOMATCH_LONG_I=(int32*)mem_static_malloc(4);
 *_SUB_IDENOMATCH_LONG_I=0;
 }
-int32 pass67780;
-int32 pass67781;
-int64 fornext_value67783;
-int64 fornext_finalvalue67783;
-int64 fornext_step67783;
-uint8 fornext_step_negative67783;
+int32 pass28845;
+int32 pass28846;
+int64 fornext_value28848;
+int64 fornext_finalvalue28848;
+int64 fornext_step28848;
+uint8 fornext_step_negative28848;
 int32 *_SUB_IDENOMATCH_LONG_F=NULL;
 if(_SUB_IDENOMATCH_LONG_F==NULL){
 _SUB_IDENOMATCH_LONG_F=(int32*)mem_static_malloc(4);
@@ -56,10 +56,10 @@ if(_SUB_IDENOMATCH_LONG_CY==NULL){
 _SUB_IDENOMATCH_LONG_CY=(int32*)mem_static_malloc(4);
 *_SUB_IDENOMATCH_LONG_CY=0;
 }
-int64 fornext_value67786;
-int64 fornext_finalvalue67786;
-int64 fornext_step67786;
-uint8 fornext_step_negative67786;
+int64 fornext_value28851;
+int64 fornext_finalvalue28851;
+int64 fornext_step28851;
+uint8 fornext_step_negative28851;
 int32 *_SUB_IDENOMATCH_LONG_LASTFOCUS=NULL;
 if(_SUB_IDENOMATCH_LONG_LASTFOCUS==NULL){
 _SUB_IDENOMATCH_LONG_LASTFOCUS=(int32*)mem_static_malloc(4);
@@ -92,9 +92,9 @@ _SUB_IDENOMATCH_LONG_OLDALT=(int32*)mem_static_malloc(4);
 }
 qbs *_SUB_IDENOMATCH_STRING_ALTLETTER=NULL;
 if (!_SUB_IDENOMATCH_STRING_ALTLETTER)_SUB_IDENOMATCH_STRING_ALTLETTER=qbs_new(0,0);
-byte_element_struct *byte_element_67789=NULL;
-if (!byte_element_67789){
-if ((mem_static_pointer+=12)<mem_static_limit) byte_element_67789=(byte_element_struct*)(mem_static_pointer-12); else byte_element_67789=(byte_element_struct*)mem_static_malloc(12);
+byte_element_struct *byte_element_28854=NULL;
+if (!byte_element_28854){
+if ((mem_static_pointer+=12)<mem_static_limit) byte_element_28854=(byte_element_struct*)(mem_static_pointer-12); else byte_element_28854=(byte_element_struct*)mem_static_malloc(12);
 }
 int32 *_SUB_IDENOMATCH_LONG_K=NULL;
 if(_SUB_IDENOMATCH_LONG_K==NULL){
@@ -106,10 +106,10 @@ if(_SUB_IDENOMATCH_LONG_INFO==NULL){
 _SUB_IDENOMATCH_LONG_INFO=(int32*)mem_static_malloc(4);
 *_SUB_IDENOMATCH_LONG_INFO=0;
 }
-int64 fornext_value67791;
-int64 fornext_finalvalue67791;
-int64 fornext_step67791;
-uint8 fornext_step_negative67791;
+int64 fornext_value28856;
+int64 fornext_finalvalue28856;
+int64 fornext_step28856;
+uint8 fornext_step_negative28856;
 int32 *_SUB_IDENOMATCH_LONG_T=NULL;
 if(_SUB_IDENOMATCH_LONG_T==NULL){
 _SUB_IDENOMATCH_LONG_T=(int32*)mem_static_malloc(4);
